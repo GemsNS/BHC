@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #1a1d21;
+  --paper: #f3f1ec;
+  --foam: #f8f7f4;
+  --amber: #d97706;
+  --amber-deep: #b45309;
+  --line: #d9d4cb;
+  --muted: #6b655c;
+  --sea: #1f4e5f;
+  --background: var(--paper);
+  --foreground: var(--ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.surface-grid {
+  background-image:
+    linear-gradient(rgba(26, 29, 33, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 29, 33, 0.03) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.hero-wash {
+  background:
+    radial-gradient(ellipse 80% 60% at 70% 20%, rgba(217, 119, 6, 0.22), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 15% 80%, rgba(31, 78, 95, 0.28), transparent 50%),
+    linear-gradient(160deg, #1a1d21 0%, #243039 45%, #1f4e5f 100%);
+}
