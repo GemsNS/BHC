@@ -26,7 +26,8 @@ export default function JobsPage() {
 
   async function onCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
+    const formEl = e.currentTarget;
+    const form = new FormData(formEl);
     await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -41,7 +42,7 @@ export default function JobsPage() {
         notes: String(form.get("notes") || ""),
       }),
     });
-    e.currentTarget.reset();
+    formEl.reset();
     await load();
   }
 

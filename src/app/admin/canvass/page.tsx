@@ -24,7 +24,8 @@ export default function CanvassPage() {
   async function onCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setMessage(null);
-    const form = new FormData(e.currentTarget);
+    const formEl = e.currentTarget;
+    const form = new FormData(formEl);
     const createLead = form.get("createLead") === "on";
     const res = await fetch("/api/canvass", {
       method: "POST",
@@ -46,7 +47,7 @@ export default function CanvassPage() {
     } else {
       setMessage("Stop logged.");
     }
-    e.currentTarget.reset();
+    formEl.reset();
     await load();
   }
 

@@ -29,7 +29,8 @@ export default function LeadsPage() {
     e.preventDefault();
     setSaving(true);
     setError(null);
-    const form = new FormData(e.currentTarget);
+    const formEl = e.currentTarget;
+    const form = new FormData(formEl);
     const payload = {
       name: String(form.get("name") || ""),
       phone: String(form.get("phone") || ""),
@@ -52,7 +53,7 @@ export default function LeadsPage() {
       setError("Could not create lead");
       return;
     }
-    e.currentTarget.reset();
+    formEl.reset();
     await load();
   }
 
