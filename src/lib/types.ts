@@ -290,7 +290,7 @@ export const ADMIN_NAV: Array<{
   label: string;
   perm: Permission;
 }> = [
-  { href: "/admin/dashboard", label: "Dashboard", perm: "dashboard" },
+  { href: "/admin/dashboard", label: "Ops wall", perm: "dashboard" },
   { href: "/admin/board", label: "Announcements", perm: "board" },
   { href: "/admin/stats", label: "Statistics", perm: "stats" },
   { href: "/admin/leads", label: "Leads", perm: "leads" },

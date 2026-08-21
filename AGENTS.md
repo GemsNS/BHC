@@ -4,7 +4,8 @@
 
 - Single Next.js app at repo root. Package manager: **npm** (`package-lock.json`).
 - Dev server: `npm run dev` (binds `0.0.0.0:3000`).
-  - Login: `/login` · Admin: `/admin/dashboard` · Board: `/admin/board` or `/apps/board` · Apps: `/apps` · Knocker: `/apps/knocker`
+  - Login: `/login` · Ops wall: `/admin/dashboard` · Board: `/admin/board` or `/apps/board` · Apps: `/apps` · Knocker: `/apps/knocker`
+- Admin + field apps share one dark **CommandShell** (desktop rail / mobile chips + bottom tabs).
 - Lint / test / build: `npm run lint`, `npm test`, `npm run build` (see `package.json` / `README.md`).
 - Persistence: `data/store.json` (gitignored), auto-seeded; reset with `POST /api/seed`. No external DB required.
 - Auth: every employee has `login` + `pin`. Session is client-side (`bhc-auth-user-id`). Role permissions gate nav and routes.

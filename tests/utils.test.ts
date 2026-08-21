@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { formatCurrency, formatHours, labelize } from "../src/lib/utils";
 import { buildSeedData } from "../src/lib/seed";
 import { ROLE_PERMISSIONS, homeForRole } from "../src/lib/types";
+import {
+  buildActivityFeed,
+  buildOpsAlerts,
+  buildOpsMetrics,
+} from "../src/lib/ops-wall";
 
 describe("utils", () => {
   it("formats currency", () => {
@@ -37,6 +42,16 @@ describe("seed data", () => {
       expect(emp.login.length).toBeGreaterThan(0);
       expect(emp.pin.length).toBeGreaterThanOrEqual(4);
     }
+  });
+});
+
+describe("ops wall helpers", () => {
+  it("builds metrics and activity feed from seed", () => {
+    const seed = buildSeedData();
+    const metrics = buildOpsMetrics(seed);
+    expect(metrics.length).toBe(5);
+    expect(buildActivityFeed(seed).length).toBeGreaterThan(0);
+    expect(Array.isArray(buildOpsAlerts(seed))).toBe(true);
   });
 });
 

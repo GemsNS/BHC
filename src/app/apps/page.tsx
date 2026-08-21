@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { AppsShell } from "@/components/AppsShell";
+import { MetricStrip, PageFrame, Panel } from "@/components/cc";
+import { loadAppData } from "@/lib/client-data";
+import { buildFieldTodayMetrics } from "@/lib/ops-wall";
 import { useSession } from "@/lib/session";
+import type { AppData } from "@/lib/types";
 
 const apps = [
   {
@@ -49,32 +54,50 @@ const apps = [
   },
   {
     href: "/admin/dashboard",
-    title: "Admin desk",
-    blurb: "Full ops panel — only if your role allows.",
+    title: "Ops wall",
+    blurb: "Full command center — if your role allows.",
     perm: "dashboard" as const,
   },
 ];
 
 export default function AppsHubPage() {
-  const { can } = useSession();
+  const { can, user } = useSession();
+  const [data, setData] = useState<AppData | null>(null);
   const visible = apps.filter((app) => can(app.perm));
+
+  useEffect(() => {
+    loadAppData().then(setData);
+  }, []);
+
+  const metrics = data
+    ? buildFieldTodayMetrics(data, user?.id)
+    : [
+        { label: "Status", value: "…" },
+        { label: "My knocks", value: "…" },
+        { label: "My zones", value: "…" },
+        { label: "Active jobs", value: "…" },
+      ];
 
   return (
     <AppsShell title="Home">
-      <div className="apps-hub">
-        <p className="apps-hub-lead">
-          Tools for your role. Phones use bottom tabs; desktop uses the top nav
-          and wider layout.
-        </p>
-        <div className="apps-hub-grid">
-          {visible.map((app) => (
-            <Link key={app.href} href={app.href} className="apps-hub-card">
-              <h2>{app.title}</h2>
-              <p>{app.blurb}</p>
-            </Link>
-          ))}
-        </div>
-      </div>
+      <PageFrame
+        context="Field mode"
+        title="Today"
+        subtitle="Same command center language as ops — tools filtered to your role."
+      >
+        <MetricStrip items={metrics} />
+
+        <Panel title="Your tools">
+          <div className="cc-hub-grid">
+            {visible.map((app) => (
+              <Link key={app.href} href={app.href} className="cc-hub-card">
+                <h2>{app.title}</h2>
+                <p>{app.blurb}</p>
+              </Link>
+            ))}
+          </div>
+        </Panel>
+      </PageFrame>
     </AppsShell>
   );
 }

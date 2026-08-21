@@ -1,30 +1,30 @@
 import { cn, labelize } from "@/lib/utils";
 
 const toneMap: Record<string, string> = {
-  new: "bg-sky-100 text-sky-800",
-  contacted: "bg-indigo-100 text-indigo-800",
-  qualified: "bg-teal-100 text-teal-800",
-  estimate: "bg-amber-100 text-amber-900",
-  won: "bg-emerald-100 text-emerald-800",
-  lost: "bg-stone-200 text-stone-700",
-  scheduled: "bg-sky-100 text-sky-800",
-  in_progress: "bg-amber-100 text-amber-900",
-  on_hold: "bg-orange-100 text-orange-900",
-  completed: "bg-emerald-100 text-emerald-800",
-  invoiced: "bg-violet-100 text-violet-800",
-  active: "bg-emerald-100 text-emerald-800",
-  idle: "bg-stone-200 text-stone-700",
-  maintenance: "bg-rose-100 text-rose-800",
-  interested: "bg-teal-100 text-teal-800",
-  appointment: "bg-emerald-100 text-emerald-800",
-  not_home: "bg-stone-200 text-stone-700",
-  not_interested: "bg-orange-100 text-orange-900",
-  do_not_knock: "bg-rose-100 text-rose-800",
-  open: "bg-sky-100 text-sky-800",
-  paused: "bg-orange-100 text-orange-900",
-  admin: "bg-stone-200 text-stone-800",
-  manager: "bg-teal-100 text-teal-800",
-  knocker: "bg-amber-100 text-amber-900",
+  new: "bg-sky-500/20 text-sky-200",
+  contacted: "bg-indigo-500/20 text-indigo-200",
+  qualified: "bg-teal-500/20 text-teal-200",
+  estimate: "bg-amber-500/20 text-amber-200",
+  won: "bg-emerald-500/20 text-emerald-200",
+  lost: "bg-stone-500/30 text-stone-300",
+  scheduled: "bg-sky-500/20 text-sky-200",
+  in_progress: "bg-amber-500/20 text-amber-200",
+  on_hold: "bg-orange-500/20 text-orange-200",
+  completed: "bg-emerald-500/20 text-emerald-200",
+  invoiced: "bg-violet-500/20 text-violet-200",
+  active: "bg-emerald-500/20 text-emerald-200",
+  idle: "bg-stone-500/30 text-stone-300",
+  maintenance: "bg-rose-500/20 text-rose-200",
+  interested: "bg-teal-500/20 text-teal-200",
+  appointment: "bg-emerald-500/20 text-emerald-200",
+  not_home: "bg-stone-500/30 text-stone-300",
+  not_interested: "bg-orange-500/20 text-orange-200",
+  do_not_knock: "bg-rose-500/20 text-rose-200",
+  open: "bg-sky-500/20 text-sky-200",
+  paused: "bg-orange-500/20 text-orange-200",
+  admin: "bg-stone-500/30 text-stone-200",
+  manager: "bg-teal-500/20 text-teal-200",
+  knocker: "bg-amber-500/20 text-amber-200",
 };
 
 export function StatusBadge({ status }: { status: string }) {
@@ -32,7 +32,7 @@ export function StatusBadge({ status }: { status: string }) {
     <span
       className={cn(
         "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
-        toneMap[status] ?? "bg-stone-200 text-stone-700",
+        toneMap[status] ?? "bg-stone-500/30 text-stone-300",
       )}
     >
       {labelize(status)}
