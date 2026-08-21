@@ -15,6 +15,7 @@ const createSchema = z.object({
   crewLeadId: z.string().nullable().optional(),
   startDate: z.string().min(1),
   estimatedValue: z.number().nonnegative(),
+  contractValue: z.number().nonnegative().optional(),
   notes: z.string().optional(),
 });
 
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
     crewLeadId: parsed.data.crewLeadId ?? null,
     startDate: parsed.data.startDate,
     estimatedValue: parsed.data.estimatedValue,
+    contractValue: parsed.data.contractValue ?? parsed.data.estimatedValue,
     notes: parsed.data.notes ?? "",
     createdAt: nowIso(),
   };

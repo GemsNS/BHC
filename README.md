@@ -1,13 +1,6 @@
 # Big Hoss Contracting — All-in-One CRM
 
-Operations CRM for **Big Hoss Contracting**: web admin panel, employee time portal, and connected tools for leads, jobs, door-to-door sales, fleet, hours, and payroll.
-
-## Stack
-
-- Next.js 15 (App Router) + TypeScript + Tailwind CSS 4
-- Zod validation on API routes
-- Local JSON file store in `data/store.json` (auto-seeded on first read)
-- Vitest for unit tests
+Operations CRM + web-hosted field apps for **Big Hoss Contracting** (subcontracting): knocker zones, jobs, materials, fuel, fleet, hours, roles, and stats.
 
 ## Quick start
 
@@ -18,44 +11,45 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-- Admin panel: `/admin/dashboard`
-- Employee portal (clock in/out): `/portal`
+| Surface | URL |
+| --- | --- |
+| Admin | `/admin/dashboard` |
+| Knocker zones (admin) | `/admin/zones` |
+| Field apps hub | `/apps` |
+| **Knocker app** | `/apps/knocker` |
+| Time clock | `/apps/clock` or `/portal` |
 
 ## Scripts
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Development server on `0.0.0.0:3000` |
-| `npm run lint` | ESLint |
-| `npm test` | Vitest unit tests |
-| `npm run build` | Production build |
-| `npm start` | Run production build |
+| `npm run dev` | Dev server `0.0.0.0:3000` |
+| `npm run lint` / `npm test` / `npm run build` | Quality checks |
+| `npm run build:gh-pages` | Static demo export to `./out` |
+| `npm run deploy:gh-pages` | Build + publish `gh-pages` branch |
 
-## Modules (v0 foundation)
+## GitHub Pages demo
 
-| Area | Route | Notes |
-| --- | --- | --- |
-| Dashboard | `/admin/dashboard` | Ops pulse |
-| Leads | `/admin/leads` | Create + advance pipeline |
-| Jobs | `/admin/jobs` | Schedule / status |
-| Door-to-door | `/admin/canvass` | Log stops; optional lead creation |
-| Fleet | `/admin/fleet` | Vehicle board (mock coords) |
-| Hours & payroll | `/admin/hours` | Punch rollup + pay estimate |
-| Team | `/admin/team` | Roster |
-| Employee portal | `/portal` | Clock in / out |
+```bash
+npm run deploy:gh-pages
+```
+
+Demo URL (after first deploy + Pages enabled on `gh-pages`):  
+https://gemsns.github.io/BHC-ALL-IN-ONE/
+
+Static demo uses **localStorage** (no server APIs). Full local/cloud mode uses `data/store.json` + `/api/*`.
+
+## Modules
+
+- **Knocker** — zone assignment, door logs, GPS stamp, lead creation, admin tracking
+- **Jobs / materials / fuel / fleet** — subcontract cost visibility
+- **Statistics & projections** — knocks, spend, pipeline, monthly targets
+- **Users & roles** — admin, manager, sales, knocker, field, office, driver
 
 ## Data
 
-First API/page hit creates `data/store.json` from seed data. Reset with:
+Auto-seeded on first read. Reset:
 
 ```bash
 curl -X POST http://localhost:3000/api/seed
 ```
-
-## Roadmap (next)
-
-- Auth / roles (admin vs crew)
-- Postgres + Prisma for multi-user production
-- Real GPS / telematics for fleet
-- Estimating, invoicing, document storage
-- Payroll export (CSV / QuickBooks)

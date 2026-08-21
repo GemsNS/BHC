@@ -1,17 +1,24 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
-import { readStore } from "@/lib/store";
+import { loadAppData } from "@/lib/client-data";
+import type { AppData } from "@/lib/types";
 import { formatCurrency, formatHours } from "@/lib/utils";
-
-export const dynamic = "force-dynamic";
 
 function entryMs(clockIn: string, clockOut: string | null): number {
   const end = clockOut ? new Date(clockOut).getTime() : Date.now();
   return Math.max(0, end - new Date(clockIn).getTime());
 }
 
-export default async function HoursPage() {
-  const data = await readStore();
+export default function HoursPage() {
+  const [data, setData] = useState<AppData | null>(null);
+  useEffect(() => {
+    loadAppData().then(setData);
+  }, []);
+  if (!data) return <p className="text-[var(--muted)]">Loading hours…</p>;
+
   const byEmployee = data.employees.map((employee) => {
     const entries = data.timeEntries.filter((t) => t.employeeId === employee.id);
     const ms = entries.reduce(
@@ -19,11 +26,13 @@ export default async function HoursPage() {
       0,
     );
     const hours = ms / (1000 * 60 * 60);
-    const pay = hours * employee.hourlyRate;
-    const open = entries.some((t) => t.clockOut === null);
-    return { employee, hours, pay, open, entries };
+    return {
+      employee,
+      hours,
+      pay: hours * employee.hourlyRate,
+      open: entries.some((t) => t.clockOut === null),
+    };
   });
-
   const totalPay = byEmployee.reduce((sum, row) => sum + row.pay, 0);
   const totalHours = byEmployee.reduce((sum, row) => sum + row.hours, 0);
 
@@ -31,9 +40,8 @@ export default async function HoursPage() {
     <div>
       <PageHeader
         title="Hours & payroll"
-        subtitle="Roll time entries into payroll-ready totals. Export integrations can plug in later."
+        subtitle="Roll time entries into payroll-ready totals."
       />
-
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard label="Total hours" value={totalHours.toFixed(1)} />
         <StatCard label="Payroll estimate" value={formatCurrency(totalPay)} />
@@ -42,14 +50,12 @@ export default async function HoursPage() {
           value={data.timeEntries.filter((t) => t.clockOut === null).length}
         />
       </div>
-
       <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-white">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-[var(--line)] bg-[var(--foam)] text-xs uppercase tracking-wide text-[var(--muted)]">
             <tr>
               <th className="px-4 py-3">Employee</th>
               <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Rate</th>
               <th className="px-4 py-3">Hours</th>
               <th className="px-4 py-3">Pay est.</th>
               <th className="px-4 py-3">Status</th>
@@ -60,7 +66,6 @@ export default async function HoursPage() {
               <tr key={row.employee.id} className="border-b border-[var(--line)] last:border-0">
                 <td className="px-4 py-3 font-medium">{row.employee.name}</td>
                 <td className="px-4 py-3 capitalize">{row.employee.role}</td>
-                <td className="px-4 py-3">${row.employee.hourlyRate}/hr</td>
                 <td className="px-4 py-3">{formatHours(row.hours * 3600000)}</td>
                 <td className="px-4 py-3">{formatCurrency(row.pay)}</td>
                 <td className="px-4 py-3">
@@ -75,28 +80,6 @@ export default async function HoursPage() {
           </tbody>
         </table>
       </div>
-
-      <section className="mt-6 rounded-xl border border-[var(--line)] bg-white p-5">
-        <h2 className="font-[family-name:var(--font-display)] text-2xl">
-          Recent punches
-        </h2>
-        <ul className="mt-3 divide-y divide-[var(--line)]">
-          {data.timeEntries.slice(0, 10).map((entry) => {
-            const emp = data.employees.find((e) => e.id === entry.employeeId);
-            return (
-              <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
-                <span className="font-medium">{emp?.name ?? entry.employeeId}</span>
-                <span className="text-[var(--muted)]">
-                  {new Date(entry.clockIn).toLocaleString()}
-                  {entry.clockOut
-                    ? ` → ${new Date(entry.clockOut).toLocaleString()}`
-                    : " → open"}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
     </div>
   );
 }

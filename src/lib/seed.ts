@@ -8,6 +8,11 @@ export function buildSeedData(): AppData {
     d.setHours(hour, 0, 0, 0);
     return d.toISOString();
   };
+  const monthKey = (offset = 0) => {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
 
   const employees = [
     {
@@ -21,6 +26,16 @@ export function buildSeedData(): AppData {
       active: true,
     },
     {
+      id: "emp-manager",
+      name: "Taylor West",
+      email: "taylor@bighoss.com",
+      role: "manager" as const,
+      phone: "(555) 100-0006",
+      hireDate: "2021-08-01",
+      hourlyRate: 38,
+      active: true,
+    },
+    {
       id: "emp-sales-1",
       name: "Alex Rivera",
       email: "alex@bighoss.com",
@@ -28,6 +43,26 @@ export function buildSeedData(): AppData {
       phone: "(555) 100-0002",
       hireDate: "2022-06-01",
       hourlyRate: 28,
+      active: true,
+    },
+    {
+      id: "emp-knocker-1",
+      name: "Jamie Cole",
+      email: "jamie@bighoss.com",
+      role: "knocker" as const,
+      phone: "(555) 100-0007",
+      hireDate: "2024-02-12",
+      hourlyRate: 22,
+      active: true,
+    },
+    {
+      id: "emp-knocker-2",
+      name: "Morgan Lee",
+      email: "morgan.lee@bighoss.com",
+      role: "knocker" as const,
+      phone: "(555) 100-0008",
+      hireDate: "2024-05-03",
+      hourlyRate: 22,
       active: true,
     },
     {
@@ -122,6 +157,7 @@ export function buildSeedData(): AppData {
       crewLeadId: "emp-field-1",
       startDate: iso(-3).slice(0, 10),
       estimatedValue: 28500,
+      contractValue: 27200,
       notes: "Material staging Thursday. Check coastal fasteners.",
       createdAt: iso(5),
     },
@@ -136,7 +172,8 @@ export function buildSeedData(): AppData {
       crewLeadId: "emp-field-1",
       startDate: iso(1).slice(0, 10),
       estimatedValue: 64000,
-      notes: "Night work window 6pm–11pm.",
+      contractValue: 61500,
+      notes: "Night work window 6pm–11pm. Sub: envelope specialty.",
       createdAt: iso(4),
     },
   ];
@@ -152,6 +189,7 @@ export function buildSeedData(): AppData {
       lng: -122.0308,
       status: "active" as const,
       lastUpdate: iso(0, 8),
+      odometer: 48210,
     },
     {
       id: "veh-2",
@@ -163,6 +201,7 @@ export function buildSeedData(): AppData {
       lng: -122.01,
       status: "idle" as const,
       lastUpdate: iso(0, 7),
+      odometer: 31102,
     },
     {
       id: "veh-3",
@@ -174,6 +213,7 @@ export function buildSeedData(): AppData {
       lng: -122.025,
       status: "maintenance" as const,
       lastUpdate: iso(1, 16),
+      odometer: 0,
     },
   ];
 
@@ -206,6 +246,7 @@ export function buildSeedData(): AppData {
       salesRepId: "emp-sales-1",
       leadId: null,
       createdAt: iso(0, 11),
+      zoneId: "zone-1",
     },
     {
       id: "can-2",
@@ -216,6 +257,7 @@ export function buildSeedData(): AppData {
       salesRepId: "emp-sales-1",
       leadId: null,
       createdAt: iso(0, 11),
+      zoneId: "zone-1",
     },
     {
       id: "can-3",
@@ -226,8 +268,179 @@ export function buildSeedData(): AppData {
       salesRepId: "emp-sales-1",
       leadId: "lead-1",
       createdAt: iso(12, 14),
+      zoneId: "zone-1",
     },
   ];
 
-  return { employees, leads, jobs, vehicles, timeEntries, canvassStops };
+  const zones = [
+    {
+      id: "zone-1",
+      name: "Harbor Lane turf",
+      neighborhood: "Harbor Lane",
+      city: "Seaside",
+      description: "Coastal residential — decks, envelopes, renovations.",
+      status: "active" as const,
+      assignedKnockerIds: ["emp-knocker-1", "emp-sales-1"],
+      targetDoors: 80,
+      centerLat: 36.974,
+      centerLng: -122.029,
+      createdAt: iso(14),
+    },
+    {
+      id: "zone-2",
+      name: "Driftwood Courts",
+      neighborhood: "Driftwood",
+      city: "Seaside",
+      description: "Newer homes, good for exterior refresh leads.",
+      status: "open" as const,
+      assignedKnockerIds: ["emp-knocker-2"],
+      targetDoors: 60,
+      centerLat: 36.969,
+      centerLng: -122.02,
+      createdAt: iso(3),
+    },
+    {
+      id: "zone-3",
+      name: "Commerce corridor",
+      neighborhood: "Commerce Blvd",
+      city: "Harbor City",
+      description: "Light commercial / storefront owners.",
+      status: "paused" as const,
+      assignedKnockerIds: [],
+      targetDoors: 40,
+      centerLat: 36.972,
+      centerLng: -122.015,
+      createdAt: iso(20),
+    },
+  ];
+
+  const knocks = [
+    {
+      id: "knock-1",
+      zoneId: "zone-1",
+      knockerId: "emp-knocker-1",
+      address: "16 Harbor Lane",
+      outcome: "interested" as const,
+      notes: "Asked about deck refinish pricing.",
+      leadId: null,
+      lat: 36.9742,
+      lng: -122.0291,
+      createdAt: iso(0, 12),
+    },
+    {
+      id: "knock-2",
+      zoneId: "zone-1",
+      knockerId: "emp-knocker-1",
+      address: "20 Harbor Lane",
+      outcome: "not_home" as const,
+      notes: "",
+      leadId: null,
+      lat: 36.9743,
+      lng: -122.0293,
+      createdAt: iso(0, 12),
+    },
+    {
+      id: "knock-3",
+      zoneId: "zone-2",
+      knockerId: "emp-knocker-2",
+      address: "58 Driftwood Ct",
+      outcome: "appointment" as const,
+      notes: "Sat 10am walkthrough.",
+      leadId: null,
+      lat: 36.9691,
+      lng: -122.0202,
+      createdAt: iso(1, 15),
+    },
+  ];
+
+  const materials = [
+    {
+      id: "mat-1",
+      jobId: "job-1",
+      description: "Composite decking boards",
+      vendor: "Coastal Building Supply",
+      quantity: 42,
+      unitCost: 68,
+      purchasedAt: iso(2).slice(0, 10),
+      notes: "Gray coastal series",
+    },
+    {
+      id: "mat-2",
+      jobId: "job-1",
+      description: "Stainless fasteners kit",
+      vendor: "Coastal Building Supply",
+      quantity: 6,
+      unitCost: 45,
+      purchasedAt: iso(2).slice(0, 10),
+      notes: "",
+    },
+    {
+      id: "mat-3",
+      jobId: "job-2",
+      description: "Storefront sealant + flashing",
+      vendor: "Metro Envelope Co",
+      quantity: 18,
+      unitCost: 92,
+      purchasedAt: iso(1).slice(0, 10),
+      notes: "Phase 1 materials",
+    },
+  ];
+
+  const fuelLogs = [
+    {
+      id: "fuel-1",
+      vehicleId: "veh-1",
+      employeeId: "emp-driver-1",
+      gallons: 28.4,
+      cost: 112.6,
+      odometer: 48180,
+      station: "Harbor Fuel",
+      filledAt: iso(1, 6),
+      notes: "",
+    },
+    {
+      id: "fuel-2",
+      vehicleId: "veh-2",
+      employeeId: "emp-field-2",
+      gallons: 14.2,
+      cost: 55.8,
+      odometer: 31090,
+      station: "City Pump",
+      filledAt: iso(0, 7),
+      notes: "Crew van fill",
+    },
+  ];
+
+  const projections = [
+    {
+      id: "proj-1",
+      month: monthKey(0),
+      projectedRevenue: 185000,
+      projectedJobs: 6,
+      projectedKnocks: 450,
+      notes: "Harbor + Driftwood push",
+    },
+    {
+      id: "proj-2",
+      month: monthKey(1),
+      projectedRevenue: 210000,
+      projectedJobs: 7,
+      projectedKnocks: 500,
+      notes: "Commercial phase 2 pipeline",
+    },
+  ];
+
+  return {
+    employees,
+    leads,
+    jobs,
+    vehicles,
+    timeEntries,
+    canvassStops,
+    zones,
+    knocks,
+    materials,
+    fuelLogs,
+    projections,
+  };
 }

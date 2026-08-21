@@ -3,6 +3,9 @@ import { mkdir, readFile, writeFile, rename } from "fs/promises";
 import path from "path";
 import type { AppData } from "./types";
 import { buildSeedData } from "./seed";
+import { normalizeStore } from "./normalize";
+
+export { normalizeStore };
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const STORE_PATH = path.join(DATA_DIR, "store.json");
@@ -11,7 +14,19 @@ export async function readStore(): Promise<AppData> {
   await mkdir(DATA_DIR, { recursive: true });
   try {
     const raw = await readFile(STORE_PATH, "utf8");
-    return JSON.parse(raw) as AppData;
+    const parsed = JSON.parse(raw) as Partial<AppData>;
+    const normalized = normalizeStore(parsed);
+    // Persist migrations when new collections were missing
+    if (
+      !parsed.zones ||
+      !parsed.knocks ||
+      !parsed.materials ||
+      !parsed.fuelLogs ||
+      !parsed.projections
+    ) {
+      await writeStore(normalized);
+    }
+    return normalized;
   } catch {
     const seed = buildSeedData();
     await writeStore(seed);

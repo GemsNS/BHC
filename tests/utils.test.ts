@@ -23,5 +23,9 @@ describe("seed data", () => {
     expect(seed.leads.length).toBeGreaterThan(0);
     expect(seed.jobs.length).toBeGreaterThan(0);
     expect(seed.vehicles.length).toBeGreaterThan(0);
+    expect(seed.zones.length).toBeGreaterThan(0);
+    expect(seed.knocks.length).toBeGreaterThan(0);
+    expect(seed.materials.length).toBeGreaterThan(0);
+    expect(seed.fuelLogs.length).toBeGreaterThan(0);
   });
 });

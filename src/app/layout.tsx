@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Barlow_Condensed, Source_Sans_3 } from "next/font/google";
+import { SessionProvider } from "@/lib/session";
 import "./globals.css";
 
 const display = Barlow_Condensed({
@@ -17,7 +18,12 @@ const body = Source_Sans_3({
 export const metadata: Metadata = {
   title: "Big Hoss Contracting | All-in-One CRM",
   description:
-    "Operations CRM for Big Hoss Contracting — leads, jobs, fleet, door-to-door sales, time tracking, and payroll.",
+    "Operations CRM and field apps for Big Hoss Contracting — knocker, jobs, fleet, fuel, materials, and payroll.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "BHC Apps",
+  },
 };
 
 export default function RootLayout({
@@ -28,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${display.variable} ${body.variable} antialiased`}>
-        {children}
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );

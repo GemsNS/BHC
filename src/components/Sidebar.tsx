@@ -3,11 +3,16 @@ import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/admin/dashboard", label: "Dashboard" },
+  { href: "/admin/stats", label: "Statistics" },
   { href: "/admin/leads", label: "Leads" },
   { href: "/admin/jobs", label: "Jobs" },
+  { href: "/admin/materials", label: "Materials" },
+  { href: "/admin/zones", label: "Knocker zones" },
   { href: "/admin/canvass", label: "Door-to-Door" },
   { href: "/admin/fleet", label: "Fleet" },
+  { href: "/admin/fuel", label: "Fuel" },
   { href: "/admin/hours", label: "Hours & Payroll" },
+  { href: "/admin/users", label: "Users & roles" },
   { href: "/admin/team", label: "Team" },
 ];
 
@@ -22,7 +27,7 @@ export function Sidebar({ pathname }: { pathname: string }) {
           Contracting CRM
         </p>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 p-3">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
         {nav.map((item) => {
           const active = pathname.startsWith(item.href);
           return (
@@ -41,16 +46,22 @@ export function Sidebar({ pathname }: { pathname: string }) {
           );
         })}
       </nav>
-      <div className="border-t border-white/10 p-4">
+      <div className="border-t border-white/10 p-4 space-y-2">
         <Link
-          href="/portal"
+          href="/apps"
+          className="block rounded-md bg-[var(--amber)] px-3 py-2 text-center text-sm font-semibold text-[var(--ink)]"
+        >
+          Field apps
+        </Link>
+        <Link
+          href="/apps/knocker"
           className="block rounded-md border border-white/15 px-3 py-2 text-center text-sm text-white/80 transition hover:border-[var(--amber)] hover:text-[var(--amber)]"
         >
-          Employee Portal
+          Knocker app
         </Link>
         <Link
           href="/"
-          className="mt-2 block text-center text-xs text-white/40 hover:text-white/70"
+          className="mt-1 block text-center text-xs text-white/40 hover:text-white/70"
         >
           Back to home
         </Link>

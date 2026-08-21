@@ -1,52 +1,79 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
-import { readStore } from "@/lib/store";
+import { loadAppData } from "@/lib/client-data";
+import type { AppData } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
+export default function DashboardPage() {
+  const [data, setData] = useState<AppData | null>(null);
 
-export default async function DashboardPage() {
-  const data = await readStore();
+  useEffect(() => {
+    loadAppData().then(setData);
+  }, []);
+
+  if (!data) {
+    return <p className="text-[var(--muted)]">Loading dashboard…</p>;
+  }
+
   const openLeads = data.leads.filter((l) => !["won", "lost"].includes(l.status));
   const activeJobs = data.jobs.filter((j) =>
     ["scheduled", "in_progress", "on_hold"].includes(j.status),
   );
   const clockedIn = data.timeEntries.filter((t) => t.clockOut === null);
-  const pipelineValue = openLeads.length * 18000;
+  const materialSpend = data.materials.reduce(
+    (s, m) => s + m.quantity * m.unitCost,
+    0,
+  );
+  const knocksToday = data.knocks.filter(
+    (k) => new Date(k.createdAt).toDateString() === new Date().toDateString(),
+  ).length;
+  const contractValue = data.jobs.reduce(
+    (s, j) => s + (j.contractValue || j.estimatedValue || 0),
+    0,
+  );
 
   return (
     <div>
       <PageHeader
         title="Operations dashboard"
-        subtitle="Pulse check across leads, jobs, fleet, and crew for Big Hoss Contracting."
+        subtitle="Subcontracting pulse — jobs, knocker zones, materials, fuel, and crew."
         actions={
           <>
             <Link
-              href="/admin/leads"
+              href="/admin/zones"
               className="rounded-md bg-[var(--amber)] px-3 py-2 text-sm font-semibold text-[var(--ink)]"
             >
-              Add lead
+              Knocker zones
             </Link>
             <Link
-              href="/portal"
+              href="/apps"
               className="rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm"
             >
-              Open portal
+              Field apps
             </Link>
           </>
         }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Open leads" value={openLeads.length} hint="Active pipeline" />
-        <StatCard label="Active jobs" value={activeJobs.length} hint="In field or scheduled" />
-        <StatCard label="Clocked in" value={clockedIn.length} hint="Live crew" />
+        <StatCard label="Open leads" value={openLeads.length} />
+        <StatCard label="Active jobs" value={activeJobs.length} />
+        <StatCard label="Contract value" value={formatCurrency(contractValue)} />
+        <StatCard label="Material spend" value={formatCurrency(materialSpend)} />
+        <StatCard label="Knocks today" value={knocksToday} />
         <StatCard
-          label="Pipeline (est.)"
-          value={formatCurrency(pipelineValue)}
-          hint="Rough lead value"
+          label="Active zones"
+          value={data.zones.filter((z) => z.status === "active").length}
+        />
+        <StatCard label="Clocked in" value={clockedIn.length} />
+        <StatCard
+          label="Fuel spend"
+          value={formatCurrency(data.fuelLogs.reduce((s, f) => s + f.cost, 0))}
         />
       </div>
 
@@ -54,78 +81,60 @@ export default async function DashboardPage() {
         <section className="rounded-xl border border-[var(--line)] bg-white p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-[family-name:var(--font-display)] text-2xl">
-              Recent leads
+              Zone progress
             </h2>
-            <Link href="/admin/leads" className="text-sm text-[var(--sea)]">
-              View all
+            <Link href="/admin/zones" className="text-sm text-[var(--sea)]">
+              Manage
             </Link>
           </div>
-          <ul className="divide-y divide-[var(--line)]">
-            {[...data.leads]
-              .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-              .slice(0, 5)
-              .map((lead) => (
-                <li key={lead.id} className="flex items-center justify-between gap-3 py-3">
-                  <div>
-                    <p className="font-medium">{lead.name}</p>
-                    <p className="text-xs text-[var(--muted)]">
-                      {lead.city} · {lead.source} · {lead.jobType}
-                    </p>
+          <ul className="space-y-3">
+            {data.zones.slice(0, 5).map((z) => {
+              const count = data.knocks.filter((k) => k.zoneId === z.id).length;
+              const pct = z.targetDoors
+                ? Math.min(100, Math.round((count / z.targetDoors) * 100))
+                : 0;
+              return (
+                <li key={z.id}>
+                  <div className="mb-1 flex justify-between text-sm">
+                    <span className="font-medium">{z.name}</span>
+                    <StatusBadge status={z.status} />
                   </div>
-                  <StatusBadge status={lead.status} />
+                  <div className="h-2 overflow-hidden rounded-full bg-[var(--line)]">
+                    <div className="h-full bg-[var(--amber)]" style={{ width: `${pct}%` }} />
+                  </div>
+                  <p className="mt-1 text-xs text-[var(--muted)]">
+                    {count}/{z.targetDoors} doors
+                  </p>
                 </li>
-              ))}
+              );
+            })}
           </ul>
         </section>
 
         <section className="rounded-xl border border-[var(--line)] bg-white p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-[family-name:var(--font-display)] text-2xl">
-              Active jobs
+              Recent knocks
             </h2>
-            <Link href="/admin/jobs" className="text-sm text-[var(--sea)]">
-              View all
+            <Link href="/apps/knocker" className="text-sm text-[var(--sea)]">
+              Open knocker
             </Link>
           </div>
           <ul className="divide-y divide-[var(--line)]">
-            {activeJobs.map((job) => (
-              <li key={job.id} className="flex items-center justify-between gap-3 py-3">
+            {data.knocks.slice(0, 6).map((k) => (
+              <li key={k.id} className="flex items-center justify-between gap-3 py-3">
                 <div>
-                  <p className="font-medium">{job.title}</p>
+                  <p className="font-medium">{k.address}</p>
                   <p className="text-xs text-[var(--muted)]">
-                    {job.customerName} · {formatCurrency(job.estimatedValue)}
+                    {new Date(k.createdAt).toLocaleString()}
                   </p>
                 </div>
-                <StatusBadge status={job.status} />
+                <StatusBadge status={k.outcome} />
               </li>
             ))}
           </ul>
         </section>
       </div>
-
-      <section className="mt-6 rounded-xl border border-[var(--line)] bg-white p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-[family-name:var(--font-display)] text-2xl">
-            Fleet snapshot
-          </h2>
-          <Link href="/admin/fleet" className="text-sm text-[var(--sea)]">
-            Fleet board
-          </Link>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {data.vehicles.map((v) => (
-            <div key={v.id} className="rounded-lg border border-[var(--line)] p-3">
-              <div className="flex items-center justify-between">
-                <p className="font-medium">{v.name}</p>
-                <StatusBadge status={v.status} />
-              </div>
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                {v.plate} · {v.type}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

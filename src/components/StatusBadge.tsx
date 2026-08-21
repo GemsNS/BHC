@@ -20,6 +20,11 @@ const toneMap: Record<string, string> = {
   not_home: "bg-stone-200 text-stone-700",
   not_interested: "bg-orange-100 text-orange-900",
   do_not_knock: "bg-rose-100 text-rose-800",
+  open: "bg-sky-100 text-sky-800",
+  paused: "bg-orange-100 text-orange-900",
+  admin: "bg-stone-200 text-stone-800",
+  manager: "bg-teal-100 text-teal-800",
+  knocker: "bg-amber-100 text-amber-900",
 };
 
 export function StatusBadge({ status }: { status: string }) {
