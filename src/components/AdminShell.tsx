@@ -14,12 +14,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const { user, can, logout, homePath } = useSession();
   const router = useRouter();
 
-  // If user has no admin section perms at all, bounce to field home
   useEffect(() => {
     if (!user) return;
-    const hasAnyAdmin = ADMIN_NAV.some((n) => can(n.perm));
-    if (!hasAnyAdmin) router.replace(homePath === "/admin/dashboard" ? "/apps" : homePath);
-  }, [user, can, router, homePath]);
+    const allowedNav = ADMIN_NAV.filter((n) => can(n.perm));
+    if (allowedNav.length === 0) {
+      router.replace(homePath === "/admin/dashboard" ? "/apps" : homePath);
+      return;
+    }
+    const match = ADMIN_NAV.find((n) => pathname.startsWith(n.href));
+    if (match && !can(match.perm)) {
+      router.replace(allowedNav[0].href);
+    }
+  }, [user, can, router, homePath, pathname]);
 
   function signOut() {
     logout();

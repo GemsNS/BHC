@@ -22,6 +22,7 @@ export async function POST(request: Request) {
   if (!employee) {
     return NextResponse.json({ error: "Invalid login or PIN" }, { status: 401 });
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { pin: _pin, ...safe } = employee;
   return NextResponse.json({ employee: safe });
 }
