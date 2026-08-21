@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ADMIN_NAV } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/session";
 
 export function Sidebar({ pathname }: { pathname: string }) {
   const { can, logout, user } = useSession();
+  const router = useRouter();
   const items = ADMIN_NAV.filter((item) => can(item.perm));
 
   function signOut() {
     logout();
-    if (typeof window !== "undefined") window.location.assign("/login");
+    // Use Next router so GitHub Pages basePath (/BHC) is respected
+    router.replace("/login");
   }
 
   return (
