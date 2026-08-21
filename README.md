@@ -56,6 +56,11 @@ Static demo uses **localStorage** (no server APIs). Full local/cloud mode uses `
 ## Modules
 
 - **Login & roles** — employee login/PIN; permission-gated nav
+- **Tools in/out** — yard asset checkout to crew/jobs
+- **Inventory** — stock levels, issue/receive, optional job material log
+- **Damage reports** — tool/vehicle/site damage with photos
+- **Job progress** — notes + photo uploads + AI summarize
+- **Invoices / job reports** — invoice vs full report with progress media
 - **Announcements** — company message board with optional role audiences
 - **Knocker** — zone assignment, door logs, GPS stamp, lead creation
 - **Jobs / materials / fuel / fleet** — subcontract cost visibility
