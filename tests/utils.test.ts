@@ -34,6 +34,10 @@ describe("seed data", () => {
     expect(seed.materials.length).toBeGreaterThan(0);
     expect(seed.fuelLogs.length).toBeGreaterThan(0);
     expect(seed.announcements.length).toBeGreaterThan(0);
+    expect(seed.tools.length).toBeGreaterThan(0);
+    expect(seed.inventory.length).toBeGreaterThan(0);
+    expect(seed.jobProgress.length).toBeGreaterThan(0);
+    expect(seed.invoices.length).toBeGreaterThan(0);
   });
 
   it("gives every employee a login and pin", () => {

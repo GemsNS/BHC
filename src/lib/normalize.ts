@@ -35,5 +35,12 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     fuelLogs: raw.fuelLogs ?? seed.fuelLogs,
     projections: raw.projections ?? seed.projections,
     announcements: raw.announcements ?? seed.announcements,
+    tools: raw.tools ?? seed.tools,
+    toolCheckouts: raw.toolCheckouts ?? seed.toolCheckouts,
+    inventory: raw.inventory ?? seed.inventory,
+    inventoryTxns: raw.inventoryTxns ?? seed.inventoryTxns,
+    damageReports: raw.damageReports ?? seed.damageReports,
+    jobProgress: raw.jobProgress ?? seed.jobProgress,
+    invoices: raw.invoices ?? seed.invoices,
   };
 }

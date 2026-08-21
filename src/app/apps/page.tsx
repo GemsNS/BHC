@@ -17,6 +17,24 @@ const apps = [
     perm: "board" as const,
   },
   {
+    href: "/apps/progress",
+    title: "Job progress",
+    blurb: "Photos, notes, and AI summarize for the job report.",
+    perm: "progress" as const,
+  },
+  {
+    href: "/apps/tools",
+    title: "Tools in/out",
+    blurb: "Check yard tools out to yourself and jobs.",
+    perm: "tools" as const,
+  },
+  {
+    href: "/apps/damage",
+    title: "Damage report",
+    blurb: "Log tool/site damage with photos.",
+    perm: "damage" as const,
+  },
+  {
     href: "/apps/knocker",
     title: "Knocker",
     blurb: "Zone-assigned door knocking. Logs sync to admin.",
@@ -33,6 +51,18 @@ const apps = [
     title: "Jobs",
     blurb: "Active and scheduled job board.",
     perm: "jobs" as const,
+  },
+  {
+    href: "/admin/inventory",
+    title: "Inventory",
+    blurb: "Stock levels and issue/receive.",
+    perm: "inventory" as const,
+  },
+  {
+    href: "/admin/invoices",
+    title: "Invoices",
+    blurb: "Invoice or full job report with progress.",
+    perm: "invoices" as const,
   },
   {
     href: "/admin/hours",

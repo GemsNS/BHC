@@ -476,6 +476,162 @@ export function buildSeedData(): AppData {
     },
   ];
 
+  const tools = [
+    {
+      id: "tool-1",
+      name: "Makita circular saw",
+      category: "Power",
+      assetTag: "BHC-T-101",
+      status: "available" as const,
+      checkedOutToId: null,
+      checkedOutAt: null,
+      jobId: null,
+      notes: "",
+    },
+    {
+      id: "tool-2",
+      name: "Laser level",
+      category: "Layout",
+      assetTag: "BHC-T-214",
+      status: "checked_out" as const,
+      checkedOutToId: "emp-field-1",
+      checkedOutAt: iso(0, 7),
+      jobId: "job-1",
+      notes: "Harbor Lane deck",
+    },
+    {
+      id: "tool-3",
+      name: "Extension ladder 28ft",
+      category: "Access",
+      assetTag: "BHC-T-330",
+      status: "available" as const,
+      checkedOutToId: null,
+      checkedOutAt: null,
+      jobId: null,
+      notes: "",
+    },
+  ];
+
+  const toolCheckouts = [
+    {
+      id: "tco-1",
+      toolId: "tool-2",
+      employeeId: "emp-field-1",
+      jobId: "job-1",
+      checkedOutAt: iso(0, 7),
+      checkedInAt: null,
+      notes: "Morning checkout",
+    },
+  ];
+
+  const inventory = [
+    {
+      id: "inv-1",
+      sku: "SHING-ARCH-30",
+      name: "Architectural shingles (bundle)",
+      category: "Roofing",
+      unit: "bundle",
+      quantityOnHand: 48,
+      reorderLevel: 20,
+      unitCost: 42,
+      location: "Yard A",
+    },
+    {
+      id: "inv-2",
+      sku: "DECK-SCR-3",
+      name: "Deck screws 3in",
+      category: "Fasteners",
+      unit: "box",
+      quantityOnHand: 12,
+      reorderLevel: 8,
+      unitCost: 18,
+      location: "Shop",
+    },
+    {
+      id: "inv-3",
+      sku: "WRAP-TYVEK",
+      name: "House wrap roll",
+      category: "Envelope",
+      unit: "roll",
+      quantityOnHand: 6,
+      reorderLevel: 4,
+      unitCost: 95,
+      location: "Yard B",
+    },
+  ];
+
+  const inventoryTxns = [
+    {
+      id: "itx-1",
+      itemId: "inv-2",
+      type: "issue" as const,
+      quantity: 2,
+      jobId: "job-1",
+      employeeId: "emp-field-1",
+      notes: "Issued to Harbor Lane",
+      createdAt: iso(1, 8),
+    },
+  ];
+
+  const damageReports = [
+    {
+      id: "dmg-1",
+      targetType: "tool" as const,
+      targetId: "tool-3",
+      targetLabel: "Extension ladder 28ft",
+      jobId: "job-1",
+      reportedById: "emp-field-1",
+      severity: "medium" as const,
+      description: "Bent rung near mid-section — still usable with caution.",
+      imageDataUrls: [] as string[],
+      createdAt: iso(2, 15),
+      resolved: false,
+    },
+  ];
+
+  const jobProgress = [
+    {
+      id: "prog-1",
+      jobId: "job-1",
+      authorId: "emp-field-1",
+      notes:
+        "Framing complete on west elevation. Waiting on envelope wrap delivery tomorrow.",
+      imageDataUrls: [] as string[],
+      aiSummary: null,
+      createdAt: iso(1, 16),
+    },
+  ];
+
+  const invoices = [
+    {
+      id: "invc-1",
+      jobId: "job-1",
+      kind: "invoice" as const,
+      status: "draft" as const,
+      customerName: "Harbor Lane Homeowner",
+      lines: [
+        {
+          id: "line-1",
+          description: "Deck framing labor",
+          quantity: 1,
+          unitPrice: 4200,
+        },
+        {
+          id: "line-2",
+          description: "Materials deposit",
+          quantity: 1,
+          unitPrice: 1800,
+        },
+      ],
+      includeProgress: false,
+      progressEntryIds: [] as string[],
+      notes: "Progress billing #1",
+      aiSummary: null,
+      createdAt: iso(0, 11),
+      createdById: "emp-admin",
+    },
+  ];
+
   return {
     employees,
     leads,
@@ -489,5 +645,12 @@ export function buildSeedData(): AppData {
     fuelLogs,
     projections,
     announcements,
+    tools,
+    toolCheckouts,
+    inventory,
+    inventoryTxns,
+    damageReports,
+    jobProgress,
+    invoices,
   };
 }

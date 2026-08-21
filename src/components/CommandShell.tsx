@@ -17,6 +17,8 @@ const APP_TABS: Array<{
 }> = [
   { href: "/apps", label: "Home", perm: "apps", exact: true },
   { href: "/apps/board", label: "Board", perm: "board" },
+  { href: "/apps/progress", label: "Progress", perm: "progress" },
+  { href: "/apps/tools", label: "Tools", perm: "tools" },
   { href: "/apps/knocker", label: "Knock", perm: "knocker" },
   { href: "/apps/clock", label: "Clock", perm: "clock" },
 ];
