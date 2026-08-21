@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formatCurrency, formatHours, labelize } from "../src/lib/utils";
 import { buildSeedData } from "../src/lib/seed";
+import { ROLE_PERMISSIONS, homeForRole } from "../src/lib/types";
 
 describe("utils", () => {
   it("formats currency", () => {
@@ -27,5 +28,28 @@ describe("seed data", () => {
     expect(seed.knocks.length).toBeGreaterThan(0);
     expect(seed.materials.length).toBeGreaterThan(0);
     expect(seed.fuelLogs.length).toBeGreaterThan(0);
+    expect(seed.announcements.length).toBeGreaterThan(0);
+  });
+
+  it("gives every employee a login and pin", () => {
+    const seed = buildSeedData();
+    for (const emp of seed.employees) {
+      expect(emp.login.length).toBeGreaterThan(0);
+      expect(emp.pin.length).toBeGreaterThanOrEqual(4);
+    }
+  });
+});
+
+describe("role permissions", () => {
+  it("gates knocker away from admin dashboard", () => {
+    expect(ROLE_PERMISSIONS.knocker.includes("dashboard")).toBe(false);
+    expect(ROLE_PERMISSIONS.knocker.includes("knocker")).toBe(true);
+    expect(ROLE_PERMISSIONS.knocker.includes("board")).toBe(true);
+  });
+
+  it("routes roles to the right home", () => {
+    expect(homeForRole("admin")).toBe("/admin/dashboard");
+    expect(homeForRole("knocker")).toBe("/apps");
+    expect(homeForRole("driver")).toBe("/apps");
   });
 });

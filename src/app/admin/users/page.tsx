@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
+import { RequireAuth } from "@/components/RequireAuth";
 import {
   clientNewId,
   fetchJson,
@@ -52,6 +53,8 @@ export default function UsersPage() {
     const payload = {
       name: String(form.get("name") || ""),
       email: String(form.get("email") || ""),
+      login: String(form.get("login") || ""),
+      pin: String(form.get("pin") || ""),
       role: String(form.get("role") || "field") as EmployeeRole,
       phone: String(form.get("phone") || ""),
       hourlyRate: Number(form.get("hourlyRate") || 20),
@@ -94,106 +97,126 @@ export default function UsersPage() {
   }
 
   return (
-    <div>
-      <PageHeader
-        title="Users & roles"
-        subtitle="Role-based access for admin panel and field apps (knocker, clock)."
-      />
+    <RequireAuth perm={["users", "manage_users"]}>
+      <div>
+        <PageHeader
+          title="Users & roles"
+          subtitle="Each employee gets a login + PIN. Roles control which admin sections and apps they see."
+        />
 
-      {!can("manage_users") ? (
-        <p className="mb-6 text-sm text-[var(--muted)]">
-          View-only. Admins can create users and change roles.
-        </p>
-      ) : (
-        <form
-          onSubmit={onCreate}
-          className="mb-8 grid gap-3 rounded-xl border border-[var(--line)] bg-white p-5 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          <h2 className="font-[family-name:var(--font-display)] text-2xl sm:col-span-2 lg:col-span-3">
-            Add user
-          </h2>
-          <input name="name" required placeholder="Full name" className="rounded-md border border-[var(--line)] px-3 py-2" />
-          <input name="email" required placeholder="Email" className="rounded-md border border-[var(--line)] px-3 py-2" />
-          <input name="phone" placeholder="Phone" className="rounded-md border border-[var(--line)] px-3 py-2" />
-          <select name="role" defaultValue="knocker" className="rounded-md border border-[var(--line)] px-3 py-2">
-            {ROLES.map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABELS[r]}
-              </option>
-            ))}
-          </select>
-          <input name="hourlyRate" type="number" min={0} defaultValue={22} className="rounded-md border border-[var(--line)] px-3 py-2" />
-          <button type="submit" className="rounded-md bg-[var(--amber)] px-4 py-2 font-semibold text-[var(--ink)]">
-            Create user
-          </button>
-        </form>
-      )}
+        {can("manage_users") ? (
+          <form onSubmit={onCreate} className="form-grid">
+            <h2>Add user</h2>
+            <input name="name" required placeholder="Full name" className="field-input" />
+            <input name="email" required placeholder="Email" className="field-input" />
+            <input name="login" required placeholder="Login (e.g. jamie)" className="field-input" />
+            <input name="pin" required placeholder="PIN (4+ digits)" className="field-input" />
+            <input name="phone" placeholder="Phone" className="field-input" />
+            <select name="role" defaultValue="knocker" className="field-input">
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABELS[r]}
+                </option>
+              ))}
+            </select>
+            <input
+              name="hourlyRate"
+              type="number"
+              min={0}
+              defaultValue={22}
+              className="field-input"
+            />
+            <button type="submit" className="btn-primary">
+              Create user
+            </button>
+          </form>
+        ) : (
+          <p className="text-sm text-[var(--muted)]">View-only.</p>
+        )}
 
-      <div className="mb-8 overflow-x-auto rounded-xl border border-[var(--line)] bg-white">
-        <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-[var(--line)] bg-[var(--foam)] text-xs uppercase tracking-wide text-[var(--muted)]">
-            <tr>
-              <th className="px-4 py-3">User</th>
-              <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Rate</th>
-              <th className="px-4 py-3">Active</th>
-            </tr>
-          </thead>
-          <tbody>
-            {employees.map((emp) => (
-              <tr key={emp.id} className="border-b border-[var(--line)] last:border-0">
-                <td className="px-4 py-3">
-                  <p className="font-medium">{emp.name}</p>
-                  <p className="text-xs text-[var(--muted)]">{emp.email}</p>
-                </td>
-                <td className="px-4 py-3">
-                  <select
-                    className="rounded-md border border-[var(--line)] px-2 py-1"
-                    value={emp.role}
-                    disabled={!can("manage_users")}
-                    onChange={(e) =>
-                      patch(emp.id, { role: e.target.value as EmployeeRole })
-                    }
-                  >
-                    {ROLES.map((r) => (
-                      <option key={r} value={r}>
-                        {ROLE_LABELS[r]}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-4 py-3">${emp.hourlyRate}/hr</td>
-                <td className="px-4 py-3">
-                  <button
-                    type="button"
-                    disabled={!can("manage_users")}
-                    className="text-sm text-[var(--sea)] disabled:opacity-40"
-                    onClick={() => patch(emp.id, { active: !emp.active })}
-                  >
-                    {emp.active ? "Active" : "Inactive"}
-                  </button>
-                </td>
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Login / PIN</th>
+                <th>Role</th>
+                <th>Active</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <section className="rounded-xl border border-[var(--line)] bg-white p-5">
-        <h2 className="font-[family-name:var(--font-display)] text-2xl">
-          Role permissions
-        </h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {ROLES.map((role) => (
-            <div key={role} className="rounded-lg border border-[var(--line)] p-3 text-sm">
-              <p className="font-semibold">{ROLE_LABELS[role]}</p>
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                {ROLE_PERMISSIONS[role].join(" · ")}
-              </p>
-            </div>
-          ))}
+            </thead>
+            <tbody>
+              {employees.map((emp) => (
+                <tr key={emp.id}>
+                  <td>
+                    <p className="font-medium">{emp.name}</p>
+                    <p className="muted">{emp.email}</p>
+                  </td>
+                  <td>
+                    <div className="cred-edit">
+                      <input
+                        className="field-input"
+                        defaultValue={emp.login}
+                        disabled={!can("manage_users")}
+                        onBlur={(e) => {
+                          if (e.target.value !== emp.login)
+                            patch(emp.id, { login: e.target.value });
+                        }}
+                      />
+                      <input
+                        className="field-input"
+                        defaultValue={emp.pin}
+                        disabled={!can("manage_users")}
+                        onBlur={(e) => {
+                          if (e.target.value !== emp.pin)
+                            patch(emp.id, { pin: e.target.value });
+                        }}
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <select
+                      className="field-input"
+                      value={emp.role}
+                      disabled={!can("manage_users")}
+                      onChange={(e) =>
+                        patch(emp.id, { role: e.target.value as EmployeeRole })
+                      }
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {ROLE_LABELS[r]}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      disabled={!can("manage_users")}
+                      className="linkish"
+                      onClick={() => patch(emp.id, { active: !emp.active })}
+                    >
+                      {emp.active ? "Active" : "Inactive"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </section>
-    </div>
+
+        <section className="perm-legend">
+          <h2>Role permissions</h2>
+          <div className="perm-grid">
+            {ROLES.map((role) => (
+              <div key={role} className="perm-card">
+                <p className="font-semibold">{ROLE_LABELS[role]}</p>
+                <p className="muted">{ROLE_PERMISSIONS[role].join(" · ")}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </RequireAuth>
   );
 }

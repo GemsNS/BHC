@@ -15,7 +15,6 @@ export type JobStatus =
 
 export type JobType = "residential" | "commercial";
 
-/** App roles for BHC subcontracting ops */
 export type EmployeeRole =
   | "admin"
   | "manager"
@@ -34,10 +33,36 @@ export type CanvassOutcome =
 
 export type ZoneStatus = "open" | "active" | "completed" | "paused";
 
+/** Granular section permissions — drives nav + route gates */
+export type Permission =
+  | "dashboard"
+  | "stats"
+  | "leads"
+  | "jobs"
+  | "materials"
+  | "zones"
+  | "canvass"
+  | "fleet"
+  | "fuel"
+  | "hours"
+  | "users"
+  | "team"
+  | "board"
+  | "board_post"
+  | "apps"
+  | "knocker"
+  | "clock"
+  | "manage_users"
+  | "manage_zones";
+
 export interface Employee {
   id: string;
   name: string;
   email: string;
+  /** Login username (usually email local-part) */
+  login: string;
+  /** Simple PIN for demo / field login */
+  pin: string;
   role: EmployeeRole;
   phone: string;
   hireDate: string;
@@ -72,7 +97,6 @@ export interface Job {
   crewLeadId: string | null;
   startDate: string;
   estimatedValue: number;
-  /** Contract / bid value for projections */
   contractValue: number;
   notes: string;
   createdAt: string;
@@ -88,7 +112,6 @@ export interface Vehicle {
   lng: number;
   status: "active" | "idle" | "maintenance";
   lastUpdate: string;
-  /** Current odometer reading */
   odometer: number;
 }
 
@@ -113,7 +136,6 @@ export interface CanvassStop {
   zoneId?: string | null;
 }
 
-/** Neighborhood / turf for the Knocker app */
 export interface KnockZone {
   id: string;
   name: string;
@@ -123,13 +145,11 @@ export interface KnockZone {
   status: ZoneStatus;
   assignedKnockerIds: string[];
   targetDoors: number;
-  /** Optional bounding hint for map placeholder */
   centerLat: number;
   centerLng: number;
   createdAt: string;
 }
 
-/** Individual door knock logged from the Knocker app */
 export interface KnockEvent {
   id: string;
   zoneId: string;
@@ -168,12 +188,22 @@ export interface FuelLog {
 
 export interface SalesProjection {
   id: string;
-  /** YYYY-MM */
   month: string;
   projectedRevenue: number;
   projectedJobs: number;
   projectedKnocks: number;
   notes: string;
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  authorId: string;
+  pinned: boolean;
+  /** Empty = everyone; otherwise role allow-list */
+  audienceRoles: EmployeeRole[];
+  createdAt: string;
 }
 
 export interface AppData {
@@ -188,6 +218,7 @@ export interface AppData {
   materials: MaterialCost[];
   fuelLogs: FuelLog[];
   projections: SalesProjection[];
+  announcements: Announcement[];
 }
 
 export const ROLE_LABELS: Record<EmployeeRole, string> = {
@@ -200,38 +231,84 @@ export const ROLE_LABELS: Record<EmployeeRole, string> = {
   driver: "Driver",
 };
 
-export const ROLE_PERMISSIONS: Record<
-  EmployeeRole,
-  Array<
-    | "admin"
-    | "apps"
-    | "knocker"
-    | "clock"
-    | "manage_users"
-    | "manage_zones"
-    | "view_stats"
-  >
-> = {
-  admin: [
-    "admin",
+const ALL_ADMIN: Permission[] = [
+  "dashboard",
+  "stats",
+  "leads",
+  "jobs",
+  "materials",
+  "zones",
+  "canvass",
+  "fleet",
+  "fuel",
+  "hours",
+  "users",
+  "team",
+  "board",
+  "board_post",
+  "apps",
+  "knocker",
+  "clock",
+  "manage_users",
+  "manage_zones",
+];
+
+export const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
+  admin: ALL_ADMIN,
+  manager: ALL_ADMIN.filter((p) => p !== "manage_users" && p !== "users"),
+  sales: [
+    "dashboard",
+    "stats",
+    "leads",
+    "canvass",
+    "zones",
+    "board",
     "apps",
     "knocker",
     "clock",
-    "manage_users",
-    "manage_zones",
-    "view_stats",
   ],
-  manager: [
-    "admin",
+  knocker: ["board", "zones", "apps", "knocker", "clock"],
+  field: ["board", "jobs", "hours", "apps", "clock"],
+  office: [
+    "dashboard",
+    "stats",
+    "leads",
+    "jobs",
+    "materials",
+    "hours",
+    "team",
+    "board",
+    "board_post",
     "apps",
-    "knocker",
     "clock",
-    "manage_zones",
-    "view_stats",
   ],
-  sales: ["apps", "knocker", "clock", "view_stats"],
-  knocker: ["apps", "knocker", "clock"],
-  field: ["apps", "clock"],
-  office: ["admin", "apps", "clock", "view_stats"],
-  driver: ["apps", "clock"],
+  driver: ["board", "fleet", "fuel", "apps", "clock"],
 };
+
+export const ADMIN_NAV: Array<{
+  href: string;
+  label: string;
+  perm: Permission;
+}> = [
+  { href: "/admin/dashboard", label: "Dashboard", perm: "dashboard" },
+  { href: "/admin/board", label: "Announcements", perm: "board" },
+  { href: "/admin/stats", label: "Statistics", perm: "stats" },
+  { href: "/admin/leads", label: "Leads", perm: "leads" },
+  { href: "/admin/jobs", label: "Jobs", perm: "jobs" },
+  { href: "/admin/materials", label: "Materials", perm: "materials" },
+  { href: "/admin/zones", label: "Knocker zones", perm: "zones" },
+  { href: "/admin/canvass", label: "Door-to-Door", perm: "canvass" },
+  { href: "/admin/fleet", label: "Fleet", perm: "fleet" },
+  { href: "/admin/fuel", label: "Fuel", perm: "fuel" },
+  { href: "/admin/hours", label: "Hours & Payroll", perm: "hours" },
+  { href: "/admin/users", label: "Users & roles", perm: "users" },
+  { href: "/admin/team", label: "Team", perm: "team" },
+];
+
+export function homeForRole(role: EmployeeRole): string {
+  const perms = ROLE_PERMISSIONS[role] || [];
+  if (perms.includes("dashboard")) return "/admin/dashboard";
+  if (perms.includes("apps")) return "/apps";
+  if (perms.includes("board")) return "/apps/board";
+  return "/login";
+}

@@ -12,6 +12,8 @@ export async function POST(request: Request) {
   const schema = z.object({
     name: z.string().min(1),
     email: z.string().min(1),
+    login: z.string().min(1),
+    pin: z.string().min(4),
     role: z.enum([
       "admin",
       "manager",
@@ -33,6 +35,8 @@ export async function POST(request: Request) {
     id: newId(),
     name: parsed.data.name,
     email: parsed.data.email,
+    login: parsed.data.login.toLowerCase(),
+    pin: parsed.data.pin,
     role: parsed.data.role as EmployeeRole,
     phone: parsed.data.phone ?? "",
     hireDate: parsed.data.hireDate ?? new Date().toISOString().slice(0, 10),
@@ -57,6 +61,8 @@ export async function PATCH(request: Request) {
     if (body.name != null) emp.name = String(body.name);
     if (body.phone != null) emp.phone = String(body.phone);
     if (body.hourlyRate != null) emp.hourlyRate = Number(body.hourlyRate);
+    if (body.login != null) emp.login = String(body.login).toLowerCase();
+    if (body.pin != null) emp.pin = String(body.pin);
     updated = emp;
   });
   if (!updated) {

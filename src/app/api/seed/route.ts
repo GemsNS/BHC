@@ -19,6 +19,7 @@ export async function POST() {
       materials: seed.materials.length,
       fuelLogs: seed.fuelLogs.length,
       projections: seed.projections.length,
+      announcements: seed.announcements.length,
     },
   });
 }

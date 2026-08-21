@@ -1,6 +1,6 @@
 # Big Hoss Contracting — All-in-One CRM
 
-Operations CRM + web-hosted field apps for **Big Hoss Contracting** (subcontracting): knocker zones, jobs, materials, fuel, fleet, hours, roles, and stats.
+Operations CRM + web-hosted field apps for **Big Hoss Contracting** (subcontracting): role-based login, announcements, knocker zones, jobs, materials, fuel, fleet, hours, and stats.
 
 ## Quick start
 
@@ -9,14 +9,26 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) — you land on the **login** page.
+
+### Demo accounts
+
+| Role | Login | PIN |
+| --- | --- | --- |
+| Admin | `jordan` | `1001` |
+| Knocker | `jamie` | `1007` |
+| Field | `sam` | `1003` |
+| Driver | `riley` | `1005` |
+
+Roles only unlock the sections they are allowed to see (admin sidebar / field apps tabs).
 
 | Surface | URL |
 | --- | --- |
+| Login | `/login` |
 | Admin | `/admin/dashboard` |
-| Knocker zones (admin) | `/admin/zones` |
+| Announcements | `/admin/board` or `/apps/board` |
 | Field apps hub | `/apps` |
-| **Knocker app** | `/apps/knocker` |
+| Knocker app | `/apps/knocker` |
 | Time clock | `/apps/clock` or `/portal` |
 
 ## Scripts
@@ -41,10 +53,16 @@ Static demo uses **localStorage** (no server APIs). Full local/cloud mode uses `
 
 ## Modules
 
-- **Knocker** — zone assignment, door logs, GPS stamp, lead creation, admin tracking
+- **Login & roles** — employee login/PIN; permission-gated nav
+- **Announcements** — company message board with optional role audiences
+- **Knocker** — zone assignment, door logs, GPS stamp, lead creation
 - **Jobs / materials / fuel / fleet** — subcontract cost visibility
 - **Statistics & projections** — knocks, spend, pipeline, monthly targets
-- **Users & roles** — admin, manager, sales, knocker, field, office, driver
+
+## Responsive UI
+
+- **Desktop (≥900px):** admin left sidebar; apps top tabs + wider content
+- **Mobile:** admin horizontal section pills; apps bottom tab bar
 
 ## Data
 

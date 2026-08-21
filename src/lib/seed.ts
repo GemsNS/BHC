@@ -1,4 +1,4 @@
-import type { AppData } from "./types";
+import type { AppData, EmployeeRole } from "./types";
 
 export function buildSeedData(): AppData {
   const now = new Date();
@@ -19,6 +19,8 @@ export function buildSeedData(): AppData {
       id: "emp-admin",
       name: "Jordan Hale",
       email: "jordan@bighoss.com",
+      login: "jordan",
+      pin: "1001",
       role: "admin" as const,
       phone: "(555) 100-0001",
       hireDate: "2021-03-15",
@@ -29,6 +31,8 @@ export function buildSeedData(): AppData {
       id: "emp-manager",
       name: "Taylor West",
       email: "taylor@bighoss.com",
+      login: "taylor",
+      pin: "1006",
       role: "manager" as const,
       phone: "(555) 100-0006",
       hireDate: "2021-08-01",
@@ -39,6 +43,8 @@ export function buildSeedData(): AppData {
       id: "emp-sales-1",
       name: "Alex Rivera",
       email: "alex@bighoss.com",
+      login: "alex",
+      pin: "1002",
       role: "sales" as const,
       phone: "(555) 100-0002",
       hireDate: "2022-06-01",
@@ -49,6 +55,8 @@ export function buildSeedData(): AppData {
       id: "emp-knocker-1",
       name: "Jamie Cole",
       email: "jamie@bighoss.com",
+      login: "jamie",
+      pin: "1007",
       role: "knocker" as const,
       phone: "(555) 100-0007",
       hireDate: "2024-02-12",
@@ -59,6 +67,8 @@ export function buildSeedData(): AppData {
       id: "emp-knocker-2",
       name: "Morgan Lee",
       email: "morgan.lee@bighoss.com",
+      login: "morgan",
+      pin: "1008",
       role: "knocker" as const,
       phone: "(555) 100-0008",
       hireDate: "2024-05-03",
@@ -69,6 +79,8 @@ export function buildSeedData(): AppData {
       id: "emp-field-1",
       name: "Sam Ortiz",
       email: "sam@bighoss.com",
+      login: "sam",
+      pin: "1003",
       role: "field" as const,
       phone: "(555) 100-0003",
       hireDate: "2020-09-12",
@@ -79,6 +91,8 @@ export function buildSeedData(): AppData {
       id: "emp-field-2",
       name: "Casey Brooks",
       email: "casey@bighoss.com",
+      login: "casey",
+      pin: "1004",
       role: "field" as const,
       phone: "(555) 100-0004",
       hireDate: "2023-01-20",
@@ -89,6 +103,8 @@ export function buildSeedData(): AppData {
       id: "emp-driver-1",
       name: "Riley Quinn",
       email: "riley@bighoss.com",
+      login: "riley",
+      pin: "1005",
       role: "driver" as const,
       phone: "(555) 100-0005",
       hireDate: "2022-11-08",
@@ -430,6 +446,36 @@ export function buildSeedData(): AppData {
     },
   ];
 
+  const announcements = [
+    {
+      id: "ann-1",
+      title: "Safety stand-down Friday 7am",
+      body: "All field and drivers meet at the yard for a 20-minute envelope safety brief before rolling out.",
+      authorId: "emp-admin",
+      pinned: true,
+      audienceRoles: [] as EmployeeRole[],
+      createdAt: iso(0, 7),
+    },
+    {
+      id: "ann-2",
+      title: "Harbor Lane turf is hot",
+      body: "Knockers: prioritize Harbor Lane this week. Interested leads go straight to Alex for estimates.",
+      authorId: "emp-manager",
+      pinned: false,
+      audienceRoles: ["knocker", "sales", "manager", "admin"] as EmployeeRole[],
+      createdAt: iso(1, 9),
+    },
+    {
+      id: "ann-3",
+      title: "Fuel receipts",
+      body: "Drivers: log every fill in the Fuel section the same day. Odometer required.",
+      authorId: "emp-admin",
+      pinned: false,
+      audienceRoles: ["driver", "field", "admin", "manager"] as EmployeeRole[],
+      createdAt: iso(2, 10),
+    },
+  ];
+
   return {
     employees,
     leads,
@@ -442,5 +488,6 @@ export function buildSeedData(): AppData {
     materials,
     fuelLogs,
     projections,
+    announcements,
   };
 }
