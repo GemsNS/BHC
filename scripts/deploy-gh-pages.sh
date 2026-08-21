@@ -7,4 +7,4 @@ cd "$ROOT"
 bash "$ROOT/scripts/build-gh-pages.sh"
 
 npx --yes gh-pages@6 -d out -b gh-pages --dotfiles
-echo "Published to gh-pages branch. Demo: https://gemsns.github.io/BHC-ALL-IN-ONE/"
+echo "Published to gh-pages branch. Demo: https://gemsns.github.io/BHC/"

@@ -21,7 +21,7 @@ cleanup() {
 trap cleanup EXIT
 
 export NEXT_PUBLIC_STATIC_DEMO=1
-export NEXT_PUBLIC_BASE_PATH="${NEXT_PUBLIC_BASE_PATH:-/BHC-ALL-IN-ONE}"
+export NEXT_PUBLIC_BASE_PATH="${NEXT_PUBLIC_BASE_PATH:-/BHC}"
 
 echo "Building static demo with basePath=$NEXT_PUBLIC_BASE_PATH"
 rm -rf out

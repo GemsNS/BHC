@@ -46,8 +46,10 @@ Roles only unlock the sections they are allowed to see (admin sidebar / field ap
 npm run deploy:gh-pages
 ```
 
+Repo: [GemsNS/BHC](https://github.com/GemsNS/BHC)
+
 Demo URL (after first deploy + Pages enabled on `gh-pages`):  
-https://gemsns.github.io/BHC-ALL-IN-ONE/
+https://gemsns.github.io/BHC/
 
 Static demo uses **localStorage** (no server APIs). Full local/cloud mode uses `data/store.json` + `/api/*`.
 
