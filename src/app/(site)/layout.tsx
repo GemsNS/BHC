@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 /**
- * Public marketing shell — 1:1 Seaside Contracting port, rebranded Big Hoss.
+ * Public marketing shell — 1:1 Seaside Contracting port, rebranded BH Contracting.
  * CRM routes live outside this group (`/login`, `/admin`, `/apps`).
  */
 export default function SiteLayout({ children }: { children: React.ReactNode }) {

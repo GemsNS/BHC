@@ -18,7 +18,7 @@ export function buildSeedData(): AppData {
     {
       id: "emp-admin",
       name: "Cameron Brown",
-      email: "cameron@bighoss.com",
+      email: "cameron@bhcontracting.co",
       login: "cameron",
       pin: "1001",
       role: "admin" as const,
@@ -30,7 +30,7 @@ export function buildSeedData(): AppData {
     {
       id: "emp-manager",
       name: "Taylor West",
-      email: "taylor@bighoss.com",
+      email: "taylor@bhcontracting.co",
       login: "taylor",
       pin: "1006",
       role: "manager" as const,
@@ -42,7 +42,7 @@ export function buildSeedData(): AppData {
     {
       id: "emp-sales-1",
       name: "Alex Rivera",
-      email: "alex@bighoss.com",
+      email: "alex@bhcontracting.co",
       login: "alex",
       pin: "1002",
       role: "sales" as const,
@@ -54,7 +54,7 @@ export function buildSeedData(): AppData {
     {
       id: "emp-knocker-1",
       name: "Jamie Cole",
-      email: "jamie@bighoss.com",
+      email: "jamie@bhcontracting.co",
       login: "jamie",
       pin: "1007",
       role: "knocker" as const,
@@ -66,7 +66,7 @@ export function buildSeedData(): AppData {
     {
       id: "emp-knocker-2",
       name: "Morgan Lee",
-      email: "morgan.lee@bighoss.com",
+      email: "morgan.lee@bhcontracting.co",
       login: "morgan",
       pin: "1008",
       role: "knocker" as const,
@@ -78,7 +78,7 @@ export function buildSeedData(): AppData {
     {
       id: "emp-field-1",
       name: "Sam Ortiz",
-      email: "sam@bighoss.com",
+      email: "sam@bhcontracting.co",
       login: "sam",
       pin: "1003",
       role: "field" as const,
@@ -90,7 +90,7 @@ export function buildSeedData(): AppData {
     {
       id: "emp-field-2",
       name: "Casey Brooks",
-      email: "casey@bighoss.com",
+      email: "casey@bhcontracting.co",
       login: "casey",
       pin: "1004",
       role: "field" as const,
@@ -102,7 +102,7 @@ export function buildSeedData(): AppData {
     {
       id: "emp-driver-1",
       name: "Riley Quinn",
-      email: "riley@bighoss.com",
+      email: "riley@bhcontracting.co",
       login: "riley",
       pin: "1005",
       role: "driver" as const,
@@ -488,7 +488,7 @@ export function buildSeedData(): AppData {
           order: 0,
           type: "email" as const,
           delayDays: 0,
-          subject: "Thanks for reaching out to Big Hoss Contracting",
+          subject: "Thanks for reaching out to BH Contracting Co.",
           body: "We received your inquiry and will follow up shortly with next steps.",
         },
         {

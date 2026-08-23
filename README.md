@@ -1,6 +1,6 @@
-# Big Hoss Contracting — All-in-One CRM
+# BH Contracting Co. — All-in-One CRM
 
-Operations CRM + web-hosted field apps for **Big Hoss Contracting** (subcontracting): role-based login, announcements, knocker zones, jobs, materials, fuel, fleet, hours, and stats.
+Operations CRM + web-hosted field apps for **BH Contracting Co.** (subcontracting): role-based login, announcements, knocker zones, jobs, materials, fuel, fleet, hours, and stats.
 
 ## Quick start
 

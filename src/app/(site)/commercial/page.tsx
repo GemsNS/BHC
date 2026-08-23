@@ -3,7 +3,7 @@ import { CommercialSiteHome } from "@/components/site/pages/CommercialSiteHome";
 import { getPricingItems } from "@/lib/site/pricingData";
 
 export const metadata: Metadata = {
-  title: "Commercial | Big Hoss Contracting",
+  title: "Commercial | BH Contracting Co.",
   description:
     "Commercial building envelopes, exterior upgrades, and phased cladding and opening work for Nova Scotia properties.",
 };

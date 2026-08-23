@@ -191,8 +191,8 @@ export function ShowcaseClient() {
       >
         <Link href={siteRoot} className="flex min-w-0 items-center gap-3">
           <Image
-            src={withBasePath("/brand/newlogolight.png")}
-            alt="Big Hoss Contracting"
+            src={withBasePath("/brand/bh-logo-dark.svg")}
+            alt="BH Contracting Co."
             width={200}
             height={56}
             className="h-9 w-auto max-w-[160px] object-contain object-left md:h-10"
@@ -333,7 +333,7 @@ export function ShowcaseClient() {
           </div>
           <div className="max-w-2xl space-y-8 text-xl leading-relaxed text-slate-600">
             <p>
-              Big Hoss Contracting delivers modern design and uncompromising craftsmanship across Halifax
+              BH Contracting Co. delivers modern design and uncompromising craftsmanship across Halifax
               and coastal Nova Scotia—from renovations and finish carpentry to custom decks, siding,
               windows, and doors.
             </p>
@@ -346,7 +346,7 @@ export function ShowcaseClient() {
             href={`${siteRoot}#about`}
             className="group relative inline-block overflow-hidden border-2 border-slate-900 px-12 py-5 text-sm font-bold uppercase tracking-widest transition-colors duration-500 hover:text-white"
           >
-            <span className="relative z-10">About Big Hoss</span>
+            <span className="relative z-10">About BH Contracting</span>
             <div className="absolute inset-0 translate-y-full bg-slate-900 transition-transform duration-500 group-hover:translate-y-0" />
           </Link>
         </div>
@@ -415,7 +415,7 @@ export function ShowcaseClient() {
           <div className="group relative aspect-video overflow-hidden rounded-sm bg-slate-900 lg:col-span-8">
             <Image
               src={SERVICE_AREA_IMAGE.src}
-              alt="Big Hoss project within Halifax and Nova Scotia service area"
+              alt="BH Contracting project within Halifax and Nova Scotia service area"
               fill
               className="object-cover opacity-30 grayscale transition-all duration-1000 group-hover:scale-105"
               sizes="(max-width: 1024px) 100vw, 66vw"
@@ -469,7 +469,7 @@ export function ShowcaseClient() {
             </p>
             <div className="flex items-center gap-12 border-t border-slate-100 pt-12">
               <div>
-                <h4 className="text-2xl font-bold">Big Hoss Contracting</h4>
+                <h4 className="text-2xl font-bold">BH Contracting Co.</h4>
                 <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   Halifax &amp; coastal Nova Scotia
                 </p>
@@ -498,7 +498,7 @@ export function ShowcaseClient() {
             <div className="relative aspect-[4/5] w-full overflow-hidden showcase-owner-mask">
               <Image
                 src={TEAM_IMAGE.src}
-                alt="Big Hoss exterior project showing precision field execution"
+                alt="BH Contracting exterior project showing precision field execution"
                 fill
                 className="object-cover transition-transform duration-1000 hover:scale-105"
                 sizes="(max-width: 1024px) 100vw, 50vw"
@@ -514,7 +514,7 @@ export function ShowcaseClient() {
         <div className="showcase-reveal mb-16 flex flex-col items-end justify-between gap-6 sm:flex-row">
           <div>
             <p className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-400">Completed projects</p>
-            <h2 className="text-4xl font-extrabold">From the Big Hoss gallery</h2>
+            <h2 className="text-4xl font-extrabold">From the BH Contracting gallery</h2>
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-600">
               Open any image in fullscreen for a closer look at field details.
             </p>
@@ -659,8 +659,8 @@ export function ShowcaseClient() {
           <div className="space-y-8 md:col-span-2">
             <Link href={siteRoot} className="inline-flex items-center gap-3">
               <Image
-                src={withBasePath("/brand/newlogolight.png")}
-                alt="Big Hoss Contracting"
+                src={withBasePath("/brand/bh-logo-dark.svg")}
+                alt="BH Contracting Co."
                 width={280}
                 height={80}
                 className="h-12 w-auto object-contain object-left"
@@ -710,10 +710,10 @@ export function ShowcaseClient() {
             </p>
             <p className="text-slate-300">
               <a
-                href="mailto:info@bighosscontracting.ca"
+                href="mailto:info@bhcontracting.co"
                 className="hover:text-[var(--sea-accent)]"
               >
-                info@bighosscontracting.ca
+                info@bhcontracting.co
               </a>
             </p>
             <div className="flex gap-4">
@@ -749,7 +749,7 @@ export function ShowcaseClient() {
         </div>
 
         <div className="relative z-10 flex flex-col justify-between gap-6 border-t border-white/10 pt-12 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 md:flex-row">
-          <p>© {new Date().getFullYear()} Big Hoss Contracting. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} BH Contracting Co. All rights reserved.</p>
           <div className="flex gap-8">
             <Link href="/" className="transition hover:text-white">
               Choose audience

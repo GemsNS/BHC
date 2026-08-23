@@ -53,13 +53,13 @@ export type JobShowcaseImage = {
 export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   {
     src: F031DE44,
-    alt: "Completed Big Hoss Contracting exterior project.",
+    alt: "Completed BH Contracting Co. exterior project.",
     title: "Coastal exterior renovation",
     audience: "residential",
   },
   {
     src: IMG_0983,
-    alt: "Siding and trim installation completed by Big Hoss Contracting.",
+    alt: "Siding and trim installation completed by BH Contracting Co.",
     title: "Siding and trim package",
     audience: "commercial",
   },
@@ -71,7 +71,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_1436,
-    alt: "Commercial facade detail from a multi-unit exterior project by Big Hoss Contracting.",
+    alt: "Commercial facade detail from a multi-unit exterior project by BH Contracting Co.",
     title: "Commercial facade detail",
     audience: "commercial",
   },
@@ -83,7 +83,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_1773,
-    alt: "Project showcase photo from a completed Big Hoss build.",
+    alt: "Project showcase photo from a completed BH Contracting build.",
     title: "Completed build showcase",
     audience: "commercial",
   },
@@ -125,7 +125,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_1886,
-    alt: "Completed residential facade upgrade by Big Hoss Contracting.",
+    alt: "Completed residential facade upgrade by BH Contracting Co.",
     title: "Residential facade upgrade",
     audience: "residential",
   },
@@ -161,7 +161,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_2203,
-    alt: "Home exterior update completed by Big Hoss Contracting team.",
+    alt: "Home exterior update completed by BH Contracting Co. team.",
     title: "Whole-home exterior update",
     audience: "residential",
   },
@@ -179,7 +179,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_2358,
-    alt: "Completed project photo from Big Hoss Contracting portfolio.",
+    alt: "Completed project photo from BH Contracting Co. portfolio.",
     title: "Portfolio exterior completion",
     audience: "commercial",
   },
@@ -215,7 +215,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_2597,
-    alt: "Big Hoss Contracting completed project detail image.",
+    alt: "BH Contracting Co. completed project detail image.",
     title: "Full residential siding overhaul",
     audience: "residential",
   },
@@ -239,7 +239,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_2836,
-    alt: "Nova Scotia residential job completed by Big Hoss Contracting.",
+    alt: "Nova Scotia residential job completed by BH Contracting Co.",
     title: "Garage and bay window facade",
     audience: "residential",
   },
@@ -257,7 +257,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_3205,
-    alt: "Completed Big Hoss project photo featuring custom exterior elements.",
+    alt: "Completed BH Contracting project photo featuring custom exterior elements.",
     title: "Custom exterior elements",
     audience: "commercial",
   },
@@ -269,13 +269,13 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_3266,
-    alt: "Completed construction portfolio image from Big Hoss Contracting.",
+    alt: "Completed construction portfolio image from BH Contracting Co.",
     title: "Portfolio exterior project",
     audience: "commercial",
   },
   {
     src: IMAGE_000000,
-    alt: "Completed job showcase image from Big Hoss Contracting.",
+    alt: "Completed job showcase image from BH Contracting Co.",
     title: "Completed exterior showcase",
     audience: "commercial",
   },

@@ -58,7 +58,7 @@ export default function LoginPage() {
     <div className="login-shell">
       <div className="login-panel">
         <div className="login-brand">
-          <p className="login-eyebrow">Big Hoss Contracting</p>
+          <p className="login-eyebrow">BH Contracting Co.</p>
           <h1 className="login-title">Sign in</h1>
           <p className="login-sub">
             Your role unlocks only the tools you need — admin desk or field apps.{" "}
@@ -123,9 +123,9 @@ export default function LoginPage() {
       </div>
       <div className="login-visual" aria-hidden>
         <div className="login-visual-inner">
-          <p className="login-visual-brand">BHC</p>
+          <p className="login-visual-brand">BH</p>
           <p className="login-visual-tag">
-            Subcontracting ops — knocks to closeout.
+            Contracting ops — knocks to closeout.
           </p>
         </div>
       </div>

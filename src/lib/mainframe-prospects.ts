@@ -90,7 +90,7 @@ function draftMessage(
   prospectName: string,
 ): string {
   const region = lead.city ? ` in ${lead.city}` : "";
-  return `Hi ${prospectName.split(" ")[0]} — Big Hoss Contracting handles ${lead.jobType} exterior work${region}. ${profile.outreachTone} Reply if you'd like a scope call this week.`;
+  return `Hi ${prospectName.split(" ")[0]} — BH Contracting Co. handles ${lead.jobType} exterior work${region}. ${profile.outreachTone} Reply if you'd like a scope call this week.`;
 }
 
 /** Score in-CRM leads + queue synthetic prospects from criteria regions */

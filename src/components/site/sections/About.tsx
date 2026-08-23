@@ -11,14 +11,14 @@ export function About({ audience }: AboutProps) {
       ? {
           title: "Built for the coast. Trusted on complex sites.",
           paragraphs: [
-            "Big Hoss Contracting supports owners and operators who need exterior work done right the first time—from cladding and openings to coordinated trim packages across multi-unit or retail footprints.",
+            "BH Contracting Co. supports owners and operators who need exterior work done right the first time—from cladding and openings to coordinated trim packages across multi-unit or retail footprints.",
             "We combine code-aware detailing with field pragmatism: protecting weathertight layers, respecting occupied buildings, and communicating clearly with everyone who depends on the schedule.",
           ],
         }
       : {
           title: "Built for the coast. Built to last.",
           paragraphs: [
-            "At Big Hoss Contracting, we believe your home should be as resilient as it is beautiful. Specializing in high-end residential builds and modern renovations across Nova Scotia, our team brings meticulous attention to detail and unwavering reliability to every project.",
+            "At BH Contracting Co., we believe your home should be as resilient as it is beautiful. Specializing in high-end residential builds and modern renovations across Nova Scotia, our team brings meticulous attention to detail and unwavering reliability to every project.",
             "We don't just build homes—we engineer living spaces designed to thrive in the coastal environment, with assemblies and finishes selected for performance in salt air, wind, and seasonal swings.",
           ],
         };
@@ -49,7 +49,7 @@ export function About({ audience }: AboutProps) {
           <div>
             <Reveal y={20}>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary-aqua">
-                About Big Hoss
+                About BH Contracting
               </p>
               <h2
                 id="about-heading"

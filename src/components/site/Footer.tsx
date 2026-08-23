@@ -22,8 +22,8 @@ export function Footer() {
           <div className="lg:col-span-5">
             <Link href="/" className="inline-block">
               <Image
-                src={withBasePath("/brand/newlogodark.png")}
-                alt="Big Hoss Contracting"
+                src={withBasePath("/brand/bh-logo-dark.svg")}
+                alt="BH Contracting Co."
                 width={320}
                 height={100}
                 unoptimized
@@ -59,8 +59,8 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="mailto:info@bighosscontracting.ca" className="hover:text-primary-aqua">
-                  info@bighosscontracting.ca
+                <a href="mailto:info@bhcontracting.co" className="hover:text-primary-aqua">
+                  info@bhcontracting.co
                 </a>
               </li>
               <li className="flex items-start gap-2.5 pt-1">
@@ -75,7 +75,7 @@ export function Footer() {
         </div>
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-zinc-500">© {new Date().getFullYear()} Big Hoss Contracting. All rights reserved.</p>
+          <p className="text-xs text-zinc-500">© {new Date().getFullYear()} BH Contracting Co. All rights reserved.</p>
           <p className="text-xs text-zinc-600">
             <Link
               href="/brand-preview"

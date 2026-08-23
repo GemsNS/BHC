@@ -168,7 +168,7 @@ export function buildMarketingIntel(now = Date.now()): MarketingIntel {
       id: "ad-1",
       channel: "facebook",
       headline: "Hail season prep — free roof inspection",
-      body: "Big Hoss crews are scheduling Denver Metro inspections this week. Photo report + insurance-ready scope in 24h.",
+      body: "BH Contracting crews are scheduling Denver Metro inspections this week. Photo report + insurance-ready scope in 24h.",
       cta: "Book inspection",
       status: "ready",
     },

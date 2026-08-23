@@ -14,7 +14,7 @@ const EXPLORATIONS = [
 ] as const;
 
 export const metadata = {
-  title: "Brand exploration | Big Hoss Contracting",
+  title: "Brand exploration | BH Contracting Co.",
   description: "Internal brand direction references — not linked from public navigation.",
   robots: { index: false, follow: false },
 };
@@ -53,7 +53,7 @@ export default function BrandPreviewPage() {
           <div className="mt-6 max-w-3xl rounded-xl border border-base-black/8 bg-base-white p-4 shadow-sm sm:p-6">
             <Image
               src={withBasePath("/brand/vehicle-promo.png")}
-              alt="Big Hoss Contracting vehicle wrap concepts — pickup and cargo van"
+              alt="BH Contracting Co. vehicle wrap concepts — pickup and cargo van"
               width={1600}
               height={1200}
               className="h-auto w-full object-contain"

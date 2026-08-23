@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 240" fill="none" role="img" aria-labelledby="bhTitle">
+  <title id="bhTitle">BH Contracting Co.</title>
+  <!-- Monochrome BH lockup — architectural thin stroke -->
+  <g transform="translate(40 8)" stroke="#FFFFFF" stroke-width="6" fill="none" stroke-linecap="butt" stroke-linejoin="miter">
+    <!-- Left shared stem (B left / H left) -->
+    <path d="M40 24 V168"/>
+    <!-- Upper B bowl (open on left against stem) -->
+    <path d="M40 24 H96 A44 44 0 0 1 96 112 H40"/>
+    <!-- Lower B bowl -->
+    <path d="M40 112 H104 A44 44 0 0 1 104 168 H40"/>
+    <!-- H right stem -->
+    <path d="M200 24 V168"/>
+    <!-- H crossbar through shared stem to right stem -->
+    <path d="M40 96 H200"/>
+  </g>
+  <text
+    x="180"
+    y="214"
+    text-anchor="middle"
+    fill="#FFFFFF"
+    font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+    font-size="18"
+    font-weight="400"
+    letter-spacing="0.38em"
+  >CONTRACTING CO.</text>
+</svg>

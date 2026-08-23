@@ -67,9 +67,9 @@ export async function POST(req: Request) {
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.CONTACT_TO_EMAIL ?? "info@bighosscontracting.ca";
+  const to = process.env.CONTACT_TO_EMAIL ?? "info@bhcontracting.co";
   const from =
-    process.env.RESEND_FROM_EMAIL ?? "Big Hoss Contracting <onboarding@resend.dev>";
+    process.env.RESEND_FROM_EMAIL ?? "BH Contracting Co. <onboarding@resend.dev>";
 
   if (!apiKey) {
     return json(

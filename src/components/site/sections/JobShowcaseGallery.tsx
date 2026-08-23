@@ -21,7 +21,7 @@ export function JobShowcaseGallery({ audience }: JobShowcaseGalleryProps) {
       : {
           eyebrow: "Completed work",
           title: "Real projects, built for coastal conditions",
-          body: "Explore recent Big Hoss Contracting projects across Halifax and Nova Scotia. Every image reflects the same priorities: clean detailing, weather-ready assemblies, and reliable communication.",
+          body: "Explore recent BH Contracting Co. projects across Halifax and Nova Scotia. Every image reflects the same priorities: clean detailing, weather-ready assemblies, and reliable communication.",
         };
 
   return (

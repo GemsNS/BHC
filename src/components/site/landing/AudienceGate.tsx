@@ -21,7 +21,7 @@ export function AudienceGate() {
     >
       <div className="pointer-events-none absolute inset-0">
         <Image
-          src={withBasePath("/brand/newlogolight.png")}
+          src={withBasePath("/brand/bh-logo-dark.svg")}
           alt=""
           width={480}
           height={140}
@@ -39,7 +39,7 @@ export function AudienceGate() {
       <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-7xl flex-col px-4 pb-10 pt-28 sm:px-6 sm:pb-14 sm:pt-32 lg:px-8 lg:pb-16 lg:pt-36">
         <header className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-primary-aqua">
-            Big Hoss Contracting
+            BH Contracting Co.
           </p>
           <h1
             id="audience-gate-heading"

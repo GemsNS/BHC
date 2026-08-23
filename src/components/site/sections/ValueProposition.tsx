@@ -33,7 +33,7 @@ const commercialPillars = [
   {
     title: "Single partner for the shell",
     body:
-      "From storefront refreshes to multi-elevation packages, Big Hoss coordinates siding, windows, doors, and finish carpentry under one clear field standard.",
+      "From storefront refreshes to multi-elevation packages, BH Contracting coordinates siding, windows, doors, and finish carpentry under one clear field standard.",
   },
 ] as const;
 
@@ -44,14 +44,14 @@ export function ValueProposition({ audience }: ValuePropositionProps) {
   const sectionLead =
     audience === "commercial"
       ? {
-          kicker: "Why Big Hoss",
+          kicker: "Why BH Contracting",
           title: "Commercial exterior work with residential-grade finish discipline.",
           body: "Property teams choose us when the building cannot afford loose ends: documented scopes, respectful site presence, and craftsmanship visible at the details.",
         }
       : {
-          kicker: "Why Big Hoss",
+          kicker: "Why BH Contracting",
           title: "The flexibility to deliver unique solutions—and the focus to deliver value to your bottom line.",
-          body: "Partnering with Big Hoss means a reliable, full-service residential partner rooted in Halifax and coastal Nova Scotia: proven craft, transparent communication, and builds designed to thrive where salt air and storms set the bar.",
+          body: "Partnering with BH Contracting means a reliable, full-service residential partner rooted in Halifax and coastal Nova Scotia: proven craft, transparent communication, and builds designed to thrive where salt air and storms set the bar.",
         };
 
   return (

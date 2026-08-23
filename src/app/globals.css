@@ -990,6 +990,15 @@ button, input, select, textarea { font: inherit; }
   background: rgba(10, 12, 15, 0.92);
   backdrop-filter: blur(12px);
 }
+.jarvis-bar-interactive {
+  cursor: default;
+  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
+}
+.jarvis-bar-interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 24px rgba(217, 119, 6, 0.18);
+}
+.jarvis-bar-copy { min-width: 0; flex: 1; }
 .jarvis-orb {
   width: 0.65rem;
   height: 0.65rem;
@@ -999,6 +1008,49 @@ button, input, select, textarea { font: inherit; }
   animation: jarvis-pulse 2s ease-in-out infinite;
   flex-shrink: 0;
 }
+.jarvis-bar-interactive:hover {
+  box-shadow: 0 0 28px rgba(217, 119, 6, 0.22);
+}
+.jarvis-bar-copy { min-width: 0; flex: 1; }
+.jarvis-orb-btn {
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.jarvis-orb-btn:hover {
+  transform: scale(1.35);
+  box-shadow: 0 0 18px rgba(217, 119, 6, 1);
+}
+.jarvis-orb-btn:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+}
+.jarvis-orb-btn {
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+.jarvis-orb-btn:hover {
+  transform: scale(1.35);
+  box-shadow: 0 0 18px rgba(217, 119, 6, 1);
+}
+.jarvis-orb-btn:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+}
+.jarvis-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.2);
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.jarvis-dot:hover { background: rgba(255,255,255,0.45); }
+.jarvis-dot-on { background: var(--amber); }
 .jarvis-bar-label {
   margin: 0;
   font-size: 0.62rem;
@@ -1031,14 +1083,7 @@ button, input, select, textarea { font: inherit; }
   color: var(--amber);
   white-space: nowrap;
 }
-.jarvis-dots { display: flex; gap: 0.25rem; margin-left: 0.5rem; }
-.jarvis-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.2);
-}
-.jarvis-dot-on { background: var(--amber); }
+.jarvis-dots { display: flex; gap: 0.25rem; margin-left: 0.5rem; align-items: center; }
 
 .jarvis-cmd-trigger {
   display: none;
@@ -1666,6 +1711,17 @@ button, input, select, textarea { font: inherit; }
 .cc-shell-command {
   position: relative;
 }
+.command-atmosphere-root {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  --ptr-x: 50%;
+  --ptr-y: 20%;
+  --ptr-nx: 0;
+  --ptr-ny: 0;
+}
 .command-atmosphere {
   pointer-events: none;
   position: absolute;
@@ -1674,7 +1730,33 @@ button, input, select, textarea { font: inherit; }
   background:
     radial-gradient(ellipse 90% 60% at 50% 0%, rgba(217, 119, 6, 0.04), transparent 55%),
     radial-gradient(circle at 20% 80%, rgba(255, 42, 42, 0.03), transparent 40%);
+  transform: translate3d(calc(var(--ptr-nx) * 6px), calc(var(--ptr-ny) * 4px), 0);
+  transition: transform 120ms linear;
   animation: command-atmo-breathe 8s ease-in-out infinite;
+}
+.command-spotlight {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  background: radial-gradient(
+    420px circle at var(--ptr-x) var(--ptr-y),
+    rgba(255, 193, 7, 0.08),
+    transparent 55%
+  );
+  z-index: 1;
+}
+.command-ripple {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 193, 7, 0.45);
+  pointer-events: none;
+  z-index: 2;
+  animation: command-ripple 850ms var(--ease-out) forwards;
 }
 .command-corners {
   pointer-events: none;
@@ -1710,6 +1792,10 @@ button, input, select, textarea { font: inherit; }
 @keyframes command-corner-in {
   from { opacity: 0; transform: scale(0.92); }
   to { opacity: 1; transform: scale(1); }
+}
+@keyframes command-ripple {
+  from { opacity: 0.9; transform: scale(1); }
+  to { opacity: 0; transform: scale(28); }
 }
 @keyframes command-page-enter {
   from { opacity: 0; transform: translateY(10px) scale(0.995); }
