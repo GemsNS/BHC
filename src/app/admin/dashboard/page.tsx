@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   ActivityFeed,
@@ -9,96 +10,77 @@ import {
   PageFrame,
   Panel,
 } from "@/components/cc";
+import { RadialHud } from "@/components/command-deck/RadialHud";
+import { CommandCanvas } from "@/components/command-deck/CommandCanvas";
 import { loadAppData } from "@/lib/client-data";
+import type { DeckView } from "@/lib/command-deck";
+import type { AppData } from "@/lib/types";
 import {
   buildActivityFeed,
   buildOpsAlerts,
   buildOpsMetrics,
 } from "@/lib/ops-wall";
-import type { AppData } from "@/lib/types";
 
 export default function DashboardPage() {
+  const searchParams = useSearchParams();
+  const classic = searchParams.get("classic") === "1";
   const [data, setData] = useState<AppData | null>(null);
+  const [view, setView] = useState<DeckView>("sales");
 
   useEffect(() => {
     loadAppData().then(setData);
   }, []);
 
   if (!data) {
-    return <p className="cc-empty">Loading ops wall…</p>;
+    return <p className="hud-loading">Initializing command deck…</p>;
   }
 
-  const metrics = buildOpsMetrics(data);
-  const feed = buildActivityFeed(data);
-  const alerts = buildOpsAlerts(data);
-  const pinned = data.announcements
-    .filter((a) => a.pinned)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  if (classic) {
+    const metrics = buildOpsMetrics(data);
+    const feed = buildActivityFeed(data);
+    const alerts = buildOpsAlerts(data);
+    return (
+      <div className="command-deck-classic-wrap">
+        <p className="mb-4 text-sm text-[var(--muted)]">
+          <Link href="/admin/dashboard" className="linkish">
+            ← HUD command deck
+          </Link>
+        </p>
+        <PageFrame title="Live overview" subtitle="Classic list view" context="Intelligence layer">
+          <MetricStrip items={metrics} />
+          <div className="cc-ops-grid">
+            <Panel title="Activity feed">
+              <ActivityFeed items={feed} />
+            </Panel>
+            <Panel title="Alerts">
+              <AlertRail
+                items={alerts}
+                linkAs={(href, children) => (
+                  <Link href={href} className="block">
+                    {children}
+                  </Link>
+                )}
+              />
+            </Panel>
+          </div>
+        </PageFrame>
+      </div>
+    );
+  }
 
   return (
-    <PageFrame
-      context="Intelligence layer"
-      title="Live overview"
-      subtitle="Cross-system pulse — sales, crew, shifts, and spend in one place."
-      actions={
-        <div className="cc-quick-links">
-          <Link href="/admin/sales" className="cc-quick-link">
-            Sales
-          </Link>
-          <Link href="/admin/schedule" className="cc-quick-link">
-            Schedule
-          </Link>
-          <Link href="/admin/jobs" className="cc-quick-link">
-            Jobs
-          </Link>
-          <Link href="/apps/knocker" className="cc-quick-link">
-            Knocker
-          </Link>
-        </div>
-      }
-    >
-      <MetricStrip items={metrics} />
-
-      <div className="cc-ops-grid">
-        <Panel title="Activity feed">
-          <ActivityFeed items={feed} />
-        </Panel>
-
-        <div className="grid gap-4">
-          <Panel title="Alerts" pulse={alerts.some((a) => a.level === "critical")}>
-            <AlertRail
-              items={alerts}
-              linkAs={(href, children) => (
-                <Link href={href} className="block">
-                  {children}
-                </Link>
-              )}
-            />
-          </Panel>
-
-          <Panel
-            title="Pinned announcements"
-            action={
-              <Link href="/admin/board" className="cc-topbar-link">
-                Open board
-              </Link>
-            }
-          >
-            {pinned.length ? (
-              <ul className="cc-pin-list">
-                {pinned.map((a) => (
-                  <li key={a.id} className="cc-pin-item">
-                    <h3>{a.title}</h3>
-                    <p>{a.body}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="cc-empty">No pinned posts.</p>
-            )}
-          </Panel>
-        </div>
-      </div>
-    </PageFrame>
+    <div className="command-deck">
+      <div className="command-deck-vignette" aria-hidden />
+      <div className="command-deck-glow" aria-hidden />
+      <header className="command-deck-header">
+        <p className="command-deck-eyebrow">BHC INTELLIGENCE</p>
+        <h1 className="command-deck-title">{view.toUpperCase()}</h1>
+        <Link href="/admin/dashboard?classic=1" className="command-deck-classic-link">
+          Classic view
+        </Link>
+      </header>
+      <CommandCanvas view={view} data={data} />
+      <RadialHud active={view} onChange={setView} />
+    </div>
   );
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RequireAuth } from "./RequireAuth";
 import { useSession } from "@/lib/session";
 import {
@@ -198,7 +198,7 @@ function MobileBottomBar({ pathname }: { pathname: string }) {
   );
 }
 
-export function CommandShell({
+function CommandShellInner({
   children,
   mode,
   title,
@@ -208,6 +208,7 @@ export function CommandShell({
   title?: string;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, can, logout, homePath } = useSession();
   const router = useRouter();
 
@@ -249,51 +250,93 @@ export function CommandShell({
     day: "numeric",
   });
 
+  const isDeck =
+    mode === "admin" &&
+    pathname.startsWith("/admin/dashboard") &&
+    searchParams.get("classic") !== "1";
+
   return (
     <RequireAuth perm={mode === "apps" ? "apps" : undefined}>
       <CommandPalette />
-      <div className={cn("cc-shell", mode === "apps" && "cc-shell-apps")}>
+      <div
+        className={cn(
+          "cc-shell",
+          mode === "apps" && "cc-shell-apps",
+          isDeck && "cc-shell-immersive",
+        )}
+      >
         <div className="cc-rail-wrap">
           <CommandRail pathname={pathname} mode={mode} />
         </div>
         <div className="cc-main">
-          <header className="cc-topbar">
-            <div className="cc-topbar-left">
-              <p className="cc-topbar-brand mobile-only">BHC</p>
-              <div className="desktop-only-block">
-                <p className="cc-topbar-context">{contextLabel}</p>
-                <p className="cc-topbar-shift">{shiftContext}</p>
-              </div>
-            </div>
-            <div className="cc-topbar-right">
+          {isDeck ? (
+            <div className="hud-minimal-chrome">
               <CommandPaletteTrigger />
-              {user ? (
-                <div className="cc-identity desktop-only">
-                  <span className="cc-identity-name">{user.name}</span>
-                  <span className="cc-identity-role">{user.role}</span>
-                </div>
-              ) : null}
-              {mode === "admin" && can("apps") ? (
-                <Link href="/apps" className="cc-topbar-link">
-                  Field
-                </Link>
-              ) : null}
-              {mode === "apps" && can("dashboard") ? (
-                <Link href="/admin/dashboard" className="cc-topbar-link desktop-only">
-                  Overview
-                </Link>
-              ) : null}
               <button type="button" className="cc-topbar-link" onClick={signOut}>
                 Sign out
               </button>
             </div>
-          </header>
-          <JarvisBar />
-          {mode === "admin" ? <MobileSectionNav pathname={pathname} /> : null}
-          <main className="cc-content jarvis-content">{children}</main>
+          ) : (
+            <header className="cc-topbar">
+              <div className="cc-topbar-left">
+                <p className="cc-topbar-brand mobile-only">BHC</p>
+                <div className="desktop-only-block">
+                  <p className="cc-topbar-context">{contextLabel}</p>
+                  <p className="cc-topbar-shift">{shiftContext}</p>
+                </div>
+              </div>
+              <div className="cc-topbar-right">
+                <CommandPaletteTrigger />
+                {user ? (
+                  <div className="cc-identity desktop-only">
+                    <span className="cc-identity-name">{user.name}</span>
+                    <span className="cc-identity-role">{user.role}</span>
+                  </div>
+                ) : null}
+                {mode === "admin" && can("apps") ? (
+                  <Link href="/apps" className="cc-topbar-link">
+                    Field
+                  </Link>
+                ) : null}
+                {mode === "apps" && can("dashboard") ? (
+                  <Link href="/admin/dashboard" className="cc-topbar-link desktop-only">
+                    Overview
+                  </Link>
+                ) : null}
+                <button type="button" className="cc-topbar-link" onClick={signOut}>
+                  Sign out
+                </button>
+              </div>
+            </header>
+          )}
+          {!isDeck ? <JarvisBar /> : null}
+          {mode === "admin" && !isDeck ? (
+            <MobileSectionNav pathname={pathname} />
+          ) : null}
+          <main
+            className={cn(
+              "cc-content",
+              !isDeck && "jarvis-content",
+              isDeck && "cc-content-deck",
+            )}
+          >
+            {children}
+          </main>
           {mode === "apps" ? <MobileBottomBar pathname={pathname} /> : null}
         </div>
       </div>
     </RequireAuth>
+  );
+}
+
+export function CommandShell(props: {
+  children: React.ReactNode;
+  mode: "admin" | "apps";
+  title?: string;
+}) {
+  return (
+    <Suspense fallback={<p className="hud-loading">Loading…</p>}>
+      <CommandShellInner {...props} />
+    </Suspense>
   );
 }

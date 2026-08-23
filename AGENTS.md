@@ -14,6 +14,7 @@
 - **Schedule:** `/admin/schedule` (team week grid) · `/apps/schedule` (claim pool). API: `/api/shifts`.
 - **Sales hub:** `/admin/sales` — unified Pipeline, Client 360°, Automation, Support, Outreach tabs (replaces separate Leads/CRM/Workflows pages). Legacy URLs redirect automatically.
 - **JARVIS layer:** persistent intelligence bar + ⌘K command palette on every admin/field screen. GoDaddy email hooks into Automation tab later.
+- **HUD command deck:** `/admin/dashboard` — immersive neon ops viz (SALES / INSTALL / ADMIN / NET radial dock). Append `?classic=1` for the list-based ops wall.
 - Static demo localStorage key: `bhc-crm-store-v3` (bump when `AppData` schema changes).
 - AI summarize: `POST /api/ai/summarize` (and progress/invoice flows). Uses `OPENAI_API_KEY` when set; otherwise local heuristic. See `.env.example`.
 - Progress photos are compressed to JPEG data URLs and stored in `data/store.json` (fine for demo; swap to object storage later).

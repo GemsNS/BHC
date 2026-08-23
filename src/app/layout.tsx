@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
-import { Barlow_Condensed, Source_Sans_3 } from "next/font/google";
+import { Share_Tech_Mono, Barlow_Condensed, Source_Sans_3 } from "next/font/google";
 import { SessionProvider } from "@/lib/session";
 import "./globals.css";
+
+const hud = Share_Tech_Mono({
+  variable: "--font-hud",
+  subsets: ["latin"],
+  weight: ["400"],
+});
 
 const display = Barlow_Condensed({
   variable: "--font-display",
@@ -33,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${display.variable} ${body.variable} antialiased`}>
+      <body className={`${display.variable} ${body.variable} ${hud.variable} antialiased`}>
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
