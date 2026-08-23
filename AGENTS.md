@@ -16,7 +16,7 @@
 - **JARVIS layer:** persistent intelligence bar + ⌘K command palette on every admin/field screen. GoDaddy email hooks into Automation tab later.
 - **HUD command deck:** `/admin/dashboard` — immersive neon ops viz (SALES / INSTALL / ADMIN / NET / MKT radial dock). Append `?classic=1` for the list-based ops wall.
 - **Market terminal:** `/admin/markets` — Bloomberg-style ticker, competitor $/sqft grid, decision signals, Open-Meteo field weather; auto-refreshes every 30s.
-- Static demo localStorage key: `bhc-crm-store-v4` (bump when `AppData` schema changes).
+- Static demo localStorage key: `bhc-crm-store-v4` (bump when `AppData` schema changes). **Do not** pass `withBasePath()` to Next.js `Link` or `router.push` — Next adds `basePath` automatically; use `withBasePath` for `fetch` only.
 - **Mainframe AI:** `/admin/assistant` or floating MAINFRAME button — executes CRM tools (leads, invoices, workflows, hunt criteria, daily automations). Outreach always `pending_approval`. Optional `OPENAI_API_KEY` for NLU; local command parser fallback.
 - AI summarize: `POST /api/ai/summarize` (and progress/invoice flows). Uses `OPENAI_API_KEY` when set; otherwise local heuristic. See `.env.example`.
 - Progress photos are compressed to JPEG data URLs and stored in `data/store.json` (fine for demo; swap to object storage later).

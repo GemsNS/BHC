@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ADMIN_NAV_SECTIONS, SALES_TABS } from "@/lib/nav";
 import { useSession } from "@/lib/session";
-import { withBasePath } from "@/lib/paths";
 
 type CommandEntry = {
   id: string;
@@ -71,7 +70,7 @@ export function CommandPalette() {
     (href: string) => {
       setOpen(false);
       setQuery("");
-      router.push(withBasePath(href));
+      router.push(href);
     },
     [router],
   );

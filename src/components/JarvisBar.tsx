@@ -10,7 +10,6 @@ import {
   type JarvisInsight,
 } from "@/lib/jarvis-briefing";
 import { cn } from "@/lib/utils";
-import { withBasePath } from "@/lib/paths";
 
 export function JarvisBar() {
   const pathname = usePathname();
@@ -67,7 +66,7 @@ export function JarvisBar() {
           </p>
         </div>
         {active?.href ? (
-          <Link href={withBasePath(active.href)} className="jarvis-bar-action">
+          <Link href={active.href} className="jarvis-bar-action">
             Open
           </Link>
         ) : null}
