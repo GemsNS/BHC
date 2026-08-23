@@ -73,57 +73,53 @@ export function MarketTerminal() {
         </div>
       </header>
 
-      <div className="bloom-grid">
-        <aside className="bloom-panel bloom-watchlist">
-          <p className="bloom-panel-label">WATCHLIST</p>
-          <ul className="bloom-watch">
-            {external.map((t) => (
-              <li key={t.symbol}>
-                <button
-                  type="button"
-                  className={cn(
-                    "bloom-watch-row",
-                    selected === t.symbol && "bloom-watch-active",
-                  )}
-                  onClick={() => setSelected(t.symbol)}
-                >
-                  <span className="bloom-watch-sym">{t.symbol}</span>
-                  <span className="bloom-watch-name">{t.name}</span>
-                  <span
-                    className={cn(
-                      "bloom-watch-px",
-                      t.changePct > 0 && "bloom-up",
-                      t.changePct < 0 && "bloom-down",
-                    )}
-                  >
-                    {formatPrice(t)}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <p className="bloom-panel-label bloom-panel-label-spaced">BHC INTERNAL</p>
-          <ul className="bloom-watch">
-            {internal.map((t) => (
-              <li key={t.symbol}>
-                <button
-                  type="button"
-                  className={cn(
-                    "bloom-watch-row",
-                    selected === t.symbol && "bloom-watch-active",
-                  )}
-                  onClick={() => setSelected(t.symbol)}
-                >
-                  <span className="bloom-watch-sym">{t.symbol}</span>
-                  <span className="bloom-watch-px bloom-watch-px-internal">
-                    {formatPrice(t)}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </aside>
+      <section className="bloom-watch-strip" aria-label="Market watchlist">
+        <p className="bloom-panel-label bloom-watch-strip-label">WATCHLIST</p>
+        <div className="bloom-watch-scroll">
+          {external.map((t) => (
+            <button
+              key={t.symbol}
+              type="button"
+              className={cn(
+                "bloom-watch-chip",
+                selected === t.symbol && "bloom-watch-chip-active",
+              )}
+              onClick={() => setSelected(t.symbol)}
+            >
+              <span className="bloom-watch-chip-sym">{t.symbol}</span>
+              <span className="bloom-watch-chip-name">{t.name}</span>
+              <span
+                className={cn(
+                  "bloom-watch-chip-px",
+                  t.changePct > 0 && "bloom-up",
+                  t.changePct < 0 && "bloom-down",
+                )}
+              >
+                {formatPrice(t)}
+              </span>
+            </button>
+          ))}
+        </div>
+        <p className="bloom-panel-label bloom-internal-label">BHC INTERNAL</p>
+        <div className="bloom-internal-scroll">
+          {internal.map((t) => (
+            <button
+              key={t.symbol}
+              type="button"
+              className={cn(
+                "bloom-internal-chip",
+                selected === t.symbol && "bloom-internal-chip-active",
+              )}
+              onClick={() => setSelected(t.symbol)}
+            >
+              <span>{t.symbol}</span>
+              <span className="bloom-internal-chip-px">{formatPrice(t)}</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
+      <div className="bloom-grid">
         <section className="bloom-panel bloom-main">
           {focus ? (
             <>

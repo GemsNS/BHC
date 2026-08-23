@@ -257,6 +257,7 @@ function CommandShellInner({
 
   const isTerminal = mode === "admin" && pathname.startsWith("/admin/markets");
   const isAssistantPage = mode === "admin" && pathname.startsWith("/admin/assistant");
+  const isImmersiveChrome = isDeck || isTerminal;
 
   return (
     <RequireAuth perm={mode === "apps" ? "apps" : undefined}>
@@ -266,15 +267,16 @@ function CommandShellInner({
           "cc-shell",
           mode === "apps" && "cc-shell-apps",
           isDeck && "cc-shell-immersive",
-          mode === "admin" && !isDeck && "cc-shell-command",
+          isTerminal && "cc-shell-terminal",
+          mode === "admin" && !isImmersiveChrome && "cc-shell-command",
         )}
       >
         <div className="cc-rail-wrap">
           <CommandRail pathname={pathname} mode={mode} />
         </div>
         <div className="cc-main">
-          {!isDeck ? <CommandAtmosphere /> : null}
-          {isDeck ? (
+          {!isImmersiveChrome ? <CommandAtmosphere /> : null}
+          {isImmersiveChrome ? (
             <div className="hud-minimal-chrome">
               <CommandPaletteTrigger />
               <button type="button" className="cc-topbar-link" onClick={signOut}>
@@ -314,19 +316,19 @@ function CommandShellInner({
               </div>
             </header>
           )}
-          {!isDeck ? <JarvisBar /> : null}
-          {mode === "admin" && !isDeck ? (
+          {!isImmersiveChrome && !isAssistantPage ? <JarvisBar /> : null}
+          {mode === "admin" && !isImmersiveChrome ? (
             <MobileSectionNav pathname={pathname} />
           ) : null}
           <main
             key={pathname}
             className={cn(
               "cc-content",
-              !isDeck && "jarvis-content",
+              !isImmersiveChrome && "jarvis-content",
               isDeck && "cc-content-deck",
               isTerminal && "cc-content-terminal",
               isAssistantPage && "cc-content-assistant",
-              "command-page-enter",
+              !isTerminal && "command-page-enter",
             )}
           >
             {children}
