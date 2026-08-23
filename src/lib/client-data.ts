@@ -5,12 +5,20 @@ import { normalizeStore } from "./normalize";
 import { isStaticDemo, withBasePath } from "./paths";
 import type { AppData } from "./types";
 
-const STORAGE_KEY = "bhc-crm-store-v3";
+const STORAGE_KEY = "bhc-crm-store-v4";
+const LEGACY_STORAGE_KEY = "bhc-crm-store-v3";
 
 function readLocal(): AppData {
   if (typeof window === "undefined") return buildSeedData();
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legacy) {
+        localStorage.setItem(STORAGE_KEY, legacy);
+        raw = legacy;
+      }
+    }
     if (!raw) {
       const seed = buildSeedData();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));

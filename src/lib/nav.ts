@@ -21,6 +21,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     label: "Overview",
     items: [
       { href: "/admin/dashboard", label: "Live overview", short: "Live", perm: "dashboard" },
+      { href: "/admin/assistant", label: "Mainframe AI", short: "AI", perm: "dashboard" },
       { href: "/admin/markets", label: "Market terminal", short: "Market", perm: "stats" },
       { href: "/admin/stats", label: "Analytics", short: "Stats", perm: "stats" },
       { href: "/admin/board", label: "Announcements", short: "News", perm: "board" },

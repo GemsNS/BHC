@@ -123,6 +123,12 @@ export function buildJarvisInsights(
 
   if (context === "overview") {
     insights.push({
+      id: "mainframe",
+      tone: "action",
+      text: "Mainframe AI — command the CRM: leads, invoices, hunt criteria, daily automations.",
+      href: "/admin/assistant",
+    });
+    insights.push({
       id: "market",
       tone: "neutral",
       text: "Market terminal — lumber, mortgage, competitor $/sqft, field weather.",
@@ -170,7 +176,7 @@ export function jarvisContextFromPath(pathname: string): Parameters<
   )
     return "delivery";
   if (pathname.startsWith("/apps")) return "field";
-  if (pathname.startsWith("/admin/markets")) return "overview";
+  if (pathname.startsWith("/admin/assistant")) return "overview";
   if (pathname.startsWith("/admin/dashboard")) return "overview";
   return "global";
 }

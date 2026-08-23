@@ -56,5 +56,8 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     sequences: raw.sequences ?? seed.sequences,
     sequenceEnrollments: raw.sequenceEnrollments ?? seed.sequenceEnrollments,
     outreachQueue: raw.outreachQueue ?? seed.outreachQueue,
+    assistantProfiles: raw.assistantProfiles ?? seed.assistantProfiles,
+    assistantAutomations: raw.assistantAutomations ?? seed.assistantAutomations,
+    assistantAudit: raw.assistantAudit ?? seed.assistantAudit,
   };
 }

@@ -1,4 +1,4 @@
-import type { AppData, EmployeeRole, WorkflowDefinition } from "./types";
+import type { AppData, EmployeeRole, JobType, WorkflowDefinition } from "./types";
 
 export function buildSeedData(): AppData {
   const now = new Date();
@@ -543,6 +543,59 @@ export function buildSeedData(): AppData {
     },
   ];
 
+  const assistantProfiles = [
+    {
+      id: "profile-default",
+      name: "Front Range storm & envelope",
+      jobTypes: ["residential", "commercial"] as JobType[],
+      regions: ["Denver", "Aurora", "Seaside", "Harbor City"],
+      keywords: ["roof", "storm", "envelope", "deck", "insurance"],
+      minLeadScore: 55,
+      outreachTone: "Professional, local, no hard sell — offer free inspection.",
+      enabled: true,
+      updatedAt: iso(0),
+    },
+  ];
+
+  const assistantAutomations = [
+    {
+      id: "auto-pipeline",
+      name: "Morning pipeline scan",
+      description: "Flag stale new leads and create follow-up tasks.",
+      enabled: true,
+      runHour: 8,
+      action: "pipeline_scan" as const,
+      lastRunAt: null,
+    },
+    {
+      id: "auto-hunt",
+      name: "Qualified lead prospect hunt",
+      description: "Find prospects for qualified leads using your criteria profile.",
+      enabled: true,
+      runHour: 9,
+      action: "prospect_hunt" as const,
+      lastRunAt: null,
+    },
+    {
+      id: "auto-outreach",
+      name: "Outreach approval digest",
+      description: "Summarize pending outreach drafts for admin review.",
+      enabled: true,
+      runHour: 16,
+      action: "outreach_digest" as const,
+      lastRunAt: null,
+    },
+    {
+      id: "auto-sequences",
+      name: "Process due sequences",
+      description: "Run sequence steps that are due today.",
+      enabled: true,
+      runHour: 10,
+      action: "process_sequences" as const,
+      lastRunAt: null,
+    },
+  ];
+
   const jobs = [
     {
       id: "job-1",
@@ -1044,5 +1097,8 @@ export function buildSeedData(): AppData {
     sequences,
     sequenceEnrollments,
     outreachQueue,
+    assistantProfiles,
+    assistantAutomations,
+    assistantAudit: [] as AppData["assistantAudit"],
   };
 }

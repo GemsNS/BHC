@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { JarvisBar } from "./JarvisBar";
 import { CommandPalette, CommandPaletteTrigger } from "./CommandPalette";
 import { CommandAtmosphere } from "./CommandAtmosphere";
+import { MainframeLauncher } from "./mainframe/MainframeLauncher";
 
 const APP_TABS: Array<{
   href: string;
@@ -257,6 +258,7 @@ function CommandShellInner({
     searchParams.get("classic") !== "1";
 
   const isTerminal = mode === "admin" && pathname.startsWith("/admin/markets");
+  const isAssistantPage = mode === "admin" && pathname.startsWith("/admin/assistant");
 
   return (
     <RequireAuth perm={mode === "apps" ? "apps" : undefined}>
@@ -325,12 +327,14 @@ function CommandShellInner({
               !isDeck && "jarvis-content",
               isDeck && "cc-content-deck",
               isTerminal && "cc-content-terminal",
+              isAssistantPage && "cc-content-assistant",
               "command-page-enter",
             )}
           >
             {children}
           </main>
           {mode === "apps" ? <MobileBottomBar pathname={pathname} /> : null}
+          {mode === "admin" && !isDeck ? <MainframeLauncher /> : null}
         </div>
       </div>
     </RequireAuth>

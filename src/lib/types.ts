@@ -394,6 +394,42 @@ export interface OutreachQueueItem {
   createdAt: string;
 }
 
+/** Admin AI assistant — lead hunt criteria fed by operator */
+export interface AssistantCriteriaProfile {
+  id: string;
+  name: string;
+  jobTypes: JobType[];
+  regions: string[];
+  keywords: string[];
+  minLeadScore: number;
+  outreachTone: string;
+  enabled: boolean;
+  updatedAt: string;
+}
+
+/** Scheduled daily automations the mainframe can run */
+export interface AssistantDailyAutomation {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  /** Hour in local server time (0–23) when automation is due */
+  runHour: number;
+  action:
+    | "pipeline_scan"
+    | "prospect_hunt"
+    | "outreach_digest"
+    | "process_sequences";
+  lastRunAt: string | null;
+}
+
+export interface AssistantAuditEntry {
+  id: string;
+  action: string;
+  detail: string;
+  createdAt: string;
+}
+
 export interface Job {
   id: string;
   title: string;
@@ -544,6 +580,9 @@ export interface AppData {
   sequences: SalesSequence[];
   sequenceEnrollments: SequenceEnrollment[];
   outreachQueue: OutreachQueueItem[];
+  assistantProfiles: AssistantCriteriaProfile[];
+  assistantAutomations: AssistantDailyAutomation[];
+  assistantAudit: AssistantAuditEntry[];
 }
 
 export const ROLE_LABELS: Record<EmployeeRole, string> = {
