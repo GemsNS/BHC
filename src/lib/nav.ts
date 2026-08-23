@@ -20,9 +20,9 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     id: "overview",
     label: "Overview",
     items: [
-      { href: "/admin/dashboard", label: "Live overview", short: "Live", perm: "dashboard" },
-      { href: "/admin/assistant", label: "Mainframe AI", short: "AI", perm: "dashboard" },
-      { href: "/admin/markets", label: "Market terminal", short: "Market", perm: "stats" },
+      { href: "/admin/dashboard", label: "Command deck", short: "Deck", perm: "dashboard" },
+      { href: "/admin/assistant", label: "Mainframe", short: "AI", perm: "dashboard" },
+      { href: "/admin/markets", label: "Markets", short: "Mkt", perm: "stats" },
       { href: "/admin/stats", label: "Analytics", short: "Stats", perm: "stats" },
       { href: "/admin/board", label: "Announcements", short: "News", perm: "board" },
     ],
@@ -33,7 +33,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     items: [
       {
         href: "/admin/sales",
-        label: "Pipeline & clients",
+        label: "Pipeline",
         short: "Sales",
         perm: "leads",
       },
@@ -61,7 +61,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
         short: "Sched",
         perm: "schedule_manage",
       },
-      { href: "/admin/hours", label: "Hours & payroll", short: "Hours", perm: "hours" },
+      { href: "/admin/hours", label: "Payroll", short: "Hours", perm: "hours" },
       { href: "/admin/team", label: "Team roster", short: "Team", perm: "team" },
     ],
   },
@@ -70,17 +70,17 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     label: "Assets & yard",
     items: [
       { href: "/admin/inventory", label: "Inventory", short: "Stock", perm: "inventory" },
-      { href: "/admin/tools", label: "Tool checkout", short: "Tools", perm: "tools" },
+      { href: "/admin/tools", label: "Tools", short: "Tools", perm: "tools" },
       { href: "/admin/fleet", label: "Fleet", short: "Fleet", perm: "fleet" },
       { href: "/admin/fuel", label: "Fuel logs", short: "Fuel", perm: "fuel" },
-      { href: "/admin/damage", label: "Damage reports", short: "Dmg", perm: "damage" },
+      { href: "/admin/damage", label: "Damage", short: "Dmg", perm: "damage" },
     ],
   },
   {
     id: "system",
     label: "Administration",
     items: [
-      { href: "/admin/users", label: "Users & access", short: "Users", perm: "users" },
+      { href: "/admin/users", label: "Users", short: "Users", perm: "users" },
     ],
   },
 ];
@@ -118,15 +118,30 @@ export const LEGACY_REDIRECTS: Record<string, string> = {
   "/admin/outreach": "/admin/sales?tab=outreach",
 };
 
+export function isNavItemActive(pathname: string, href: string): boolean {
+  if (href === "/admin/sales") {
+    return (
+      pathname.startsWith("/admin/sales") ||
+      pathname.startsWith("/admin/leads") ||
+      pathname.startsWith("/admin/crm") ||
+      pathname.startsWith("/admin/workflows") ||
+      pathname.startsWith("/admin/sequences") ||
+      pathname.startsWith("/admin/tickets") ||
+      pathname.startsWith("/admin/outreach")
+    );
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function navItemForPath(pathname: string): NavItem | undefined {
-  return ADMIN_NAV.find((n) => pathname.startsWith(n.href));
+  return ADMIN_NAV.find((n) => isNavItemActive(pathname, n.href));
 }
 
 export function sectionForPath(pathname: string): NavSection | undefined {
-  if (pathname.startsWith("/admin/sales")) {
+  if (isNavItemActive(pathname, "/admin/sales")) {
     return ADMIN_NAV_SECTIONS.find((s) => s.id === "sales");
   }
   return ADMIN_NAV_SECTIONS.find((s) =>
-    s.items.some((i) => pathname.startsWith(i.href)),
+    s.items.some((i) => isNavItemActive(pathname, i.href)),
   );
 }

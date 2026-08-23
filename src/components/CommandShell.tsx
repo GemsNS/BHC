@@ -8,6 +8,7 @@ import { useSession } from "@/lib/session";
 import {
   ADMIN_NAV,
   ADMIN_NAV_SECTIONS,
+  isNavItemActive,
   navItemForPath,
   sectionForPath,
 } from "@/lib/nav";
@@ -89,10 +90,7 @@ function CommandRail({
                     href={item.href}
                     className={cn(
                       "cc-rail-link",
-                      (pathname.startsWith(item.href) ||
-                        (item.href === "/admin/sales" &&
-                          pathname.startsWith("/admin/sales"))) &&
-                        "cc-rail-link-active",
+                      isNavItemActive(pathname, item.href) && "cc-rail-link-active",
                     )}
                   >
                     {item.label}
@@ -271,11 +269,11 @@ function CommandShellInner({
           mode === "admin" && !isDeck && "cc-shell-command",
         )}
       >
-        {!isDeck ? <CommandAtmosphere /> : null}
         <div className="cc-rail-wrap">
           <CommandRail pathname={pathname} mode={mode} />
         </div>
         <div className="cc-main">
+          {!isDeck ? <CommandAtmosphere /> : null}
           {isDeck ? (
             <div className="hud-minimal-chrome">
               <CommandPaletteTrigger />
