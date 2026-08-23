@@ -18,7 +18,11 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
   );
   return {
     employees,
-    leads: raw.leads ?? seed.leads,
+    leads: (raw.leads ?? seed.leads).map((l) => ({
+      ...l,
+      companyId: l.companyId ?? null,
+      leadScore: l.leadScore ?? 50,
+    })),
     jobs: (raw.jobs ?? seed.jobs).map((j) => ({
       ...j,
       contractValue: j.contractValue ?? j.estimatedValue ?? 0,
@@ -42,5 +46,15 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     damageReports: raw.damageReports ?? seed.damageReports,
     jobProgress: raw.jobProgress ?? seed.jobProgress,
     invoices: raw.invoices ?? seed.invoices,
+    companies: raw.companies ?? seed.companies,
+    deals: raw.deals ?? seed.deals,
+    activities: raw.activities ?? seed.activities,
+    tickets: raw.tickets ?? seed.tickets,
+    shifts: raw.shifts ?? seed.shifts,
+    workflows: raw.workflows ?? seed.workflows,
+    workflowRuns: raw.workflowRuns ?? seed.workflowRuns,
+    sequences: raw.sequences ?? seed.sequences,
+    sequenceEnrollments: raw.sequenceEnrollments ?? seed.sequenceEnrollments,
+    outreachQueue: raw.outreachQueue ?? seed.outreachQueue,
   };
 }

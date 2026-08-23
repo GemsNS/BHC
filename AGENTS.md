@@ -11,6 +11,9 @@
 - Auth: every employee has `login` + `pin`. Session is client-side (`bhc-auth-user-id`). Role permissions gate nav and routes.
 - Demo logins: `jordan`/`1001` (admin), `jamie`/`1007` (knocker), `sam`/`1003` (field), `riley`/`1005` (driver).
 - Ops modules: tools in/out, inventory, damage reports, job progress (photos+notes), invoices vs full job reports.
+- **Schedule:** `/admin/schedule` (team week grid + post/release shifts) · `/apps/schedule` (my shifts + claim open pool/overtime). API: `/api/shifts`.
+- **Smart CRM (HubSpot-style):** `/admin/crm` (contacts, companies, deals, activity timeline) · `/admin/workflows` · `/admin/sequences` · `/admin/tickets` · `/admin/outreach`. APIs: `/api/crm`, `/api/workflows`, `/api/outreach`, `/api/tickets`. Workflows auto-run on lead create/status change and shift pool publish; outreach queues drafts for approval (no live SMTP in demo).
+- Static demo localStorage key: `bhc-crm-store-v3` (bump when `AppData` schema changes).
 - AI summarize: `POST /api/ai/summarize` (and progress/invoice flows). Uses `OPENAI_API_KEY` when set; otherwise local heuristic. See `.env.example`.
 - Progress photos are compressed to JPEG data URLs and stored in `data/store.json` (fine for demo; swap to object storage later).
 - Repo: `GemsNS/BHC` · Pages demo base path `/BHC`

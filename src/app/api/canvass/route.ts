@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { newId, nowIso, readStore, updateStore } from "@/lib/store";
+import { onLeadCreated } from "@/lib/workflows";
 import type { CanvassStop, Lead } from "@/lib/types";
 
 const createSchema = z.object({
@@ -57,6 +58,8 @@ export async function POST(request: Request) {
         jobType: "residential",
         notes: parsed.data.notes ?? "",
         assignedToId: parsed.data.salesRepId,
+        companyId: null,
+        leadScore: 50,
         createdAt: stamp,
         updatedAt: stamp,
       }
@@ -74,7 +77,10 @@ export async function POST(request: Request) {
   };
 
   await updateStore((data) => {
-    if (lead) data.leads.unshift(lead);
+    if (lead) {
+      data.leads.unshift(lead);
+      onLeadCreated(data, lead, parsed.data.salesRepId);
+    }
     data.canvassStops.unshift(stop);
   });
 

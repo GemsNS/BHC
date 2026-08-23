@@ -39,6 +39,15 @@ const toneMap: Record<string, string> = {
   sent: "bg-indigo-500/20 text-indigo-200",
   paid: "bg-emerald-500/20 text-emerald-200",
   void: "bg-rose-500/20 text-rose-200",
+  open_pool: "bg-emerald-500/20 text-emerald-200",
+  claimed: "bg-violet-500/20 text-violet-200",
+  overtime: "bg-amber-500/20 text-amber-200",
+  pending_approval: "bg-amber-500/20 text-amber-200",
+  approved: "bg-teal-500/20 text-teal-200",
+  cancelled: "bg-stone-500/30 text-stone-300",
+  closed: "bg-stone-500/30 text-stone-300",
+  enabled: "bg-emerald-500/20 text-emerald-200",
+  disabled: "bg-stone-500/30 text-stone-300",
 };
 
 export function StatusBadge({ status }: { status: string }) {

@@ -26,7 +26,10 @@ export async function readStore(): Promise<AppData> {
       !parsed.tools ||
       !parsed.inventory ||
       !parsed.jobProgress ||
-      !parsed.invoices
+      !parsed.invoices ||
+      !parsed.shifts ||
+      !parsed.workflows ||
+      !parsed.companies
     ) {
       await writeStore(normalized);
     }

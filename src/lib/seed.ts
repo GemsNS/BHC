@@ -1,4 +1,4 @@
-import type { AppData, EmployeeRole } from "./types";
+import type { AppData, EmployeeRole, WorkflowDefinition } from "./types";
 
 export function buildSeedData(): AppData {
   const now = new Date();
@@ -126,6 +126,8 @@ export function buildSeedData(): AppData {
       jobType: "residential" as const,
       notes: "Wants deck rebuild + new exterior trim. Coastal exposure.",
       assignedToId: "emp-sales-1",
+      companyId: null,
+      leadScore: 78,
       createdAt: iso(12),
       updatedAt: iso(2),
     },
@@ -141,6 +143,8 @@ export function buildSeedData(): AppData {
       jobType: "commercial" as const,
       notes: "Storefront envelope upgrade, phased over 3 weekends.",
       assignedToId: "emp-sales-1",
+      companyId: "co-1",
+      leadScore: 85,
       createdAt: iso(8),
       updatedAt: iso(1),
     },
@@ -156,8 +160,386 @@ export function buildSeedData(): AppData {
       jobType: "residential" as const,
       notes: "Inquiry about renovation + custom exterior.",
       assignedToId: null,
+      companyId: null,
+      leadScore: 42,
       createdAt: iso(0, 10),
       updatedAt: iso(0, 10),
+    },
+  ];
+
+  const shiftAt = (dayOffset: number, startHour: number, endHour: number) => {
+    const start = new Date(now);
+    start.setDate(start.getDate() + dayOffset);
+    start.setHours(startHour, 0, 0, 0);
+    const end = new Date(start);
+    end.setHours(endHour, 0, 0, 0);
+    return { start: start.toISOString(), end: end.toISOString() };
+  };
+
+  const companies = [
+    {
+      id: "co-1",
+      name: "Bayfront Properties LLC",
+      domain: "bayfrontprops.com",
+      industry: "Commercial real estate",
+      phone: "(555) 330-8822",
+      address: "880 Commerce Blvd",
+      city: "Harbor City",
+      notes: "Multi-site envelope client — prefers weekend phases.",
+      createdAt: iso(30),
+    },
+    {
+      id: "co-2",
+      name: "Seaside HOA",
+      domain: "seasidehoa.org",
+      industry: "Property management",
+      phone: "(555) 550-2200",
+      address: "100 Coastal Way",
+      city: "Seaside",
+      notes: "Annual maintenance RFP cycle Q2.",
+      createdAt: iso(45),
+    },
+  ];
+
+  const deals = [
+    {
+      id: "deal-1",
+      title: "Commerce Blvd storefront envelope",
+      leadId: "lead-2",
+      companyId: "co-1",
+      stage: "negotiation" as const,
+      amount: 61500,
+      closeDate: iso(-7).slice(0, 10),
+      ownerId: "emp-sales-1",
+      notes: "Phased billing agreed.",
+      createdAt: iso(10),
+      updatedAt: iso(1),
+    },
+    {
+      id: "deal-2",
+      title: "Harbor Lane deck rebuild",
+      leadId: "lead-1",
+      companyId: null,
+      stage: "proposal" as const,
+      amount: 27200,
+      closeDate: iso(14).slice(0, 10),
+      ownerId: "emp-sales-1",
+      notes: "Estimate sent — coastal hardware spec attached.",
+      createdAt: iso(8),
+      updatedAt: iso(2),
+    },
+  ];
+
+  const activities = [
+    {
+      id: "act-1",
+      type: "call" as const,
+      subject: "Discovery call — deck scope",
+      body: "Discussed coastal exposure, timeline, and permit needs.",
+      relatedType: "lead" as const,
+      relatedId: "lead-1",
+      authorId: "emp-sales-1",
+      dueAt: null,
+      completedAt: iso(3, 14),
+      createdAt: iso(3, 14),
+    },
+    {
+      id: "act-2",
+      type: "email" as const,
+      subject: "Estimate follow-up",
+      body: "Sent revised estimate with stainless fastener line item.",
+      relatedType: "lead" as const,
+      relatedId: "lead-1",
+      authorId: "emp-sales-1",
+      dueAt: null,
+      completedAt: iso(2, 10),
+      createdAt: iso(2, 10),
+    },
+    {
+      id: "act-3",
+      type: "task" as const,
+      subject: "Schedule site walk with facilities",
+      body: "Coordinate weekend access with Bayfront ops team.",
+      relatedType: "deal" as const,
+      relatedId: "deal-1",
+      authorId: "emp-sales-1",
+      dueAt: iso(-1, 9),
+      completedAt: null,
+      createdAt: iso(1, 11),
+    },
+  ];
+
+  const tickets = [
+    {
+      id: "tkt-1",
+      subject: "Warranty question — flashing detail",
+      description: "Customer asking about flashing warranty on west elevation.",
+      status: "open" as const,
+      priority: "medium" as const,
+      contactName: "Morgan Ellis",
+      contactEmail: "morgan.ellis@email.com",
+      assigneeId: "emp-admin",
+      leadId: "lead-1",
+      companyId: null,
+      createdAt: iso(1, 9),
+      updatedAt: iso(0, 15),
+    },
+  ];
+
+  const mon = shiftAt(0, 7, 15);
+  const tue = shiftAt(1, 7, 15);
+  const wed = shiftAt(2, 7, 15);
+  const thu = shiftAt(3, 7, 15);
+  const fri = shiftAt(4, 7, 15);
+  const satOt = shiftAt(5, 8, 14);
+  const poolShift = shiftAt(2, 7, 15);
+
+  const shifts = [
+    {
+      id: "shift-1",
+      title: "Field crew — Harbor Lane",
+      employeeId: "emp-field-1",
+      startAt: mon.start,
+      endAt: mon.end,
+      location: "14 Harbor Lane",
+      status: "scheduled" as const,
+      isOvertime: false,
+      postedById: null,
+      claimedById: null,
+      claimedAt: null,
+      jobId: "job-1",
+      notes: "Lead: Sam",
+      createdAt: iso(7),
+      updatedAt: iso(7),
+    },
+    {
+      id: "shift-2",
+      title: "Field crew — Commerce Blvd",
+      employeeId: "emp-field-2",
+      startAt: tue.start,
+      endAt: tue.end,
+      location: "880 Commerce Blvd",
+      status: "scheduled" as const,
+      isOvertime: false,
+      postedById: null,
+      claimedById: null,
+      claimedAt: null,
+      jobId: "job-2",
+      notes: "",
+      createdAt: iso(7),
+      updatedAt: iso(7),
+    },
+    {
+      id: "shift-3",
+      title: "Driver — yard runs",
+      employeeId: "emp-driver-1",
+      startAt: wed.start,
+      endAt: wed.end,
+      location: "Yard A",
+      status: "scheduled" as const,
+      isOvertime: false,
+      postedById: null,
+      claimedById: null,
+      claimedAt: null,
+      jobId: null,
+      notes: "Material pickup AM",
+      createdAt: iso(7),
+      updatedAt: iso(7),
+    },
+    {
+      id: "shift-4",
+      title: "Open shift — field backup",
+      employeeId: null,
+      startAt: poolShift.start,
+      endAt: poolShift.end,
+      location: "TBD job site",
+      status: "open_pool" as const,
+      isOvertime: false,
+      postedById: "emp-manager",
+      claimedById: null,
+      claimedAt: null,
+      jobId: null,
+      notes: "Coverage needed Wednesday — first claim gets it.",
+      createdAt: iso(2),
+      updatedAt: iso(2),
+    },
+    {
+      id: "shift-5",
+      title: "Saturday overtime — envelope wrap",
+      employeeId: null,
+      startAt: satOt.start,
+      endAt: satOt.end,
+      location: "880 Commerce Blvd",
+      status: "overtime" as const,
+      isOvertime: true,
+      postedById: "emp-manager",
+      claimedById: null,
+      claimedAt: null,
+      jobId: "job-2",
+      notes: "1.5× rate — needs harness cert.",
+      createdAt: iso(1),
+      updatedAt: iso(1),
+    },
+    {
+      id: "shift-6",
+      title: "Sales — canvass support",
+      employeeId: "emp-sales-1",
+      startAt: thu.start,
+      endAt: thu.end,
+      location: "Seaside zones",
+      status: "scheduled" as const,
+      isOvertime: false,
+      postedById: null,
+      claimedById: null,
+      claimedAt: null,
+      jobId: null,
+      notes: "",
+      createdAt: iso(7),
+      updatedAt: iso(7),
+    },
+    {
+      id: "shift-7",
+      title: "Knocker — Zone B",
+      employeeId: "emp-knocker-1",
+      startAt: fri.start,
+      endAt: fri.end,
+      location: "Zone B — Seaside",
+      status: "scheduled" as const,
+      isOvertime: false,
+      postedById: null,
+      claimedById: null,
+      claimedAt: null,
+      jobId: null,
+      notes: "",
+      createdAt: iso(7),
+      updatedAt: iso(7),
+    },
+  ];
+
+  const workflows: WorkflowDefinition[] = [
+    {
+      id: "wf-1",
+      name: "New lead — assign & welcome task",
+      description: "When a lead is created, assign to sales and create follow-up task.",
+      enabled: true,
+      trigger: "lead_created" as const,
+      triggerConfig: {},
+      actions: [
+        {
+          type: "assign_lead" as const,
+          config: { assigneeId: "emp-sales-1" },
+        },
+        {
+          type: "create_task" as const,
+          config: {
+            subject: "Welcome outreach within 24h",
+            dueDays: "1",
+          },
+        },
+        {
+          type: "enroll_sequence" as const,
+          config: { sequenceId: "seq-1" },
+        },
+      ],
+      createdAt: iso(60),
+      updatedAt: iso(10),
+    },
+    {
+      id: "wf-2",
+      name: "Qualified lead — find similar prospects",
+      description: "When lead hits qualified, queue autonomous prospect outreach.",
+      enabled: true,
+      trigger: "lead_status_changed" as const,
+      triggerConfig: { status: "qualified" },
+      actions: [
+        { type: "find_prospects" as const, config: { limit: "3" } },
+        { type: "queue_outreach" as const, config: { channel: "email" } },
+      ],
+      createdAt: iso(60),
+      updatedAt: iso(10),
+    },
+    {
+      id: "wf-3",
+      name: "Open shift posted — notify team",
+      description: "When a shift hits the pool, log activity and notify field crew.",
+      enabled: true,
+      trigger: "shift_posted_pool" as const,
+      triggerConfig: {},
+      actions: [
+        {
+          type: "notify" as const,
+          config: { message: "New shift available in the open pool." },
+        },
+      ],
+      createdAt: iso(30),
+      updatedAt: iso(5),
+    },
+  ];
+
+  const sequences = [
+    {
+      id: "seq-1",
+      name: "Residential intro sequence",
+      description: "3-touch drip for new residential inquiries.",
+      enabled: true,
+      steps: [
+        {
+          id: "step-1",
+          order: 0,
+          type: "email" as const,
+          delayDays: 0,
+          subject: "Thanks for reaching out to Big Hoss Contracting",
+          body: "We received your inquiry and will follow up shortly with next steps.",
+        },
+        {
+          id: "step-2",
+          order: 1,
+          type: "call" as const,
+          delayDays: 2,
+          subject: "Discovery call",
+          body: "Schedule a 15-minute scope call.",
+        },
+        {
+          id: "step-3",
+          order: 2,
+          type: "email" as const,
+          delayDays: 5,
+          subject: "Project examples in your area",
+          body: "Sharing recent deck and envelope projects near you.",
+        },
+      ],
+      createdAt: iso(90),
+    },
+  ];
+
+  const sequenceEnrollments = [
+    {
+      id: "enr-1",
+      sequenceId: "seq-1",
+      leadId: "lead-3",
+      currentStepIndex: 0,
+      status: "active" as const,
+      enrolledAt: iso(0, 10),
+      nextRunAt: iso(0, 10),
+    },
+  ];
+
+  const outreachQueue = [
+    {
+      id: "out-1",
+      leadId: "lead-2",
+      prospectName: "Harbor City Retail Group",
+      prospectEmail: "facilities@harborcityretail.com",
+      prospectPhone: "(555) 660-1100",
+      channel: "email" as const,
+      subject: "Envelope upgrades for multi-tenant storefronts",
+      message:
+        "Hi — we help commercial properties in Harbor City with phased envelope work. Would a brief call make sense?",
+      status: "pending_approval" as const,
+      workflowRunId: null,
+      scheduledAt: iso(0, 14),
+      sentAt: null,
+      createdAt: iso(0, 11),
     },
   ];
 
@@ -652,5 +1034,15 @@ export function buildSeedData(): AppData {
     damageReports,
     jobProgress,
     invoices,
+    companies,
+    deals,
+    activities,
+    tickets,
+    shifts,
+    workflows,
+    workflowRuns: [] as AppData["workflowRuns"],
+    sequences,
+    sequenceEnrollments,
+    outreachQueue,
   };
 }

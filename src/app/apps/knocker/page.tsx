@@ -129,6 +129,8 @@ export default function KnockerAppPage() {
               jobType: "residential",
               notes: payload.notes,
               assignedToId: payload.knockerId,
+              companyId: null,
+              leadScore: 50,
               createdAt: stamp,
               updatedAt: stamp,
             };

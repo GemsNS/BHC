@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { onLeadCreated, onLeadStatusChanged } from "@/lib/workflows";
 import { newId, nowIso, readStore, updateStore } from "@/lib/store";
 import type { Lead } from "@/lib/types";
 
@@ -49,12 +50,15 @@ export async function POST(request: Request) {
     jobType: parsed.data.jobType,
     notes: parsed.data.notes ?? "",
     assignedToId: parsed.data.assignedToId ?? null,
+    companyId: null,
+    leadScore: 50,
     createdAt: stamp,
     updatedAt: stamp,
   };
 
   await updateStore((data) => {
     data.leads.unshift(lead);
+    onLeadCreated(data, lead);
   });
 
   return NextResponse.json({ lead }, { status: 201 });
@@ -74,6 +78,7 @@ export async function PATCH(request: Request) {
     lead.status = status;
     lead.updatedAt = nowIso();
     updated = lead;
+    onLeadStatusChanged(data, lead);
   });
 
   if (!updated) {

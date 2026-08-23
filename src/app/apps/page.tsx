@@ -11,6 +11,12 @@ import type { AppData } from "@/lib/types";
 
 const apps = [
   {
+    href: "/apps/schedule",
+    title: "Schedule",
+    blurb: "Your shifts plus open pool and overtime to claim.",
+    perm: "schedule" as const,
+  },
+  {
     href: "/apps/board",
     title: "Announcements",
     blurb: "Company messages and role-targeted posts.",

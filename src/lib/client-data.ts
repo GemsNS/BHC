@@ -5,7 +5,7 @@ import { normalizeStore } from "./normalize";
 import { isStaticDemo, withBasePath } from "./paths";
 import type { AppData } from "./types";
 
-const STORAGE_KEY = "bhc-crm-store-v2";
+const STORAGE_KEY = "bhc-crm-store-v3";
 
 function readLocal(): AppData {
   if (typeof window === "undefined") return buildSeedData();

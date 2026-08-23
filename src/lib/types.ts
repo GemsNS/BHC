@@ -59,7 +59,62 @@ export type Permission =
   | "clock"
   | "manage_users"
   | "manage_zones"
-  | "ai_summarize";
+  | "ai_summarize"
+  | "schedule"
+  | "schedule_manage"
+  | "shift_pool"
+  | "crm"
+  | "workflows"
+  | "sequences"
+  | "tickets"
+  | "outreach";
+
+export type ShiftStatus = "scheduled" | "open_pool" | "claimed" | "overtime";
+
+export type ActivityType =
+  | "call"
+  | "email"
+  | "meeting"
+  | "note"
+  | "task";
+
+export type CrmRecordType = "lead" | "deal" | "company" | "ticket" | "job";
+
+export type DealStage =
+  | "discovery"
+  | "proposal"
+  | "negotiation"
+  | "closed_won"
+  | "closed_lost";
+
+export type TicketStatus = "new" | "open" | "pending" | "closed";
+export type TicketPriority = "low" | "medium" | "high" | "urgent";
+
+export type WorkflowTrigger =
+  | "lead_created"
+  | "lead_status_changed"
+  | "shift_posted_pool"
+  | "manual";
+
+export type WorkflowActionType =
+  | "create_task"
+  | "log_email"
+  | "assign_lead"
+  | "enroll_sequence"
+  | "create_ticket"
+  | "notify"
+  | "find_prospects"
+  | "queue_outreach";
+
+export type SequenceStepType = "email" | "call" | "task";
+
+export type OutreachStatus =
+  | "queued"
+  | "pending_approval"
+  | "approved"
+  | "sent"
+  | "failed"
+  | "cancelled";
 
 export type ToolStatus = "available" | "checked_out" | "damaged" | "retired";
 export type InventoryTxnType = "receive" | "issue" | "adjust" | "return";
@@ -186,8 +241,157 @@ export interface Lead {
   jobType: JobType;
   notes: string;
   assignedToId: string | null;
+  companyId: string | null;
+  /** AI enrichment / scoring stub (0–100) */
+  leadScore: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  domain: string;
+  industry: string;
+  phone: string;
+  address: string;
+  city: string;
+  notes: string;
+  createdAt: string;
+}
+
+export interface Deal {
+  id: string;
+  title: string;
+  leadId: string | null;
+  companyId: string | null;
+  stage: DealStage;
+  amount: number;
+  closeDate: string | null;
+  ownerId: string | null;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrmActivity {
+  id: string;
+  type: ActivityType;
+  subject: string;
+  body: string;
+  relatedType: CrmRecordType;
+  relatedId: string;
+  authorId: string;
+  dueAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface ServiceTicket {
+  id: string;
+  subject: string;
+  description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  contactName: string;
+  contactEmail: string;
+  assigneeId: string | null;
+  leadId: string | null;
+  companyId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Shift {
+  id: string;
+  title: string;
+  employeeId: string | null;
+  startAt: string;
+  endAt: string;
+  location: string;
+  status: ShiftStatus;
+  isOvertime: boolean;
+  /** Who published shift to the open pool */
+  postedById: string | null;
+  claimedById: string | null;
+  claimedAt: string | null;
+  jobId: string | null;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkflowAction {
+  type: WorkflowActionType;
+  /** Action-specific config (assignee, template, status filter, etc.) */
+  config: Record<string, string | number | boolean | null>;
+}
+
+export interface WorkflowDefinition {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  trigger: WorkflowTrigger;
+  /** e.g. status filter for lead_status_changed */
+  triggerConfig: Record<string, string>;
+  actions: WorkflowAction[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkflowRun {
+  id: string;
+  workflowId: string;
+  trigger: WorkflowTrigger;
+  context: Record<string, string>;
+  status: "completed" | "partial" | "failed";
+  log: string[];
+  createdAt: string;
+}
+
+export interface SequenceStep {
+  id: string;
+  order: number;
+  type: SequenceStepType;
+  delayDays: number;
+  subject: string;
+  body: string;
+}
+
+export interface SalesSequence {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  steps: SequenceStep[];
+  createdAt: string;
+}
+
+export interface SequenceEnrollment {
+  id: string;
+  sequenceId: string;
+  leadId: string;
+  currentStepIndex: number;
+  status: "active" | "paused" | "completed" | "cancelled";
+  enrolledAt: string;
+  nextRunAt: string | null;
+}
+
+export interface OutreachQueueItem {
+  id: string;
+  leadId: string | null;
+  prospectName: string;
+  prospectEmail: string;
+  prospectPhone: string;
+  channel: "email" | "sms" | "call";
+  subject: string;
+  message: string;
+  status: OutreachStatus;
+  workflowRunId: string | null;
+  scheduledAt: string;
+  sentAt: string | null;
+  createdAt: string;
 }
 
 export interface Job {
@@ -330,6 +534,16 @@ export interface AppData {
   damageReports: DamageReport[];
   jobProgress: JobProgressEntry[];
   invoices: InvoiceDoc[];
+  companies: Company[];
+  deals: Deal[];
+  activities: CrmActivity[];
+  tickets: ServiceTicket[];
+  shifts: Shift[];
+  workflows: WorkflowDefinition[];
+  workflowRuns: WorkflowRun[];
+  sequences: SalesSequence[];
+  sequenceEnrollments: SequenceEnrollment[];
+  outreachQueue: OutreachQueueItem[];
 }
 
 export const ROLE_LABELS: Record<EmployeeRole, string> = {
@@ -368,6 +582,14 @@ const ALL_ADMIN: Permission[] = [
   "manage_users",
   "manage_zones",
   "ai_summarize",
+  "schedule",
+  "schedule_manage",
+  "shift_pool",
+  "crm",
+  "workflows",
+  "sequences",
+  "tickets",
+  "outreach",
 ];
 
 export const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
@@ -377,6 +599,9 @@ export const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
     "dashboard",
     "stats",
     "leads",
+    "crm",
+    "sequences",
+    "outreach",
     "canvass",
     "zones",
     "board",
@@ -385,8 +610,10 @@ export const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
     "clock",
     "progress",
     "invoices",
+    "schedule",
+    "shift_pool",
   ],
-  knocker: ["board", "zones", "apps", "knocker", "clock"],
+  knocker: ["board", "zones", "apps", "knocker", "clock", "schedule", "shift_pool"],
   field: [
     "board",
     "jobs",
@@ -397,11 +624,15 @@ export const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
     "damage",
     "progress",
     "ai_summarize",
+    "schedule",
+    "shift_pool",
   ],
   office: [
     "dashboard",
     "stats",
     "leads",
+    "crm",
+    "tickets",
     "jobs",
     "materials",
     "inventory",
@@ -416,8 +647,20 @@ export const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
     "apps",
     "clock",
     "ai_summarize",
+    "schedule",
+    "shift_pool",
   ],
-  driver: ["board", "fleet", "fuel", "apps", "clock", "tools", "damage"],
+  driver: [
+    "board",
+    "fleet",
+    "fuel",
+    "apps",
+    "clock",
+    "tools",
+    "damage",
+    "schedule",
+    "shift_pool",
+  ],
 };
 
 export const ADMIN_NAV: Array<{
@@ -429,6 +672,12 @@ export const ADMIN_NAV: Array<{
   { href: "/admin/board", label: "Announcements", perm: "board" },
   { href: "/admin/stats", label: "Statistics", perm: "stats" },
   { href: "/admin/leads", label: "Leads", perm: "leads" },
+  { href: "/admin/crm", label: "Smart CRM", perm: "crm" },
+  { href: "/admin/workflows", label: "Workflows", perm: "workflows" },
+  { href: "/admin/sequences", label: "Sequences", perm: "sequences" },
+  { href: "/admin/tickets", label: "Tickets", perm: "tickets" },
+  { href: "/admin/outreach", label: "Outreach queue", perm: "outreach" },
+  { href: "/admin/schedule", label: "Schedule", perm: "schedule_manage" },
   { href: "/admin/jobs", label: "Jobs", perm: "jobs" },
   { href: "/admin/progress", label: "Job progress", perm: "progress" },
   { href: "/admin/invoices", label: "Invoices", perm: "invoices" },
