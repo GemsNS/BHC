@@ -8,7 +8,6 @@ import { useSession } from "@/lib/session";
 import {
   ADMIN_NAV,
   ADMIN_NAV_SECTIONS,
-  isNavItemActive,
   navItemForPath,
   sectionForPath,
 } from "@/lib/nav";
@@ -18,21 +17,7 @@ import { JarvisBar } from "./JarvisBar";
 import { CommandPalette, CommandPaletteTrigger } from "./CommandPalette";
 import { CommandAtmosphere } from "./CommandAtmosphere";
 import { MainframeLauncher } from "./mainframe/MainframeLauncher";
-
-const APP_TABS: Array<{
-  href: string;
-  label: string;
-  perm: Permission;
-  exact?: boolean;
-}> = [
-  { href: "/apps", label: "Home", perm: "apps", exact: true },
-  { href: "/apps/schedule", label: "Schedule", perm: "schedule" },
-  { href: "/apps/board", label: "Board", perm: "board" },
-  { href: "/apps/progress", label: "Progress", perm: "progress" },
-  { href: "/apps/tools", label: "Tools", perm: "tools" },
-  { href: "/apps/knocker", label: "Knock", perm: "knocker" },
-  { href: "/apps/clock", label: "Clock", perm: "clock" },
-];
+import { CommandRail, useRailCollapsed, APP_FIELD_TABS } from "./CommandRail";
 
 function canSeeSales(can: (p: Permission) => boolean) {
   return (
@@ -41,100 +26,6 @@ function canSeeSales(can: (p: Permission) => boolean) {
     can("workflows") ||
     can("tickets") ||
     can("outreach")
-  );
-}
-
-function CommandRail({
-  pathname,
-  mode,
-}: {
-  pathname: string;
-  mode: "admin" | "apps";
-}) {
-  const { can, logout, user } = useSession();
-  const router = useRouter();
-  const appItems = APP_TABS.filter((t) => can(t.perm));
-
-  function signOut() {
-    logout();
-    router.replace("/login");
-  }
-
-  return (
-    <aside className="cc-rail">
-      <div className="cc-rail-brand">
-        <p className="cc-rail-logo">BHC</p>
-        <p className="cc-rail-tag">Intelligence layer</p>
-        {user ? (
-          <p className="cc-rail-user">
-            {user.name}
-            <span>{user.role}</span>
-          </p>
-        ) : null}
-      </div>
-
-      {mode === "admin" ? (
-        <nav className="cc-rail-nav cc-rail-nav-grouped" aria-label="Ops sections">
-          {ADMIN_NAV_SECTIONS.map((section) => {
-            const items = section.items.filter((item) => {
-              if (item.href === "/admin/sales") return canSeeSales(can);
-              return can(item.perm);
-            });
-            if (!items.length) return null;
-            return (
-              <div key={section.id} className="cc-nav-section">
-                <p className="cc-nav-section-label">{section.label}</p>
-                {items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "cc-rail-link",
-                      isNavItemActive(pathname, item.href) && "cc-rail-link-active",
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            );
-          })}
-        </nav>
-      ) : (
-        <nav className="cc-rail-nav" aria-label="Field modes">
-          {appItems.map((tab) => {
-            const active = tab.exact
-              ? pathname === tab.href
-              : pathname.startsWith(tab.href);
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className={cn("cc-rail-link", active && "cc-rail-link-active")}
-              >
-                {tab.label}
-              </Link>
-            );
-          })}
-        </nav>
-      )}
-
-      <div className="cc-rail-foot">
-        {mode === "admin" && can("apps") ? (
-          <Link href="/apps" className="cc-rail-cta">
-            Field modes
-          </Link>
-        ) : null}
-        {mode === "apps" && can("dashboard") ? (
-          <Link href="/admin/dashboard" className="cc-rail-cta">
-            Overview
-          </Link>
-        ) : null}
-        <button type="button" className="cc-rail-logout" onClick={signOut}>
-          Sign out
-        </button>
-      </div>
-    </aside>
   );
 }
 
@@ -177,7 +68,7 @@ function MobileSectionNav({ pathname }: { pathname: string }) {
 
 function MobileBottomBar({ pathname }: { pathname: string }) {
   const { can } = useSession();
-  const tabs = APP_TABS.filter((t) => can(t.perm));
+  const tabs = APP_FIELD_TABS.filter((t) => can(t.perm));
   return (
     <nav className="cc-bottom-bar" aria-label="Field apps">
       {tabs.map((tab) => {
@@ -233,13 +124,15 @@ function CommandShellInner({
     router.replace("/login");
   }
 
+  const [railCollapsed, toggleRailCollapsed] = useRailCollapsed();
+
   const contextLabel =
     mode === "admin"
       ? pathname.startsWith("/admin/sales")
         ? "Pipeline & clients"
         : navItemForPath(pathname)?.label || sectionForPath(pathname)?.label || "Overview"
       : title ||
-        APP_TABS.find((t) =>
+        APP_FIELD_TABS.find((t) =>
           t.exact ? pathname === t.href : pathname.startsWith(t.href),
         )?.label ||
         "Field";
@@ -266,13 +159,18 @@ function CommandShellInner({
         className={cn(
           "cc-shell",
           mode === "apps" && "cc-shell-apps",
+          railCollapsed && "cc-shell-rail-collapsed",
           isDeck && "cc-shell-immersive",
           isTerminal && "cc-shell-terminal",
           mode === "admin" && !isImmersiveChrome && "cc-shell-command",
         )}
       >
         <div className="cc-rail-wrap">
-          <CommandRail pathname={pathname} mode={mode} />
+          <CommandRail
+            mode={mode}
+            collapsed={railCollapsed}
+            onToggleCollapsed={toggleRailCollapsed}
+          />
         </div>
         <div className="cc-main">
           {!isImmersiveChrome ? <CommandAtmosphere /> : null}
