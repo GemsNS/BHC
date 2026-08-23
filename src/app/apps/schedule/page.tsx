@@ -40,7 +40,6 @@ export default function AppsSchedulePage() {
 
   useEffect(() => {
     void refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when user id available
   }, [user?.id]);
 
   async function claim(shiftId: string) {
