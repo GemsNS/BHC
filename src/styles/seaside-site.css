@@ -1,0 +1,320 @@
+
+/**
+ * Seaside Contracting — brand tokens from brand-guide.md
+ */
+:root {
+  --primary-aqua: #00b4d8;
+  --base-black: #121212;
+  --base-white: #ffffff;
+  --neutral-offwhite: #f8f9fa;
+  /* Nova Scotia flag saltire blue — accents / regional touches */
+  --ns-saltire-blue: #00247d;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body .seaside-root,
+.seaside-root {
+  background-color: var(--base-white, #fff);
+  color: #27272a;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Corporate banding: subtle section rhythm (PCL-style alternation) */
+.surface-muted {
+  background-color: #fafafa;
+}
+
+.surface-white {
+  background-color: #fff;
+}
+
+/* Homepage hero — animated backdrop (no stock photography) */
+.hero-animated-base {
+  background: linear-gradient(
+    135deg,
+    #050a0e 0%,
+    #0a1a24 18%,
+    #0c2433 35%,
+    #08202c 52%,
+    #06121a 70%,
+    #04080c 100%
+  );
+  background-size: 280% 280%;
+  animation: hero-gradient-drift 22s ease-in-out infinite alternate;
+}
+
+.hero-harbour-drift {
+  animation: hero-harbour-drift 52s ease-in-out infinite alternate;
+}
+
+@keyframes hero-harbour-drift {
+  from {
+    transform: translateX(-5px);
+  }
+  to {
+    transform: translateX(5px);
+  }
+}
+
+.hero-smoke-puff {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-name: hero-smoke-billow;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes hero-smoke-billow {
+  0%,
+  100% {
+    transform: translate(0, 4px) scale(1);
+  }
+  50% {
+    transform: translate(12px, -32px) scale(1.12);
+  }
+}
+
+/* Billboard on barge — gentle drift in the water */
+.hero-barge-float {
+  animation: hero-barge-float 20s ease-in-out infinite alternate;
+}
+
+@keyframes hero-barge-float {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(4px, -5px);
+  }
+}
+
+.hero-nav-light-red {
+  animation: hero-nav-twinkle 2.3s ease-in-out infinite;
+}
+
+.hero-nav-light-green {
+  animation: hero-nav-twinkle 2.3s ease-in-out infinite;
+  animation-delay: 0.75s;
+}
+
+.hero-nav-light-white {
+  animation: hero-nav-twinkle 3.1s ease-in-out infinite;
+  animation-delay: 0.4s;
+}
+
+@keyframes hero-nav-twinkle {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-animated-base {
+    animation: none;
+    background-size: 100% 100%;
+  }
+
+  .hero-orb-drift,
+  .hero-wave-layer {
+    animation: none !important;
+  }
+
+  .hero-cloud-a,
+  .hero-cloud-b,
+  .hero-rain-layer,
+  .hero-snow-flake,
+  .hero-star-dot,
+  .hero-window-flicker,
+  .hero-window-glimmer,
+  .hero-barge-float,
+  .hero-harbour-drift,
+  .hero-smoke-puff {
+    animation: none !important;
+  }
+
+  .hero-nav-light-red,
+  .hero-nav-light-green,
+  .hero-nav-light-white {
+    animation: none !important;
+    opacity: 0.9 !important;
+  }
+
+  .hero-backdrop-blur-layer {
+    filter: none !important;
+  }
+}
+
+@keyframes hero-gradient-drift {
+  0% {
+    background-position: 0% 20%;
+  }
+  100% {
+    background-position: 100% 80%;
+  }
+}
+
+@keyframes hero-orb-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.06) translate(2%, -1%);
+  }
+}
+
+.hero-orb-drift {
+  animation: hero-orb-pulse 14s ease-in-out infinite;
+}
+
+.hero-orb-drift-delayed {
+  animation: hero-orb-pulse 18s ease-in-out infinite;
+  animation-delay: -6s;
+}
+
+@keyframes hero-wave-shift {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-24px);
+  }
+}
+
+.hero-wave-layer {
+  animation: hero-wave-shift 12s ease-in-out infinite alternate;
+}
+
+/* Halifax skyline backdrop */
+.hero-cloud-a {
+  animation: hero-cloud-drift-a 88s linear infinite;
+}
+
+.hero-cloud-b {
+  animation: hero-cloud-drift-b 118s linear infinite reverse;
+}
+
+@keyframes hero-cloud-drift-a {
+  from {
+    transform: translateX(-5%);
+  }
+  to {
+    transform: translateX(5%);
+  }
+}
+
+@keyframes hero-cloud-drift-b {
+  from {
+    transform: translateX(4%);
+  }
+  to {
+    transform: translateX(-6%);
+  }
+}
+
+.hero-starfield .hero-star-dot {
+  animation: hero-star-twinkle 2.8s ease-in-out infinite alternate;
+}
+
+@keyframes hero-star-twinkle {
+  0% {
+    opacity: 0.25;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.hero-rain-layer {
+  animation: hero-rain-fall 16s linear infinite;
+}
+
+@keyframes hero-rain-fall {
+  from {
+    transform: translateY(-32px);
+  }
+  to {
+    transform: translateY(32px);
+  }
+}
+
+.hero-snow-flake {
+  animation: hero-snow-drift 10s ease-in-out infinite alternate;
+}
+
+@keyframes hero-snow-drift {
+  0% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes hero-water-shimmer {
+  from {
+    opacity: 0.22;
+  }
+  to {
+    opacity: 0.48;
+  }
+}
+
+.hero-window-flicker {
+  animation: hero-window-flicker 5s ease-in-out infinite alternate;
+}
+
+@keyframes hero-window-flicker {
+  0% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Sharper “alive” city lights — staggered twinkle */
+.hero-window-glimmer {
+  animation: hero-window-glimmer 3.2s ease-in-out infinite;
+}
+
+@keyframes hero-window-glimmer {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  30% {
+    opacity: 0.55;
+  }
+  45% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.4;
+  }
+  78% {
+    opacity: 0.92;
+  }
+}
+
+/* Softens illustrated harbour layer; billboard is a sibling and stays sharp */
+.hero-backdrop-blur-layer {
+  filter: blur(1.15px);
+  transform: translateZ(0);
+  will-change: filter;
+}
+
+@media (max-width: 640px) {
+  .hero-backdrop-blur-layer {
+    filter: blur(0.85px);
+  }
+}

@@ -1,15 +1,14 @@
-import { SiteAbout } from "@/components/marketing/SiteAbout";
-import { SiteContact } from "@/components/marketing/SiteContact";
-import { SiteHero } from "@/components/marketing/SiteHero";
-import { SiteServices } from "@/components/marketing/SiteServices";
+import type { Metadata } from "next";
+import { CommercialSiteHome } from "@/components/site/pages/CommercialSiteHome";
+import { getPricingItems } from "@/lib/site/pricingData";
 
-export default function CommercialPage() {
-  return (
-    <>
-      <SiteHero audience="commercial" />
-      <SiteServices audience="commercial" />
-      <SiteAbout audience="commercial" />
-      <SiteContact />
-    </>
-  );
+export const metadata: Metadata = {
+  title: "Commercial | Big Hoss Contracting",
+  description:
+    "Commercial building envelopes, exterior upgrades, and phased cladding and opening work for Nova Scotia properties.",
+};
+
+export default async function CommercialPage() {
+  const pricingItems = await getPricingItems();
+  return <CommercialSiteHome pricingItems={pricingItems} />;
 }

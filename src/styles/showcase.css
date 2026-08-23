@@ -1,0 +1,106 @@
+/* Seaside showcase page — PCL-inspired motion & shapes (scoped via .showcase-root) */
+
+.showcase-root {
+  --sea-dark: #0c1a1d;
+  --sea-accent: #00b4d8;
+}
+
+.showcase-hero-gradient {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.22) 40%,
+    rgba(0, 0, 0, 0.82) 100%
+  );
+}
+
+@keyframes showcase-slow-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.1);
+  }
+}
+
+.showcase-animate-zoom {
+  animation: showcase-slow-zoom 15s ease-out forwards;
+}
+
+.showcase-clip-wing-tr {
+  clip-path: polygon(100% 0, 100% 70%, 30% 0);
+}
+
+.showcase-clip-wing-bl {
+  clip-path: polygon(0 30%, 0 100%, 70% 100%);
+}
+
+.showcase-owner-mask {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 15% 100%);
+}
+
+.showcase-reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition:
+    opacity 1s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.showcase-reveal.showcase-reveal-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes showcase-map-dot {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.showcase-map-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  position: absolute;
+  box-shadow: 0 0 8px var(--sea-accent);
+  opacity: 0;
+}
+
+.showcase-root .showcase-map-section.is-visible .showcase-map-dot {
+  animation: showcase-map-dot 0.5s ease forwards;
+}
+
+@keyframes showcase-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.showcase-hero-line {
+  animation: showcase-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 200ms;
+  opacity: 0;
+}
+
+.showcase-hero-title {
+  animation: showcase-fade-up 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 380ms;
+  opacity: 0;
+}
+
+.showcase-hero-cta {
+  animation: showcase-fade-up 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 520ms;
+  opacity: 0;
+}

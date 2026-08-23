@@ -1,15 +1,12 @@
-import { SiteAbout } from "@/components/marketing/SiteAbout";
-import { SiteContact } from "@/components/marketing/SiteContact";
-import { SiteHero } from "@/components/marketing/SiteHero";
-import { SiteServices } from "@/components/marketing/SiteServices";
+import type { Metadata } from "next";
+import { AudienceSiteHome } from "@/components/site/pages/AudienceSiteHome";
+
+export const metadata: Metadata = {
+  title: "Residential | Big Hoss Contracting",
+  description:
+    "Residential renovations, custom exteriors, and coastal-durable craftsmanship for Halifax and Nova Scotia homeowners.",
+};
 
 export default function ResidentialPage() {
-  return (
-    <>
-      <SiteHero audience="residential" />
-      <SiteServices audience="residential" />
-      <SiteAbout audience="residential" />
-      <SiteContact />
-    </>
-  );
+  return <AudienceSiteHome audience="residential" />;
 }

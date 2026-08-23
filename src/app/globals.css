@@ -25,6 +25,11 @@
 }
 
 @theme inline {
+  --color-primary-aqua: #00b4d8;
+  --color-base-black: #121212;
+  --color-base-white: #ffffff;
+  --color-neutral-offwhite: #f8f9fa;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-body);

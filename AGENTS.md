@@ -10,7 +10,7 @@
 - Persistence: `data/store.json` (gitignored), auto-seeded; reset with `POST /api/seed`. No external DB required.
 - Auth: every employee has `login` + `pin`. Session is client-side (`bhc-auth-user-id`). Role permissions gate nav and routes.
 - Demo logins: `cameron`/`1001` (admin), `jamie`/`1007` (knocker), `sam`/`1003` (field), `riley`/`1005` (driver).
-- **Public site:** `/` audience gate (residential / commercial) with **Staff login** → `/login`. Adapted from [Seaside-Contracting](https://github.com/GemsNS/Seaside-Contracting), rebranded Big Hoss Contracting.
+- **Public site (1:1 Seaside port):** `/` audience gate · `/residential` · `/commercial` · `/showcase` · `/brand-preview`. Full Seaside Contracting UI/assets (Halifax hero, exterior designer, job showcase gallery, responsive header) rebranded **Big Hoss Contracting**. Staff entry: **Staff login** on gate + header → `/login`.
 - Ops modules: tools in/out, inventory, damage reports, job progress (photos+notes), invoices vs full job reports.
 - **Schedule:** `/admin/schedule` (team week grid) · `/apps/schedule` (claim pool). API: `/api/shifts`.
 - **Sales hub:** `/admin/sales` — unified Pipeline, Client 360°, Automation, Support, Outreach tabs (replaces separate Leads/CRM/Workflows pages). Legacy URLs redirect automatically.
