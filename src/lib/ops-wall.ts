@@ -129,7 +129,7 @@ export function buildOpsAlerts(data: AppData): AlertItem[] {
       id: "hot-leads",
       label: "Pipeline",
       detail: `${hotLeads.length} lead(s) in estimate/qualified`,
-      href: "/admin/leads",
+      href: "/admin/sales?tab=pipeline",
       level: "info",
     });
   }

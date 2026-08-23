@@ -5,9 +5,16 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { RequireAuth } from "./RequireAuth";
 import { useSession } from "@/lib/session";
-import { ADMIN_NAV, ROLE_LABELS } from "@/lib/types";
+import {
+  ADMIN_NAV,
+  ADMIN_NAV_SECTIONS,
+  navItemForPath,
+  sectionForPath,
+} from "@/lib/nav";
 import type { Permission } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { JarvisBar } from "./JarvisBar";
+import { CommandPalette, CommandPaletteTrigger } from "./CommandPalette";
 
 const APP_TABS: Array<{
   href: string;
@@ -16,12 +23,23 @@ const APP_TABS: Array<{
   exact?: boolean;
 }> = [
   { href: "/apps", label: "Home", perm: "apps", exact: true },
+  { href: "/apps/schedule", label: "Schedule", perm: "schedule" },
   { href: "/apps/board", label: "Board", perm: "board" },
   { href: "/apps/progress", label: "Progress", perm: "progress" },
   { href: "/apps/tools", label: "Tools", perm: "tools" },
   { href: "/apps/knocker", label: "Knock", perm: "knocker" },
   { href: "/apps/clock", label: "Clock", perm: "clock" },
 ];
+
+function canSeeSales(can: (p: Permission) => boolean) {
+  return (
+    can("leads") ||
+    can("crm") ||
+    can("workflows") ||
+    can("tickets") ||
+    can("outreach")
+  );
+}
 
 function CommandRail({
   pathname,
@@ -32,7 +50,6 @@ function CommandRail({
 }) {
   const { can, logout, user } = useSession();
   const router = useRouter();
-  const adminItems = ADMIN_NAV.filter((item) => can(item.perm));
   const appItems = APP_TABS.filter((t) => can(t.perm));
 
   function signOut() {
@@ -44,29 +61,44 @@ function CommandRail({
     <aside className="cc-rail">
       <div className="cc-rail-brand">
         <p className="cc-rail-logo">BHC</p>
-        <p className="cc-rail-tag">Command Center</p>
+        <p className="cc-rail-tag">Intelligence layer</p>
         {user ? (
           <p className="cc-rail-user">
             {user.name}
-            <span>{ROLE_LABELS[user.role]}</span>
+            <span>{user.role}</span>
           </p>
         ) : null}
       </div>
 
       {mode === "admin" ? (
-        <nav className="cc-rail-nav" aria-label="Ops sections">
-          {adminItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "cc-rail-link",
-                pathname.startsWith(item.href) && "cc-rail-link-active",
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
+        <nav className="cc-rail-nav cc-rail-nav-grouped" aria-label="Ops sections">
+          {ADMIN_NAV_SECTIONS.map((section) => {
+            const items = section.items.filter((item) => {
+              if (item.href === "/admin/sales") return canSeeSales(can);
+              return can(item.perm);
+            });
+            if (!items.length) return null;
+            return (
+              <div key={section.id} className="cc-nav-section">
+                <p className="cc-nav-section-label">{section.label}</p>
+                {items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "cc-rail-link",
+                      (pathname.startsWith(item.href) ||
+                        (item.href === "/admin/sales" &&
+                          pathname.startsWith("/admin/sales"))) &&
+                        "cc-rail-link-active",
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            );
+          })}
         </nav>
       ) : (
         <nav className="cc-rail-nav" aria-label="Field modes">
@@ -95,7 +127,7 @@ function CommandRail({
         ) : null}
         {mode === "apps" && can("dashboard") ? (
           <Link href="/admin/dashboard" className="cc-rail-cta">
-            Ops wall
+            Overview
           </Link>
         ) : null}
         <button type="button" className="cc-rail-logout" onClick={signOut}>
@@ -108,10 +140,21 @@ function CommandRail({
 
 function MobileSectionNav({ pathname }: { pathname: string }) {
   const { can } = useSession();
-  const items = ADMIN_NAV.filter((item) => can(item.perm));
+  const chips = ADMIN_NAV_SECTIONS.flatMap((section) =>
+    section.items
+      .filter((item) => {
+        if (item.href === "/admin/sales") return canSeeSales(can);
+        return can(item.perm);
+      })
+      .map((item) => ({
+        href: item.href,
+        short: item.short ?? item.label.split(" ")[0],
+      })),
+  );
+
   return (
     <nav className="cc-mobile-scroll" aria-label="Ops sections">
-      {items.map((item) => (
+      {chips.map((item) => (
         <Link
           key={item.href}
           href={item.href}
@@ -120,12 +163,12 @@ function MobileSectionNav({ pathname }: { pathname: string }) {
             pathname.startsWith(item.href) && "cc-chip-active",
           )}
         >
-          {item.label.split(" ")[0]}
+          {item.short}
         </Link>
       ))}
       {can("apps") ? (
         <Link href="/apps" className="cc-chip">
-          Apps
+          Field
         </Link>
       ) : null}
     </nav>
@@ -170,13 +213,16 @@ export function CommandShell({
 
   useEffect(() => {
     if (!user || mode !== "admin") return;
-    const allowedNav = ADMIN_NAV.filter((n) => can(n.perm));
+    const allowedNav = ADMIN_NAV.filter((n) => {
+      if (n.href === "/admin/sales") return canSeeSales(can);
+      return can(n.perm);
+    });
     if (allowedNav.length === 0) {
       router.replace(homePath === "/admin/dashboard" ? "/apps" : homePath);
       return;
     }
     const match = ADMIN_NAV.find((n) => pathname.startsWith(n.href));
-    if (match && !can(match.perm)) {
+    if (match && match.href !== "/admin/sales" && !can(match.perm)) {
       router.replace(allowedNav[0].href);
     }
   }, [user, can, router, homePath, pathname, mode]);
@@ -188,21 +234,24 @@ export function CommandShell({
 
   const contextLabel =
     mode === "admin"
-      ? ADMIN_NAV.find((n) => pathname.startsWith(n.href))?.label || "Ops"
+      ? pathname.startsWith("/admin/sales")
+        ? "Pipeline & clients"
+        : navItemForPath(pathname)?.label || sectionForPath(pathname)?.label || "Overview"
       : title ||
         APP_TABS.find((t) =>
           t.exact ? pathname === t.href : pathname.startsWith(t.href),
         )?.label ||
         "Field";
 
-  const shiftContext = `Today · ${new Date().toLocaleDateString(undefined, {
+  const shiftContext = new Date().toLocaleDateString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
-  })}`;
+  });
 
   return (
     <RequireAuth perm={mode === "apps" ? "apps" : undefined}>
+      <CommandPalette />
       <div className={cn("cc-shell", mode === "apps" && "cc-shell-apps")}>
         <div className="cc-rail-wrap">
           <CommandRail pathname={pathname} mode={mode} />
@@ -217,12 +266,11 @@ export function CommandShell({
               </div>
             </div>
             <div className="cc-topbar-right">
+              <CommandPaletteTrigger />
               {user ? (
-                <div className="cc-identity">
+                <div className="cc-identity desktop-only">
                   <span className="cc-identity-name">{user.name}</span>
-                  <span className="cc-identity-role">
-                    {ROLE_LABELS[user.role]}
-                  </span>
+                  <span className="cc-identity-role">{user.role}</span>
                 </div>
               ) : null}
               {mode === "admin" && can("apps") ? (
@@ -231,24 +279,18 @@ export function CommandShell({
                 </Link>
               ) : null}
               {mode === "apps" && can("dashboard") ? (
-                <Link
-                  href="/admin/dashboard"
-                  className="cc-topbar-link desktop-only"
-                >
-                  Ops
+                <Link href="/admin/dashboard" className="cc-topbar-link desktop-only">
+                  Overview
                 </Link>
               ) : null}
-              <button
-                type="button"
-                className="cc-topbar-link"
-                onClick={signOut}
-              >
+              <button type="button" className="cc-topbar-link" onClick={signOut}>
                 Sign out
               </button>
             </div>
           </header>
+          <JarvisBar />
           {mode === "admin" ? <MobileSectionNav pathname={pathname} /> : null}
-          <main className="cc-content">{children}</main>
+          <main className="cc-content jarvis-content">{children}</main>
           {mode === "apps" ? <MobileBottomBar pathname={pathname} /> : null}
         </div>
       </div>

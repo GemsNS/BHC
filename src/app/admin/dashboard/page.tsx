@@ -37,22 +37,22 @@ export default function DashboardPage() {
 
   return (
     <PageFrame
-      context="Command center"
-      title="Ops wall"
-      subtitle="Live pulse across knocks, crew, pipeline, and spend — what’s happening right now."
+      context="Intelligence layer"
+      title="Live overview"
+      subtitle="Cross-system pulse — sales, crew, shifts, and spend in one place."
       actions={
         <div className="cc-quick-links">
-          <Link href="/admin/zones" className="cc-quick-link">
-            Zones
+          <Link href="/admin/sales" className="cc-quick-link">
+            Sales
+          </Link>
+          <Link href="/admin/schedule" className="cc-quick-link">
+            Schedule
           </Link>
           <Link href="/admin/jobs" className="cc-quick-link">
             Jobs
           </Link>
           <Link href="/apps/knocker" className="cc-quick-link">
             Knocker
-          </Link>
-          <Link href="/admin/board" className="cc-quick-link">
-            Board
           </Link>
         </div>
       }

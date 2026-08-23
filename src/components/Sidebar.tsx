@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ADMIN_NAV } from "@/lib/types";
+import { ADMIN_NAV } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/session";
 

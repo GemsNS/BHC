@@ -663,36 +663,14 @@ export const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
   ],
 };
 
-export const ADMIN_NAV: Array<{
-  href: string;
-  label: string;
-  perm: Permission;
-}> = [
-  { href: "/admin/dashboard", label: "Ops wall", perm: "dashboard" },
-  { href: "/admin/board", label: "Announcements", perm: "board" },
-  { href: "/admin/stats", label: "Statistics", perm: "stats" },
-  { href: "/admin/leads", label: "Leads", perm: "leads" },
-  { href: "/admin/crm", label: "Smart CRM", perm: "crm" },
-  { href: "/admin/workflows", label: "Workflows", perm: "workflows" },
-  { href: "/admin/sequences", label: "Sequences", perm: "sequences" },
-  { href: "/admin/tickets", label: "Tickets", perm: "tickets" },
-  { href: "/admin/outreach", label: "Outreach queue", perm: "outreach" },
-  { href: "/admin/schedule", label: "Schedule", perm: "schedule_manage" },
-  { href: "/admin/jobs", label: "Jobs", perm: "jobs" },
-  { href: "/admin/progress", label: "Job progress", perm: "progress" },
-  { href: "/admin/invoices", label: "Invoices", perm: "invoices" },
-  { href: "/admin/materials", label: "Job materials", perm: "materials" },
-  { href: "/admin/inventory", label: "Inventory", perm: "inventory" },
-  { href: "/admin/tools", label: "Tools", perm: "tools" },
-  { href: "/admin/damage", label: "Damage", perm: "damage" },
-  { href: "/admin/zones", label: "Knocker zones", perm: "zones" },
-  { href: "/admin/canvass", label: "Door-to-Door", perm: "canvass" },
-  { href: "/admin/fleet", label: "Fleet", perm: "fleet" },
-  { href: "/admin/fuel", label: "Fuel", perm: "fuel" },
-  { href: "/admin/hours", label: "Hours & Payroll", perm: "hours" },
-  { href: "/admin/users", label: "Users & roles", perm: "users" },
-  { href: "/admin/team", label: "Team", perm: "team" },
-];
+export {
+  ADMIN_NAV,
+  ADMIN_NAV_SECTIONS,
+  SALES_TABS,
+  LEGACY_REDIRECTS,
+  navItemForPath,
+  sectionForPath,
+} from "./nav";
 
 export function homeForRole(role: EmployeeRole): string {
   const perms = ROLE_PERMISSIONS[role] || [];

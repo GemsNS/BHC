@@ -850,3 +850,254 @@ button, input, select, textarea { font: inherit; }
   border-color: rgba(168, 85, 247, 0.4);
   background: rgba(168, 85, 247, 0.12);
 }
+
+/* —— JARVIS intelligence layer —— */
+.jarvis-bar {
+  margin: 0 1rem 0.75rem;
+  border-radius: 0.75rem;
+  padding: 1px;
+  background: linear-gradient(
+    120deg,
+    rgba(217, 119, 6, 0.55),
+    rgba(31, 78, 95, 0.45),
+    rgba(217, 119, 6, 0.35)
+  );
+  background-size: 200% 200%;
+  animation: jarvis-border 6s ease infinite;
+}
+.jarvis-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.72rem;
+  background: rgba(10, 12, 15, 0.92);
+  backdrop-filter: blur(12px);
+}
+.jarvis-orb {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: var(--amber);
+  box-shadow: 0 0 12px rgba(217, 119, 6, 0.85);
+  animation: jarvis-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.jarvis-bar-label {
+  margin: 0;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(217, 119, 6, 0.85);
+}
+.jarvis-bar-text {
+  margin: 0.15rem 0 0;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.88);
+  min-height: 1.25rem;
+}
+.jarvis-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.9em;
+  margin-left: 2px;
+  background: var(--amber);
+  vertical-align: text-bottom;
+  animation: jarvis-blink 1s step-end infinite;
+}
+.jarvis-bar-action {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(217, 119, 6, 0.15);
+  color: var(--amber);
+  white-space: nowrap;
+}
+.jarvis-dots { display: flex; gap: 0.25rem; margin-left: 0.5rem; }
+.jarvis-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.2);
+}
+.jarvis-dot-on { background: var(--amber); }
+
+.jarvis-cmd-trigger {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.7);
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.jarvis-cmd-trigger kbd {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 0.25rem;
+  padding: 0 0.25rem;
+}
+
+.jarvis-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+}
+.jarvis-palette {
+  width: min(32rem, 92vw);
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(18, 20, 23, 0.98);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.55);
+  overflow: hidden;
+}
+.jarvis-palette-input {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: transparent;
+  color: #fff;
+  padding: 1rem 1.1rem;
+  font-size: 1rem;
+}
+.jarvis-palette-input:focus { outline: none; }
+.jarvis-palette-list { list-style: none; margin: 0; padding: 0.35rem; max-height: 18rem; overflow-y: auto; }
+.jarvis-palette-item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: rgba(255,255,255,0.9);
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+.jarvis-palette-item:hover { background: rgba(217,119,6,0.12); }
+.jarvis-palette-meta { font-size: 0.72rem; color: rgba(255,255,255,0.45); }
+.jarvis-palette-empty { padding: 1rem; color: rgba(255,255,255,0.45); font-size: 0.85rem; }
+.jarvis-palette-hint {
+  margin: 0;
+  padding: 0.65rem 1rem;
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.35);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.jarvis-palette-hint kbd {
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 0.2rem;
+  padding: 0 0.2rem;
+}
+
+.cc-nav-section { margin-bottom: 0.85rem; }
+.cc-nav-section-label {
+  margin: 0 0 0.35rem;
+  padding: 0 0.85rem;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.35);
+}
+.cc-rail-nav-grouped { padding-top: 0.5rem; }
+
+.jarvis-glass-panel {
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(10px);
+  padding: 1rem 1.1rem;
+  transition: border-color 200ms var(--ease-out), transform 200ms var(--ease-out);
+}
+.jarvis-panel-stack { display: grid; gap: 1rem; }
+.jarvis-panel-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.jarvis-tab-bar {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  padding: 0.35rem;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.06);
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.jarvis-tab {
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.55);
+  white-space: nowrap;
+  transition: background 180ms var(--ease-out), color 180ms var(--ease-out);
+}
+.jarvis-tab-active {
+  background: rgba(217,119,6,0.2);
+  color: var(--amber);
+  font-weight: 600;
+}
+.jarvis-tab-panel { animation: jarvis-fade-in 320ms var(--ease-out); }
+.jarvis-fade-in { animation: jarvis-fade-in 320ms var(--ease-out); }
+.jarvis-content > * { animation: jarvis-fade-in 280ms var(--ease-out); }
+
+.jarvis-contact-list { list-style: none; margin: 0; padding: 0; max-height: 16rem; overflow-y: auto; }
+.jarvis-contact, .jarvis-contact-active {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  display: block;
+}
+.jarvis-contact:hover { background: rgba(255,255,255,0.05); }
+.jarvis-contact-active { background: rgba(217,119,6,0.15); }
+.jarvis-card {
+  border-radius: 0.55rem;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 0.75rem;
+  background: rgba(0,0,0,0.15);
+}
+.jarvis-deal-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; font-size: 0.85rem; }
+.jarvis-deal-list li { display: flex; justify-content: space-between; gap: 0.5rem; }
+
+@keyframes jarvis-border {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes jarvis-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.65; transform: scale(0.92); }
+}
+@keyframes jarvis-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes jarvis-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (min-width: 900px) {
+  .jarvis-cmd-trigger { display: inline-flex; }
+  .jarvis-bar { margin: 0 1.5rem 1rem; }
+}
