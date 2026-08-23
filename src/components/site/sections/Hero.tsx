@@ -139,19 +139,19 @@ export function Hero({ audience }: HeroProps) {
               </Link>
               <Link
                 href="#contact"
-                className="inline-flex items-center justify-center rounded-sm border border-white/40 bg-white/10 px-7 py-3.5 text-base font-semibold text-white backdrop-blur-sm transition-[transform,background-color] duration-300 hover:bg-white/18"
+                className="inline-flex items-center justify-center rounded-sm border border-white/50 bg-black/35 px-7 py-3.5 text-base font-semibold text-white shadow-sm backdrop-blur-sm transition-[transform,background-color] duration-300 hover:bg-black/50"
               >
                 {copy.secondaryCta}
               </Link>
               <Link
                 href="#services"
-                className="inline-flex items-center justify-center text-sm font-semibold text-white/85 underline-offset-4 transition-colors hover:text-primary-aqua hover:underline"
+                className="inline-flex items-center justify-center text-sm font-semibold text-white underline-offset-4 transition-colors hover:text-primary-aqua hover:underline"
               >
                 {copy.tertiary}
               </Link>
               <Link
                 href={showcaseHref}
-                className="inline-flex items-center justify-center rounded-sm border border-white/25 bg-white/5 px-7 py-3.5 text-base font-semibold text-white transition-[transform,background-color] duration-300 hover:border-primary-aqua/60 hover:bg-white/10"
+                className="inline-flex items-center justify-center rounded-sm border border-white/40 bg-black/30 px-7 py-3.5 text-base font-semibold text-white transition-[transform,background-color] duration-300 hover:border-primary-aqua/60 hover:bg-black/45"
               >
                 Full showcase
               </Link>

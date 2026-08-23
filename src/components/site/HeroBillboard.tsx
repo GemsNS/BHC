@@ -105,11 +105,11 @@ export function HeroBillboard({ motion, waterBand }: Props) {
               fontSize="58"
               fontWeight="900"
               fill="#ffffff"
-              letterSpacing="0.04em"
+              letterSpacing="0.12em"
               textLength="430"
               lengthAdjust="spacing"
             >
-              SEASIDE
+              BH
             </text>
             <text
               x="498"
@@ -122,7 +122,7 @@ export function HeroBillboard({ motion, waterBand }: Props) {
               textLength="430"
               lengthAdjust="spacing"
             >
-              CONTRACTING
+              CONTRACTING CO.
             </text>
 
             <text
