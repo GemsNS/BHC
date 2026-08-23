@@ -121,6 +121,15 @@ export function buildJarvisInsights(
     }
   }
 
+  if (context === "overview") {
+    insights.push({
+      id: "market",
+      tone: "neutral",
+      text: "Market terminal — lumber, mortgage, competitor $/sqft, field weather.",
+      href: "/admin/markets",
+    });
+  }
+
   const dueTasks = data.activities.filter(
     (a) =>
       a.type === "task" &&
@@ -161,6 +170,7 @@ export function jarvisContextFromPath(pathname: string): Parameters<
   )
     return "delivery";
   if (pathname.startsWith("/apps")) return "field";
+  if (pathname.startsWith("/admin/markets")) return "overview";
   if (pathname.startsWith("/admin/dashboard")) return "overview";
   return "global";
 }

@@ -6,6 +6,7 @@ import type { DeckView } from "@/lib/command-deck";
 import {
   buildAdminKpis,
   buildInstallGrid,
+  buildMarketPreview,
   buildNetworkGraph,
   buildSalesTree,
   deckViewHref,
@@ -70,6 +71,24 @@ export function CommandCanvas({
         ))}
         <Link href={deckViewHref("admin")} className="hud-canvas-cta">
           Full analytics →
+        </Link>
+      </div>
+    );
+  }
+
+  if (view === "market") {
+    const rows = buildMarketPreview(data);
+    return (
+      <div className="hud-canvas-inner hud-market-grid">
+        {rows.map((row) => (
+          <div key={row.label} className="hud-kpi hud-kpi-market">
+            <p className="hud-kpi-val">{row.value}</p>
+            <p className="hud-kpi-label">{row.label}</p>
+            <p className="hud-kpi-delta">{row.delta}</p>
+          </div>
+        ))}
+        <Link href={deckViewHref("market")} className="hud-canvas-cta">
+          Open market terminal →
         </Link>
       </div>
     );

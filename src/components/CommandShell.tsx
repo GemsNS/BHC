@@ -15,6 +15,7 @@ import type { Permission } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { JarvisBar } from "./JarvisBar";
 import { CommandPalette, CommandPaletteTrigger } from "./CommandPalette";
+import { CommandAtmosphere } from "./CommandAtmosphere";
 
 const APP_TABS: Array<{
   href: string;
@@ -255,6 +256,8 @@ function CommandShellInner({
     pathname.startsWith("/admin/dashboard") &&
     searchParams.get("classic") !== "1";
 
+  const isTerminal = mode === "admin" && pathname.startsWith("/admin/markets");
+
   return (
     <RequireAuth perm={mode === "apps" ? "apps" : undefined}>
       <CommandPalette />
@@ -263,8 +266,10 @@ function CommandShellInner({
           "cc-shell",
           mode === "apps" && "cc-shell-apps",
           isDeck && "cc-shell-immersive",
+          mode === "admin" && !isDeck && "cc-shell-command",
         )}
       >
+        {!isDeck ? <CommandAtmosphere /> : null}
         <div className="cc-rail-wrap">
           <CommandRail pathname={pathname} mode={mode} />
         </div>
@@ -314,10 +319,13 @@ function CommandShellInner({
             <MobileSectionNav pathname={pathname} />
           ) : null}
           <main
+            key={pathname}
             className={cn(
               "cc-content",
               !isDeck && "jarvis-content",
               isDeck && "cc-content-deck",
+              isTerminal && "cc-content-terminal",
+              "command-page-enter",
             )}
           >
             {children}

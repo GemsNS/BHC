@@ -1,6 +1,6 @@
 import type { AppData, Job, LeadStatus } from "./types";
 
-export type DeckView = "sales" | "install" | "admin" | "network";
+export type DeckView = "sales" | "install" | "admin" | "network" | "market";
 
 export const DECK_TONE_STROKE: Record<string, string> = {
   red: "#ff2a2a",
@@ -146,7 +146,21 @@ export function deckViewHref(view: DeckView): string {
       return "/admin/stats";
     case "network":
       return "/admin/sales";
+    case "market":
+      return "/admin/markets";
     default:
       return "/admin/dashboard";
   }
+}
+
+export function buildMarketPreview(data: AppData) {
+  const pipeline = data.deals
+    .filter((d) => !d.stage.startsWith("closed"))
+    .reduce((s, d) => s + (d.amount || 0), 0);
+  return [
+    { label: "LUMBER", value: "612", delta: "+0.8%" },
+    { label: "MORTGAGE", value: "6.82%", delta: "-0.04" },
+    { label: "PIPELINE", value: `$${Math.round(pipeline / 1000)}k`, delta: "BHC" },
+    { label: "COMP AVG", value: "$4.89", delta: "/sqft" },
+  ];
 }

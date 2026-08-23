@@ -9,6 +9,7 @@ const TABS: Array<{ id: DeckView; label: string }> = [
   { id: "install", label: "INSTALL" },
   { id: "admin", label: "ADMIN" },
   { id: "network", label: "NET" },
+  { id: "market", label: "MKT" },
 ];
 
 export function RadialHud({

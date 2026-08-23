@@ -48,6 +48,7 @@ function SalesHubInner() {
       context="Sales & clients"
       title="Pipeline & clients"
       subtitle={subtitle}
+      className="command-hub-frame"
     >
       <nav className="jarvis-tab-bar" aria-label="Sales sections">
         {tabs.map((t) => (

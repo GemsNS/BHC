@@ -34,15 +34,17 @@ export function PageFrame({
   context,
   actions,
   children,
+  className,
 }: {
   title: string;
   subtitle?: string;
   context?: string;
   actions?: React.ReactNode;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="cc-page">
+    <div className={cn("cc-page", className)}>
       <header className="cc-page-header">
         <div>
           {context ? <p className="cc-page-context">{context}</p> : null}
