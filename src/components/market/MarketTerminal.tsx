@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import type { MarketPulse } from "@/lib/market-intel";
 import { loadMarketPulse } from "@/lib/market-intel";
+import { buildMarketingIntel } from "@/lib/market-marketing";
 import { cn } from "@/lib/utils";
 import { MiniSparkline } from "./MiniSparkline";
+import { MarketingIntelPanels } from "./MarketingIntelPanels";
 import { TickerTape } from "./TickerTape";
 
 function formatPrice(t: MarketPulse["tickers"][0]): string {
@@ -20,14 +22,10 @@ function formatPrice(t: MarketPulse["tickers"][0]): string {
 export function MarketTerminal() {
   const [pulse, setPulse] = useState<MarketPulse | null>(null);
   const [selected, setSelected] = useState("LBR");
-  const [flashKey, setFlashKey] = useState("0");
-  const prevPrices = useRef<Record<string, number>>({});
 
   const refresh = useCallback(async () => {
     const next = await loadMarketPulse();
     setPulse(next);
-    setFlashKey(String(Date.now()));
-    prevPrices.current = Object.fromEntries(next.tickers.map((t) => [t.symbol, t.price]));
   }, []);
 
   useEffect(() => {
@@ -43,10 +41,11 @@ export function MarketTerminal() {
   const focus = pulse.tickers.find((t) => t.symbol === selected) ?? pulse.tickers[0];
   const external = pulse.tickers.filter((t) => t.category !== "internal");
   const internal = pulse.tickers.filter((t) => t.category === "internal");
+  const marketingIntel = buildMarketingIntel();
 
   return (
     <div className="bloom-terminal command-page-enter">
-      <TickerTape tickers={pulse.tickers} flashKey={flashKey} />
+      <TickerTape tickers={pulse.tickers} />
 
       <header className="bloom-header">
         <div>
@@ -249,6 +248,8 @@ export function MarketTerminal() {
           </ul>
         </section>
       </div>
+
+      <MarketingIntelPanels intel={marketingIntel} />
     </div>
   );
 }

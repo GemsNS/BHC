@@ -15,7 +15,7 @@ Open [http://localhost:3000](http://localhost:3000) — you land on the **login*
 
 | Role | Login | PIN |
 | --- | --- | --- |
-| Admin | `jordan` | `1001` |
+| Admin | `cameron` | `1001` |
 | Knocker | `jamie` | `1007` |
 | Field | `sam` | `1003` |
 | Driver | `riley` | `1005` |

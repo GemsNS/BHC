@@ -17,9 +17,9 @@ export function buildSeedData(): AppData {
   const employees = [
     {
       id: "emp-admin",
-      name: "Jordan Hale",
-      email: "jordan@bighoss.com",
-      login: "jordan",
+      name: "Cameron Brown",
+      email: "cameron@bighoss.com",
+      login: "cameron",
       pin: "1001",
       role: "admin" as const,
       phone: "(555) 100-0001",

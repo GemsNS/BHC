@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/session";
 import { homeForRole, ROLE_LABELS } from "@/lib/types";
 
 const DEMO_ACCOUNTS = [
-  { login: "jordan", pin: "1001", role: "Admin" },
+  { login: "cameron", pin: "1001", role: "Admin" },
   { login: "jamie", pin: "1007", role: "Knocker" },
   { login: "sam", pin: "1003", role: "Field" },
   { login: "riley", pin: "1005", role: "Driver" },
@@ -60,7 +61,10 @@ export default function LoginPage() {
           <p className="login-eyebrow">Big Hoss Contracting</p>
           <h1 className="login-title">Sign in</h1>
           <p className="login-sub">
-            Your role unlocks only the tools you need — admin desk or field apps.
+            Your role unlocks only the tools you need — admin desk or field apps.{" "}
+            <Link href="/" className="login-home-link">
+              ← Public site
+            </Link>
           </p>
         </div>
 
@@ -72,7 +76,7 @@ export default function LoginPage() {
               name="login"
               required
               autoComplete="username"
-              placeholder="jordan"
+              placeholder="cameron"
               className="field-input"
             />
           </label>

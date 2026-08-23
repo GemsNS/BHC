@@ -9,14 +9,15 @@
 - Lint / test / build: `npm run lint`, `npm test`, `npm run build` (see `package.json` / `README.md`).
 - Persistence: `data/store.json` (gitignored), auto-seeded; reset with `POST /api/seed`. No external DB required.
 - Auth: every employee has `login` + `pin`. Session is client-side (`bhc-auth-user-id`). Role permissions gate nav and routes.
-- Demo logins: `jordan`/`1001` (admin), `jamie`/`1007` (knocker), `sam`/`1003` (field), `riley`/`1005` (driver).
+- Demo logins: `cameron`/`1001` (admin), `jamie`/`1007` (knocker), `sam`/`1003` (field), `riley`/`1005` (driver).
+- **Public site:** `/` audience gate (residential / commercial) with **Staff login** → `/login`. Adapted from [Seaside-Contracting](https://github.com/GemsNS/Seaside-Contracting), rebranded Big Hoss Contracting.
 - Ops modules: tools in/out, inventory, damage reports, job progress (photos+notes), invoices vs full job reports.
 - **Schedule:** `/admin/schedule` (team week grid) · `/apps/schedule` (claim pool). API: `/api/shifts`.
 - **Sales hub:** `/admin/sales` — unified Pipeline, Client 360°, Automation, Support, Outreach tabs (replaces separate Leads/CRM/Workflows pages). Legacy URLs redirect automatically.
 - **JARVIS layer:** persistent intelligence bar + ⌘K command palette on every admin/field screen. GoDaddy email hooks into Automation tab later.
 - **HUD command deck:** `/admin/dashboard` — immersive neon ops viz (SALES / INSTALL / ADMIN / NET / MKT radial dock). Append `?classic=1` for the list-based ops wall.
 - **Market terminal:** `/admin/markets` — Bloomberg-style ticker, competitor $/sqft grid, decision signals, Open-Meteo field weather; auto-refreshes every 30s. Uses terminal immersive chrome (no top bar / JARVIS bar); watchlist is a horizontal chip strip so it does not mirror the nav rail.
-- Static demo localStorage key: `bhc-crm-store-v4` (bump when `AppData` schema changes). **Do not** pass `withBasePath()` to Next.js `Link` or `router.push` — Next adds `basePath` automatically; use `withBasePath` for `fetch` only.
+- Static demo localStorage key: `bhc-crm-store-v5` (bump when `AppData` schema changes). **Do not** pass `withBasePath()` to Next.js `Link` or `router.push` — Next adds `basePath` automatically; use `withBasePath` for `fetch` only.
 - **Mainframe AI:** `/admin/assistant` or floating MAINFRAME button — executes CRM tools (leads, invoices, workflows, hunt criteria, daily automations). Outreach always `pending_approval`. Optional `OPENAI_API_KEY` for NLU; local command parser fallback.
 - AI summarize: `POST /api/ai/summarize` (and progress/invoice flows). Uses `OPENAI_API_KEY` when set; otherwise local heuristic. See `.env.example`.
 - Progress photos are compressed to JPEG data URLs and stored in `data/store.json` (fine for demo; swap to object storage later).
