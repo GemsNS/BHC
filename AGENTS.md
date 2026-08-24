@@ -18,8 +18,9 @@
 - **HUD command deck:** `/admin/dashboard` — immersive neon ops viz (SALES / INSTALL / ADMIN / NET / MKT radial dock). Append `?classic=1` for the list-based ops wall.
 - **Market terminal:** `/admin/markets` — Bloomberg-style ticker, competitor $/sqft grid, decision signals, Open-Meteo field weather; auto-refreshes every 30s. Uses terminal immersive chrome (no top bar / JARVIS bar); watchlist is a horizontal chip strip so it does not mirror the nav rail.
 - Static demo localStorage key: `bhc-crm-store-v5` (bump when `AppData` schema changes). **Do not** pass `withBasePath()` to Next.js `Link` or `router.push` — Next adds `basePath` automatically; use `withBasePath` for `fetch` only.
-- **Mainframe AI:** `/admin/assistant` or floating MAINFRAME button — executes CRM tools (leads, invoices, workflows, hunt criteria, daily automations). Outreach always `pending_approval`. Optional `OPENAI_API_KEY` for NLU; local command parser fallback.
-- AI summarize: `POST /api/ai/summarize` (and progress/invoice flows). Uses `OPENAI_API_KEY` when set; otherwise local heuristic. See `.env.example`.
+- **Mainframe AI:** `/admin/assistant` or floating MAINFRAME button — executes CRM tools (leads, invoices, workflows, hunt criteria, daily automations). Outreach always `pending_approval`. Optional `GEMINI_API_KEY` (preferred) or `OPENAI_API_KEY` for NLU; local command parser fallback. Side panel lists automations + audit; `GET /api/ai/status` reports active provider.
+- **BHC CLI:** `npm run bhc -- ai status|chat|summarize`, `store summary`, `automations list|run-daily|run <id>`. Requires local store (`data/store.json`); loads `.env` for AI keys.
+- AI summarize: `POST /api/ai/summarize` (and progress/invoice flows). Uses Gemini or OpenAI when configured; otherwise local heuristic. See `.env.example`.
 - Progress photos are compressed to JPEG data URLs and stored in `data/store.json` (fine for demo; swap to object storage later).
 - Repo: `GemsNS/BHC` · Pages demo base path `/BHC`
 - Static GitHub Pages demo: `npm run build:gh-pages` (temporarily moves `src/app/api`, sets `NEXT_PUBLIC_STATIC_DEMO=1` + `NEXT_PUBLIC_BASE_PATH=/BHC`). Client falls back to localStorage. Deploy with `npm run deploy:gh-pages`.

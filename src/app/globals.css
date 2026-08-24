@@ -2256,6 +2256,105 @@
   margin: 0;
   width: 100%;
 }
+.mainframe-page-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: calc(100vh - 4rem);
+  background: #030303;
+}
+@media (min-width: 1100px) {
+  .mainframe-page-split {
+    grid-template-columns: 16rem 1fr;
+  }
+}
+.mainframe-assistant-panel {
+  border-right: 1px solid rgba(255, 42, 42, 0.2);
+  padding: 1rem;
+  font-family: var(--font-hud), monospace;
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.7);
+  overflow-y: auto;
+  max-height: calc(100vh - 4rem);
+}
+.mainframe-assistant-block {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.mainframe-assistant-block:last-child {
+  border-bottom: 0;
+}
+.mainframe-ai-status {
+  margin: 0.35rem 0 0;
+  letter-spacing: 0.1em;
+  font-size: 0.68rem;
+}
+.mainframe-ai-live { color: rgba(57, 255, 20, 0.85); }
+.mainframe-ai-local { color: rgba(255, 193, 7, 0.85); }
+.mainframe-chat-provider {
+  margin: 0.35rem 0 0;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+}
+.mainframe-auto-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+.mainframe-auto-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  line-height: 1.35;
+}
+.mainframe-auto-list button {
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  background: transparent;
+  color: rgba(0, 229, 255, 0.85);
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0.15rem 0.4rem;
+  cursor: pointer;
+}
+.mainframe-panel-btn {
+  margin-top: 0.5rem;
+  width: 100%;
+  border: 1px solid rgba(255, 42, 42, 0.45);
+  background: rgba(255, 42, 42, 0.08);
+  color: #ff2a2a;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0.35rem 0.5rem;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+}
+.mainframe-panel-btn-muted {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+}
+.mainframe-audit-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+.mainframe-audit-list li {
+  margin-bottom: 0.45rem;
+  line-height: 1.35;
+}
+.mainframe-audit-action {
+  display: block;
+  color: rgba(0, 229, 255, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.mainframe-audit-detail {
+  display: block;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 0.15rem;
+}
 .mainframe-chat {
   min-height: calc(100vh - 4rem);
   background: #030303;

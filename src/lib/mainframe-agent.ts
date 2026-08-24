@@ -1,4 +1,9 @@
 import {
+  runAIAgentLoop,
+  type AIToolDefinition,
+  type AIChatMessage,
+} from "./ai-provider";
+import {
   executeMainframeTool,
   MAINFRAME_TOOL_NAMES,
   type MainframeToolName,
@@ -7,10 +12,7 @@ import {
 import { automationsDue } from "./mainframe-automations";
 import type { AppData } from "./types";
 
-export type ChatMessage = {
-  role: "user" | "assistant" | "system";
-  content: string;
-};
+export type ChatMessage = AIChatMessage;
 
 export type ChatTurnResult = {
   reply: string;
@@ -25,24 +27,23 @@ Be concise, command-center tone, ALL CAPS for emphasis sparingly. Confirm what y
 Outreach is NEVER sent automatically — only queued for admin approval.
 When user gives job/criteria info, save it with save_criteria_profile then hunt_leads when appropriate.`;
 
-const OPENAI_TOOLS = MAINFRAME_TOOL_NAMES.map((name) => ({
-  type: "function" as const,
-  function: {
+export function buildMainframeTools(): AIToolDefinition[] {
+  return MAINFRAME_TOOL_NAMES.map((name) => ({
     name,
     description: toolDescription(name),
     parameters: toolParameters(name),
-  },
-}));
+  }));
+}
 
 function toolDescription(name: MainframeToolName): string {
   const map: Record<MainframeToolName, string> = {
-    get_summary: "CRM ops summary",
-    list_leads: "List/filter leads",
+    get_summary: "CRM ops summary — open leads, jobs, outreach pending, automations",
+    list_leads: "List/filter leads by status or city",
     create_lead: "Create a new lead",
-    update_lead_status: "Change lead status",
-    list_jobs: "List jobs by query",
+    update_lead_status: "Change lead status by name or id",
+    list_jobs: "List jobs by title, customer, or id query",
     create_invoice: "Generate draft invoice or full report for a job",
-    run_workflow: "Run a workflow by id on a lead",
+    run_workflow: "Run a workflow by id on an optional lead",
     process_sequences: "Process due sequence steps",
     approve_outreach: "Approve outreach drafts (never sends email)",
     find_prospects: "Find prospects for a specific lead",
@@ -56,6 +57,17 @@ function toolDescription(name: MainframeToolName): string {
 
 function toolParameters(name: MainframeToolName): Record<string, unknown> {
   switch (name) {
+    case "list_leads":
+      return {
+        type: "object",
+        properties: {
+          status: {
+            type: "string",
+            enum: ["new", "contacted", "qualified", "estimate", "won", "lost"],
+          },
+          city: { type: "string" },
+        },
+      };
     case "create_lead":
       return {
         type: "object",
@@ -71,6 +83,60 @@ function toolParameters(name: MainframeToolName): Record<string, unknown> {
         },
         required: ["name"],
       };
+    case "update_lead_status":
+      return {
+        type: "object",
+        properties: {
+          lead: { type: "string", description: "Lead name or id" },
+          leadId: { type: "string" },
+          status: {
+            type: "string",
+            enum: ["new", "contacted", "qualified", "estimate", "won", "lost"],
+          },
+        },
+        required: ["status"],
+      };
+    case "list_jobs":
+      return {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Job title, customer, or id" },
+        },
+      };
+    case "create_invoice":
+      return {
+        type: "object",
+        properties: {
+          job: { type: "string", description: "Job title or id" },
+          jobId: { type: "string" },
+          kind: { type: "string", enum: ["invoice", "full_report"] },
+          notes: { type: "string" },
+        },
+      };
+    case "run_workflow":
+      return {
+        type: "object",
+        properties: {
+          workflowId: { type: "string" },
+          leadId: { type: "string" },
+        },
+      };
+    case "approve_outreach":
+      return {
+        type: "object",
+        properties: {
+          all: { type: "boolean" },
+          id: { type: "string" },
+        },
+      };
+    case "find_prospects":
+      return {
+        type: "object",
+        properties: {
+          lead: { type: "string", description: "Lead name or id" },
+        },
+        required: ["lead"],
+      };
     case "save_criteria_profile":
       return {
         type: "object",
@@ -81,6 +147,24 @@ function toolParameters(name: MainframeToolName): Record<string, unknown> {
           jobTypes: { type: "array", items: { type: "string" } },
           minLeadScore: { type: "number" },
           outreachTone: { type: "string" },
+        },
+      };
+    case "create_task":
+      return {
+        type: "object",
+        properties: {
+          subject: { type: "string" },
+          body: { type: "string" },
+          relatedType: { type: "string", enum: ["lead", "job", "deal"] },
+          relatedId: { type: "string" },
+        },
+        required: ["subject"],
+      };
+    case "run_daily_automations":
+      return {
+        type: "object",
+        properties: {
+          force: { type: "boolean", description: "Run all enabled automations" },
         },
       };
     default:
@@ -185,90 +269,6 @@ function helpText(): string {
 • "Process sequences"`;
 }
 
-async function callOpenAI(
-  messages: ChatMessage[],
-  data: AppData,
-  ctx: ToolContext,
-): Promise<{ reply: string; toolRuns: ChatTurnResult["toolRuns"] } | null> {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
-
-  const base = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-  const toolRuns: ChatTurnResult["toolRuns"] = [];
-
-  const apiMessages: Array<Record<string, unknown>> = [
-    { role: "system", content: SYSTEM_PROMPT },
-    {
-      role: "system",
-      content: `Active hunt profile: ${JSON.stringify(data.assistantProfiles.find((p) => p.enabled) ?? {})}`,
-    },
-    ...messages.map((m) => ({ role: m.role, content: m.content })),
-  ];
-
-  for (let step = 0; step < 5; step++) {
-    const res = await fetch(`${base}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.2,
-        messages: apiMessages,
-        tools: OPENAI_TOOLS,
-        tool_choice: "auto",
-      }),
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as {
-      choices?: Array<{
-        message?: {
-          content?: string | null;
-          tool_calls?: Array<{
-            id: string;
-            function: { name: string; arguments: string };
-          }>;
-        };
-      }>;
-    };
-    const msg = json.choices?.[0]?.message;
-    if (!msg) return null;
-
-    if (msg.tool_calls?.length) {
-      apiMessages.push({ role: "assistant", tool_calls: msg.tool_calls });
-      for (const tc of msg.tool_calls) {
-        const toolName = tc.function.name as MainframeToolName;
-        let args: Record<string, unknown> = {};
-        try {
-          args = JSON.parse(tc.function.arguments || "{}") as Record<string, unknown>;
-        } catch {
-          args = {};
-        }
-        const result = executeMainframeTool(data, toolName, args, ctx);
-        toolRuns.push({ tool: toolName, summary: result.summary, ok: result.ok });
-        apiMessages.push({
-          role: "tool",
-          tool_call_id: tc.id,
-          content: result.summary,
-        });
-      }
-      continue;
-    }
-
-    return {
-      reply: msg.content?.trim() || "Done.",
-      toolRuns,
-    };
-  }
-
-  return {
-    reply: toolRuns.map((r) => r.summary).join("\n") || "Completed tool runs.",
-    toolRuns,
-  };
-}
-
 export async function runMainframeTurn(
   data: AppData,
   messages: ChatMessage[],
@@ -284,8 +284,19 @@ export async function runMainframeTurn(
   }
 
   const due = automationsDue(data).map((a) => a.name);
+  const profile = data.assistantProfiles.find((p) => p.enabled) ?? {};
 
-  const ai = await callOpenAI(messages, data, ctx);
+  const ai = await runAIAgentLoop({
+    systemPrompt: SYSTEM_PROMPT,
+    contextPrompt: `Active hunt profile: ${JSON.stringify(profile)}`,
+    messages,
+    tools: buildMainframeTools(),
+    executeTool: (name, args) => {
+      const result = executeMainframeTool(data, name as MainframeToolName, args, ctx);
+      return { summary: result.summary, ok: result.ok };
+    },
+  });
+
   if (ai) {
     return {
       reply: ai.reply,
@@ -300,7 +311,7 @@ export async function runMainframeTurn(
 
   if (!intents.length) {
     return {
-      reply: `MAINFRAME LOCAL MODE — I parse direct commands (no API key). Try:\n${helpText()}`,
+      reply: `MAINFRAME LOCAL MODE — I parse direct commands (no API key). Set GEMINI_API_KEY or OPENAI_API_KEY in .env for full NLU.\n\n${helpText()}`,
       source: "mainframe",
       toolRuns: [],
       automationsDue: due.length ? due : undefined,

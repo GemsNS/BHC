@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { ChatMessage } from "@/lib/mainframe-agent";
 import { sendMainframeMessage } from "@/lib/mainframe-client";
-import { loadAppData } from "@/lib/client-data";
+import { fetchJson, loadAppData } from "@/lib/client-data";
+import { isStaticDemo } from "@/lib/paths";
+import type { AIStatus } from "@/lib/ai-provider";
 import type { AssistantCriteriaProfile } from "@/lib/types";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -40,6 +42,7 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [profile, setProfile] = useState<AssistantCriteriaProfile | null>(null);
   const [due, setDue] = useState<string[]>([]);
+  const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const refreshMeta = useCallback(async () => {
@@ -57,6 +60,23 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
         )
         .map((a) => a.name),
     );
+    if (!isStaticDemo()) {
+      try {
+        setAiStatus(await fetchJson<AIStatus>("/api/ai/status"));
+      } catch {
+        setAiStatus(null);
+      }
+    } else {
+      setAiStatus({
+        provider: "none",
+        configured: false,
+        model: null,
+        chat: false,
+        summarize: false,
+        gemini: false,
+        openai: false,
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -106,6 +126,18 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
         <div>
           <p className="mainframe-chat-eyebrow">BHC MAINFRAME AI</p>
           <h2 className="mainframe-chat-title">Command assistant</h2>
+          {aiStatus ? (
+            <p
+              className={cn(
+                "mainframe-chat-provider",
+                aiStatus.configured ? "mainframe-ai-live" : "mainframe-ai-local",
+              )}
+            >
+              {aiStatus.configured
+                ? `${aiStatus.provider.toUpperCase()} · ${aiStatus.model ?? "AI"}`
+                : "LOCAL PARSER — add GEMINI_API_KEY in .env"}
+            </p>
+          ) : null}
         </div>
         {!embedded ? (
           <Link href="/admin/dashboard" className="mainframe-chat-link">

@@ -37,6 +37,7 @@ Roles only unlock the sections they are allowed to see (admin sidebar / field ap
 | --- | --- |
 | `npm run dev` | Dev server `0.0.0.0:3000` |
 | `npm run lint` / `npm test` / `npm run build` | Quality checks |
+| `npm run bhc -- <cmd>` | CLI — `ai status`, `ai chat`, `ai summarize`, `store summary`, `automations list` |
 | `npm run build:gh-pages` | Static demo export to `./out` |
 | `npm run deploy:gh-pages` | Build + publish `gh-pages` branch |
 
@@ -59,7 +60,8 @@ Static demo uses **localStorage** (no server APIs). Full local/cloud mode uses `
 - **Tools in/out** — yard asset checkout to crew/jobs
 - **Inventory** — stock levels, issue/receive, optional job material log
 - **Damage reports** — tool/vehicle/site damage with photos
-- **Job progress** — notes + photo uploads + AI summarize
+- **Job progress** — notes + photo uploads + AI summarize (Gemini or OpenAI when configured)
+- **Mainframe AI** — `/admin/assistant` — natural-language CRM commands, automations panel, audit log
 - **Invoices / job reports** — invoice vs full report with progress media
 - **Schedule & shift pool** — team calendar, open pool, overtime (`/admin/schedule`, `/apps/schedule`)
 - **Sales hub** — Pipeline, Client 360°, Automation, Support, Outreach in one place (`/admin/sales`)

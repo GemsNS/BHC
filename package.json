@@ -9,6 +9,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "bhc": "tsx scripts/bhc-cli.ts",
+    "ai:status": "tsx scripts/bhc-cli.ts ai status",
     "build:gh-pages": "bash scripts/build-gh-pages.sh",
     "deploy:gh-pages": "bash scripts/deploy-gh-pages.sh"
   },
@@ -37,6 +39,7 @@
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "tsx": "^4.20.5",
     "vitest": "^4.1.11"
   }
 }
