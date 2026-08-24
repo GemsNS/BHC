@@ -318,3 +318,23 @@ body .seaside-root,
     filter: blur(0.85px);
   }
 }
+
+/*
+ * Header / gate chrome sits on dark photography. Utility opacity colors can lose
+ * to `a { color: inherit }` + `.seaside-root { color: #27272a }` when a build
+ * omits white tokens — keep explicit readable link colors on the public shell.
+ */
+.seaside-root header a.site-nav-link,
+.seaside-root header .site-nav-link {
+  color: rgba(255, 255, 255, 0.95);
+}
+.seaside-root header a.site-nav-link:hover,
+.seaside-root header .site-nav-link:hover {
+  color: var(--primary-aqua, #00b4d8);
+}
+.seaside-root header .site-nav-link-muted {
+  color: rgba(255, 255, 255, 0.9);
+}
+.seaside-root header .site-nav-link-muted:hover {
+  color: var(--primary-aqua, #00b4d8);
+}

@@ -53,7 +53,7 @@ export function AudienceGate() {
           </p>
           <Link
             href="/login"
-            className="mt-6 inline-flex items-center gap-2 rounded-full border border-primary-aqua/45 bg-primary-aqua/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary-aqua transition-colors hover:bg-primary-aqua/20"
+            className="mt-6 inline-flex items-center gap-2 rounded-full border border-primary-aqua/60 bg-primary-aqua/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary-aqua transition-colors hover:bg-primary-aqua/25"
           >
             Staff login
           </Link>

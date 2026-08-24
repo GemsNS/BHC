@@ -25,8 +25,8 @@ export function Header() {
   const transparent = isHome && !scrolled;
 
   const navLinkClass = transparent
-    ? "text-white/95 hover:text-primary-aqua"
-    : "text-white/90 hover:text-primary-aqua";
+    ? "site-nav-link text-white hover:text-primary-aqua"
+    : "site-nav-link-muted text-white hover:text-primary-aqua";
 
   const headerShell = transparent
     ? "border-transparent bg-black/25 backdrop-blur-sm"
