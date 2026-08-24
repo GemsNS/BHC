@@ -71,6 +71,7 @@ Persistent log of user preferences, decisions, and chat themes for future agents
 - Tone-colored orb + category chips; rotation pauses on hover/expand; typing only when collapsed.
 - CSS cleanup: removed duplicate rules, dropped global `.jarvis-content > *` fade, slower border gradient, `prefers-reduced-motion` support.
 - **HUD deck strip:** compact `JarvisBar variant="hud"` sits above the radial dock on `/admin/dashboard` (expand panel grows upward; no typewriter).
+- Metric chips and pipeline graph nodes expand the matching briefing card; action buttons in the panel still navigate.
 
 **Key files:** `src/lib/jarvis-briefing.ts`, `src/components/JarvisBar.tsx`, `src/components/JarvisDetailPanel.tsx`, `src/app/admin/dashboard/page.tsx`, `src/app/globals.css` (JARVIS + HUD blocks).
 
