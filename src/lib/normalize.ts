@@ -10,11 +10,43 @@ function withLoginFields(emp: Employee & { login?: string; pin?: string }): Empl
   return { ...emp, login, pin };
 }
 
+/**
+ * Older demos used login `jordan` while the UI/seed chips show `cameron`.
+ * Map that identity forward so demo admin login keeps working.
+ */
+function migrateEmployee(emp: Employee): Employee {
+  let next = emp;
+  if (
+    emp.id === "emp-admin" ||
+    emp.login?.toLowerCase() === "jordan" ||
+    emp.email?.toLowerCase().startsWith("jordan@")
+  ) {
+    next = {
+      ...emp,
+      name: emp.name?.toLowerCase().includes("jordan")
+        ? "Cameron Brown"
+        : emp.name,
+      login: "cameron",
+      email: emp.email?.toLowerCase().includes("jordan@")
+        ? "cameron@bhcontracting.co"
+        : emp.email?.replace(/@bighoss\.com$/i, "@bhcontracting.co") ||
+          emp.email,
+      pin: emp.pin || "1001",
+    };
+  } else if (emp.email && /@bighoss\.com$/i.test(emp.email)) {
+    next = {
+      ...emp,
+      email: emp.email.replace(/@bighoss\.com$/i, "@bhcontracting.co"),
+    };
+  }
+  return withLoginFields(next);
+}
+
 /** Fill missing collections / fields when loading older stores */
 export function normalizeStore(raw: Partial<AppData>): AppData {
   const seed = buildSeedData();
   const employees = (raw.employees ?? seed.employees).map((e) =>
-    withLoginFields(e as Employee),
+    migrateEmployee(e as Employee),
   );
   return {
     employees,

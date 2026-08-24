@@ -16,8 +16,17 @@ export async function readStore(): Promise<AppData> {
     const raw = await readFile(STORE_PATH, "utf8");
     const parsed = JSON.parse(raw) as Partial<AppData>;
     const normalized = normalizeStore(parsed);
-    // Persist migrations when new collections were missing
+    const rawAdmin = (parsed.employees ?? []).find(
+      (e) => e.id === "emp-admin" || e.login?.toLowerCase() === "jordan",
+    );
+    const needsEmployeeMigration =
+      !!rawAdmin &&
+      (rawAdmin.login?.toLowerCase() === "jordan" ||
+        rawAdmin.email?.toLowerCase().startsWith("jordan@") ||
+        /@bighoss\.com$/i.test(rawAdmin.email ?? ""));
+    // Persist migrations when new collections were missing or identity renamed
     if (
+      needsEmployeeMigration ||
       !parsed.zones ||
       !parsed.knocks ||
       !parsed.materials ||
