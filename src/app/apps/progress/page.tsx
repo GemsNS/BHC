@@ -48,19 +48,15 @@ export default function AppsProgressPage() {
     if (isStaticDemo()) {
       let aiSummary: string | null = null;
       if (runAi) {
-        try {
-          const res = await fetchJson<{ summary: string }>("/api/ai/summarize", {
-            method: "POST",
-            body: JSON.stringify({
-              jobId: payload.jobId,
-              notes: [payload.notes],
-              imageCount: images.length,
-            }),
-          });
-          aiSummary = res.summary;
-        } catch {
-          aiSummary = `• ${payload.notes}`;
-        }
+        const job = (await loadAppData()).jobs.find((j) => j.id === payload.jobId);
+        const { clientSummarizeProgress } = await import("@/lib/ai-client");
+        const res = await clientSummarizeProgress({
+          jobTitle: job?.title ?? "Job",
+          customerName: job?.customerName ?? "",
+          notes: [payload.notes],
+          imageCount: images.length,
+        });
+        aiSummary = res.summary;
       }
       await mutateAppData((d) => {
         d.jobProgress.unshift({

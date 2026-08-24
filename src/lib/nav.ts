@@ -38,6 +38,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
         perm: "leads",
       },
       { href: "/admin/canvass", label: "Canvassing", short: "Doors", perm: "canvass" },
+      { href: "/admin/knocker", label: "Active Knocker", short: "Knock", perm: "zones" },
       { href: "/admin/zones", label: "Territories", short: "Zones", perm: "zones" },
     ],
   },

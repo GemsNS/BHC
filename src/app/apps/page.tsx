@@ -43,7 +43,7 @@ const apps = [
   {
     href: "/apps/knocker",
     title: "Knocker",
-    blurb: "Zone-assigned door knocking. Logs sync to admin.",
+    blurb: "Active Knocker — map turfs, GPS pins, routes, team chat.",
     perm: "knocker" as const,
   },
   {

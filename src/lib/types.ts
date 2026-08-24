@@ -29,7 +29,10 @@ export type CanvassOutcome =
   | "interested"
   | "appointment"
   | "not_interested"
-  | "do_not_knock";
+  | "do_not_knock"
+  | "pitched"
+  | "sold"
+  | "callback";
 
 export type ZoneStatus = "open" | "active" | "completed" | "paused";
 
@@ -480,6 +483,100 @@ export interface CanvassStop {
   zoneId?: string | null;
 }
 
+export interface KnockPinActivity {
+  id: string;
+  action: string;
+  detail: string;
+  authorId: string;
+  createdAt: string;
+}
+
+export interface KnockColorCode {
+  id: string;
+  outcome: CanvassOutcome;
+  label: string;
+  hex: string;
+  stroke: string;
+}
+
+export interface KnockTag {
+  id: string;
+  label: string;
+  color: string;
+}
+
+export interface KnockProduct {
+  id: string;
+  name: string;
+  sku: string;
+  unitPrice: number;
+  category: string;
+}
+
+export interface KnockService {
+  id: string;
+  name: string;
+  description: string;
+  basePrice: number;
+}
+
+export interface KnockTerritory {
+  id: string;
+  name: string;
+  zoneId: string | null;
+  /** Closed polygon [lat, lng][] */
+  polygon: Array<[number, number]>;
+  colorHex: string;
+  fillOpacity: number;
+  assignedRepIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KnockTodo {
+  id: string;
+  pinId: string | null;
+  title: string;
+  body: string;
+  dueAt: string | null;
+  priority: "low" | "medium" | "high";
+  assignedToId: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface KnockProposal {
+  id: string;
+  pinId: string;
+  productIds: string[];
+  serviceIds: string[];
+  lineItems: Array<{ label: string; amount: number }>;
+  total: number;
+  signedAt: string | null;
+  signatureDataUrl: string | null;
+  createdAt: string;
+  createdById: string;
+}
+
+export interface KnockChatMessage {
+  id: string;
+  channelId: string;
+  authorId: string;
+  body: string;
+  imageDataUrl: string | null;
+  sharedPinId: string | null;
+  createdAt: string;
+}
+
+export interface KnockRepLocation {
+  id: string;
+  employeeId: string;
+  lat: number;
+  lng: number;
+  accuracy: number | null;
+  recordedAt: string;
+}
+
 export interface KnockZone {
   id: string;
   name: string;
@@ -492,19 +589,31 @@ export interface KnockZone {
   centerLat: number;
   centerLng: number;
   createdAt: string;
+  /** Optional geofence polygon */
+  polygon?: Array<[number, number]> | null;
+  colorHex?: string;
 }
 
 export interface KnockEvent {
   id: string;
   zoneId: string;
+  territoryId?: string | null;
   knockerId: string;
   address: string;
+  addressKey?: string;
   outcome: CanvassOutcome;
   notes: string;
+  homeownerName?: string;
+  phone?: string;
+  email?: string;
+  tagIds?: string[];
   leadId: string | null;
   lat: number | null;
   lng: number | null;
+  visitedByIds?: string[];
+  activityLog?: KnockPinActivity[];
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface MaterialCost {
@@ -559,6 +668,15 @@ export interface AppData {
   canvassStops: CanvassStop[];
   zones: KnockZone[];
   knocks: KnockEvent[];
+  knockTerritories: KnockTerritory[];
+  knockTags: KnockTag[];
+  knockProducts: KnockProduct[];
+  knockServices: KnockService[];
+  knockTodos: KnockTodo[];
+  knockProposals: KnockProposal[];
+  knockChat: KnockChatMessage[];
+  knockRepLocations: KnockRepLocation[];
+  knockColorCodes: KnockColorCode[];
   materials: MaterialCost[];
   fuelLogs: FuelLog[];
   projections: SalesProjection[];

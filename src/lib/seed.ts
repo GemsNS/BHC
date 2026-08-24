@@ -1,4 +1,6 @@
 import type { AppData, EmployeeRole, JobType, WorkflowDefinition } from "./types";
+import { buildKnockerSeed } from "./knocker/seed-data";
+import { normalizeAddressKey } from "./knocker/geo";
 
 export function buildSeedData(): AppData {
   const now = new Date();
@@ -1067,6 +1069,8 @@ export function buildSeedData(): AppData {
     },
   ];
 
+  const knockerExtra = buildKnockerSeed(iso);
+
   return {
     employees,
     leads,
@@ -1075,7 +1079,23 @@ export function buildSeedData(): AppData {
     timeEntries,
     canvassStops,
     zones,
-    knocks,
+    knocks: knocks.map((k) => ({
+      ...k,
+      addressKey: normalizeAddressKey(k.address),
+      tagIds: k.id === "knock-1" ? ["tag-deck"] : [],
+      visitedByIds: [k.knockerId],
+      activityLog: [
+        {
+          id: `act-${k.id}`,
+          action: "knock_logged",
+          detail: `${k.outcome.replace(/_/g, " ")} at ${k.address}`,
+          authorId: k.knockerId,
+          createdAt: k.createdAt,
+        },
+      ],
+      updatedAt: k.createdAt,
+    })),
+    ...knockerExtra,
     materials,
     fuelLogs,
     projections,

@@ -29,6 +29,8 @@ export async function readStore(): Promise<AppData> {
       needsEmployeeMigration ||
       !parsed.zones ||
       !parsed.knocks ||
+      !parsed.knockTerritories ||
+      !parsed.knockTags ||
       !parsed.materials ||
       !parsed.fuelLogs ||
       !parsed.projections ||

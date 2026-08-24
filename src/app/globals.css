@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 :root {
   --ink: #1a1d21;
@@ -2697,3 +2698,88 @@
 .site-footer-links a:hover { color: var(--amber); }
 .site-footer-contact { margin: 0 0 0.25rem; font-size: 0.875rem; color: rgba(255,255,255,0.55); }
 .site-footer-copy { margin: 2rem auto 0; max-width: 72rem; padding: 0 1rem; font-size: 0.72rem; color: rgba(255,255,255,0.35); text-align: center; }
+
+/* —— Active Knocker command center —— */
+.mainframe-side-stack { display: flex; flex-direction: column; gap: 0; }
+.mainframe-ai-key-panel { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.mainframe-ai-key-panel .field-input { width: 100%; margin-top: 0.35rem; font-size: 0.62rem; }
+.mainframe-ai-key-actions { display: flex; gap: 0.35rem; margin-top: 0.5rem; }
+.mainframe-ai-key-saved { margin: 0.35rem 0 0; color: rgba(57,255,20,0.85); font-size: 0.58rem; }
+
+.knocker-admin-wrap .knocker-command { margin-top: -0.5rem; }
+.knocker-command {
+  background: #030303;
+  color: #e8e8e8;
+  font-family: var(--font-hud), monospace;
+  min-height: calc(100vh - 6rem);
+}
+.knocker-command.loading { padding: 2rem; text-align: center; }
+.knocker-command-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255,42,42,0.25);
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.knocker-command-eyebrow { margin: 0; font-size: 0.58rem; letter-spacing: 0.2em; color: rgba(255,42,42,0.85); }
+.knocker-command-head h1 { margin: 0.2rem 0 0; font-size: 1.15rem; font-weight: 400; letter-spacing: 0.12em; }
+.knocker-command-stats { display: flex; gap: 1rem; font-size: 0.62rem; letter-spacing: 0.08em; color: rgba(0,229,255,0.75); }
+.knocker-command-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  align-items: center;
+}
+.knocker-tabs { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.knocker-tabs button {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: transparent;
+  color: rgba(255,255,255,0.55);
+  font-family: inherit;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+  border-radius: 999px;
+}
+.knocker-tabs button.active { border-color: rgba(255,42,42,0.55); color: #ff2a2a; }
+.knocker-msg.banner { margin: 0.5rem 1rem; padding: 0.5rem; background: rgba(255,193,7,0.08); border: 1px solid rgba(255,193,7,0.25); font-size: 0.65rem; }
+.knocker-map-panel { display: grid; grid-template-columns: 1fr; gap: 0; }
+@media (min-width: 900px) { .knocker-map-panel { grid-template-columns: 1fr 10rem; } }
+.knocker-map-canvas { height: min(55vh, 520px); width: 100%; background: #0a0a0a; z-index: 0; }
+.knocker-map-loading { display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.45); }
+.knocker-map-tools { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.5rem 1rem; }
+.knocker-map-tools button {
+  border: 1px solid rgba(0,229,255,0.35);
+  background: rgba(0,229,255,0.08);
+  color: rgba(0,229,255,0.9);
+  font-family: inherit;
+  font-size: 0.58rem;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+}
+.knocker-map-tools button.active { background: rgba(255,42,42,0.15); border-color: rgba(255,42,42,0.55); color: #ff2a2a; }
+.knocker-legend { padding: 0.75rem; font-size: 0.55rem; display: grid; gap: 0.35rem; align-content: start; }
+.knocker-legend span { display: flex; align-items: center; gap: 0.35rem; }
+.knocker-legend i { width: 0.65rem; height: 0.65rem; border-radius: 50%; display: inline-block; }
+.knocker-split { display: grid; gap: 1rem; padding: 1rem; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .knocker-split { grid-template-columns: 1fr 1fr; } }
+.knocker-tag-row { display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.62rem; }
+.knocker-pin-list ul { list-style: none; margin: 0; padding: 0; font-size: 0.62rem; }
+.knocker-pin-list li { border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0.5rem 0; }
+.knocker-pin-list button { all: unset; cursor: pointer; display: flex; justify-content: space-between; width: 100%; gap: 0.5rem; }
+.knocker-visited { font-size: 0.55rem; color: rgba(255,193,7,0.85); }
+.knocker-route-panel, .knocker-tasks, .knocker-team, .knocker-stats-panel { padding: 1rem 1.25rem; font-size: 0.65rem; }
+.knocker-route-panel ol { padding-left: 1.2rem; }
+.knocker-nav-btns { display: flex; gap: 0.35rem; margin-top: 0.25rem; }
+.knocker-nav-btns a { color: rgba(0,229,255,0.85); text-decoration: none; border: 1px solid rgba(0,229,255,0.35); padding: 0.15rem 0.4rem; font-size: 0.55rem; }
+.knocker-analytics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 1rem 0; }
+.knocker-analytics-grid strong { display: block; font-size: 1.25rem; color: #ff2a2a; }
+.knocker-chat-log { list-style: none; padding: 0; max-height: 12rem; overflow-y: auto; }
+.knocker-chat-form { display: flex; gap: 0.35rem; margin-top: 0.5rem; }
+.knocker-hint { color: rgba(255,255,255,0.45); font-size: 0.58rem; }
+.knocker-cluster-tip { background: transparent !important; border: none !important; box-shadow: none !important; color: #fff !important; font-weight: 700; font-size: 0.65rem; }

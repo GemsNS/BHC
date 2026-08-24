@@ -1,5 +1,22 @@
-import type { AppData, Employee } from "./types";
+import type { AppData, Employee, KnockEvent } from "./types";
 import { buildSeedData } from "./seed";
+import { normalizeAddressKey } from "./knocker/geo";
+import { DEFAULT_KNOCK_COLORS } from "./knocker/colors";
+
+function normalizeKnock(k: KnockEvent): KnockEvent {
+  return {
+    ...k,
+    addressKey: k.addressKey ?? normalizeAddressKey(k.address),
+    tagIds: k.tagIds ?? [],
+    visitedByIds: k.visitedByIds ?? [k.knockerId],
+    activityLog: k.activityLog ?? [],
+    updatedAt: k.updatedAt ?? k.createdAt,
+    territoryId: k.territoryId ?? null,
+    homeownerName: k.homeownerName ?? "",
+    phone: k.phone ?? "",
+    email: k.email ?? "",
+  };
+}
 
 function withLoginFields(emp: Employee & { login?: string; pin?: string }): Employee {
   const login =
@@ -65,8 +82,21 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     })),
     timeEntries: raw.timeEntries ?? seed.timeEntries,
     canvassStops: raw.canvassStops ?? seed.canvassStops,
-    zones: raw.zones ?? seed.zones,
-    knocks: raw.knocks ?? seed.knocks,
+    zones: (raw.zones ?? seed.zones).map((z) => ({
+      ...z,
+      polygon: z.polygon ?? null,
+      colorHex: z.colorHex ?? "#ff2a2a",
+    })),
+    knocks: (raw.knocks ?? seed.knocks).map((k) => normalizeKnock(k as KnockEvent)),
+    knockTerritories: raw.knockTerritories ?? seed.knockTerritories,
+    knockTags: raw.knockTags ?? seed.knockTags,
+    knockProducts: raw.knockProducts ?? seed.knockProducts,
+    knockServices: raw.knockServices ?? seed.knockServices,
+    knockTodos: raw.knockTodos ?? seed.knockTodos,
+    knockProposals: raw.knockProposals ?? seed.knockProposals,
+    knockChat: raw.knockChat ?? seed.knockChat,
+    knockRepLocations: raw.knockRepLocations ?? seed.knockRepLocations,
+    knockColorCodes: raw.knockColorCodes ?? seed.knockColorCodes ?? DEFAULT_KNOCK_COLORS,
     materials: raw.materials ?? seed.materials,
     fuelLogs: raw.fuelLogs ?? seed.fuelLogs,
     projections: raw.projections ?? seed.projections,

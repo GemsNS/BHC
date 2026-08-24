@@ -5,8 +5,9 @@ import Link from "next/link";
 import type { ChatMessage } from "@/lib/mainframe-agent";
 import { sendMainframeMessage } from "@/lib/mainframe-client";
 import { fetchJson, loadAppData } from "@/lib/client-data";
-import { isStaticDemo } from "@/lib/paths";
+import { hasClientAiKey } from "@/lib/ai-client";
 import type { AIStatus } from "@/lib/ai-provider";
+import { isStaticDemo } from "@/lib/paths";
 import type { AssistantCriteriaProfile } from "@/lib/types";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -133,9 +134,9 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
                 aiStatus.configured ? "mainframe-ai-live" : "mainframe-ai-local",
               )}
             >
-              {aiStatus.configured
-                ? `${aiStatus.provider.toUpperCase()} · ${aiStatus.model ?? "AI"}`
-                : "LOCAL PARSER — add GEMINI_API_KEY in .env"}
+              {aiStatus.configured || hasClientAiKey()
+                ? `${hasClientAiKey() ? "BROWSER GEMINI" : aiStatus.provider.toUpperCase()} · ${aiStatus.model ?? "AI"}`
+                : "LOCAL PARSER — paste key in sidebar or set GEMINI_API_KEY"}
             </p>
           ) : null}
         </div>

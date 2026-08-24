@@ -12,12 +12,27 @@ import {
   loadAppData,
   saveAppData,
 } from "@/lib/client-data";
+import { getClientGeminiKey, runMainframeWithClientAi } from "@/lib/ai-client";
 import { isStaticDemo } from "@/lib/paths";
 
 export async function sendMainframeMessage(
   messages: ChatMessage[],
   authorId: string,
 ): Promise<ChatTurnResult> {
+  const clientKey = getClientGeminiKey();
+  if (clientKey) {
+    const data = await loadAppData();
+    const ai = await runMainframeWithClientAi(data, messages, {
+      authorId,
+      newId: clientNewId,
+      nowIso: clientNowIso,
+    });
+    if (ai) {
+      await saveAppData(data);
+      return ai;
+    }
+  }
+
   if (!isStaticDemo()) {
     try {
       return await fetchJson<ChatTurnResult>("/api/ai/chat", {
