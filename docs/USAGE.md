@@ -19,6 +19,7 @@
 | Field hub | `/apps` |
 | Schedule | `/admin/schedule` / `/apps/schedule` |
 | Markets | `/admin/markets` |
+| Tutorials (role paths) | `/admin/tutorials` · `/apps/tutorials` |
 
 ## Enable AI (full stack)
 

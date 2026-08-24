@@ -75,6 +75,15 @@ Persistent log of user preferences, decisions, and chat themes for future agents
 
 **Key files:** `src/lib/jarvis-briefing.ts`, `src/components/JarvisBar.tsx`, `src/components/JarvisDetailPanel.tsx`, `src/app/admin/dashboard/page.tsx`, `src/app/globals.css` (JARVIS + HUD blocks).
 
+### Tutorials walkthrough (2026-08-24)
+
+**User request:** Full tutorials page covering every aspect of the system with role-based access.
+
+**Shipped:**
+- `src/lib/tutorials.ts` — modules + ordered role paths for admin/manager/sales/knocker/field/office/driver
+- `/admin/tutorials` + `/apps/tutorials` — interactive guide with role preview, start-here path, search, permission cheat sheet
+- Nav: Administration → Tutorials (`board` so every role can open it); Field hub card
+
 ---
 
 ## Chat themes (for continuity)
