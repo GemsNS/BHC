@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/session";
 import { homeForRole, ROLE_LABELS } from "@/lib/types";
@@ -19,7 +19,7 @@ function safeNextPath(raw: string | null): string | null {
   return raw;
 }
 
-export default function LoginPage() {
+function LoginForm() {
   const { login, authenticated, homePath, loading } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -142,5 +142,21 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="login-shell">
+          <div className="login-panel">
+            <p className="login-sub">Loading sign-in…</p>
+          </div>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
