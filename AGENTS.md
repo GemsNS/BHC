@@ -14,8 +14,8 @@
 - Ops modules: tools in/out, inventory, damage reports, job progress (photos+notes), invoices vs full job reports.
 - **Schedule:** `/admin/schedule` (team week grid) · `/apps/schedule` (claim pool). API: `/api/shifts`.
 - **Sales hub:** `/admin/sales` — unified Pipeline, Client 360°, Automation, Support, Outreach tabs (replaces separate Leads/CRM/Workflows pages). Legacy URLs redirect automatically.
-- **JARVIS layer:** persistent intelligence bar + ⌘K command palette on every admin/field screen. GoDaddy email hooks into Automation tab later.
-- **HUD command deck:** `/admin/dashboard` — immersive neon ops viz (SALES / INSTALL / ADMIN / NET / MKT radial dock). Append `?classic=1` for the list-based ops wall.
+- **JARVIS layer:** live metric chips + expandable intelligence panel (breakdown, entities, actions) + ⌘K palette on admin/field screens. See `docs/AGENT_MEMORY.md`.
+- **HUD command deck:** `/admin/dashboard` — immersive neon ops viz (SALES / INSTALL / ADMIN / NET / MKT radial dock) plus a compact JARVIS strip above the dock. Append `?classic=1` for the list-based ops wall.
 - **Market terminal:** `/admin/markets` — Bloomberg-style ticker, competitor $/sqft grid, decision signals, Open-Meteo field weather; auto-refreshes every 30s. Uses terminal immersive chrome (no top bar / JARVIS bar); watchlist is a horizontal chip strip so it does not mirror the nav rail.
 - Static demo localStorage key: `bhc-crm-store-v8` (bump when `AppData` schema changes). **Do not** pass `withBasePath()` to Next.js `Link` or `router.push` — Next adds `basePath` automatically; use `withBasePath` for `fetch` only.
 - **Transfer docs:** `CLAUDE.md` + `docs/` (HANDOFF, ARCHITECTURE, API, DEPLOYMENT, USAGE, KNOCKER, AI).

@@ -12,6 +12,7 @@ import {
 } from "@/components/cc";
 import { RadialHud } from "@/components/command-deck/RadialHud";
 import { CommandCanvas } from "@/components/command-deck/CommandCanvas";
+import { JarvisBar } from "@/components/JarvisBar";
 import { loadAppData } from "@/lib/client-data";
 import type { DeckView } from "@/lib/command-deck";
 import type { AppData } from "@/lib/types";
@@ -80,6 +81,7 @@ export default function DashboardPage() {
         </Link>
       </header>
       <CommandCanvas view={view} data={data} />
+      <JarvisBar variant="hud" />
       <RadialHud active={view} onChange={setView} />
     </div>
   );
