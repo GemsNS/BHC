@@ -16,6 +16,7 @@ Operations CRM + field PWA for **BH Contracting Co.**: role-based login, Active 
 | [docs/USAGE.md](./docs/USAGE.md) | Login, knocker flow, calendar, AI keys |
 | [docs/KNOCKER.md](./docs/KNOCKER.md) | Map, GPS, proposals, push |
 | [docs/AI.md](./docs/AI.md) | Gemini / OpenAI / Mainframe |
+| [docs/AGENT_MEMORY.md](./docs/AGENT_MEMORY.md) | User prefs, chat log, agent continuity |
 
 ## Quick start
 
