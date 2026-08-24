@@ -3,6 +3,7 @@ import { buildSeedData } from "../src/lib/seed";
 import {
   buildJarvisInsights,
   buildJarvisSnapshot,
+  insightIdForDeckNode,
   jarvisContextFromPath,
 } from "../src/lib/jarvis-briefing";
 
@@ -35,6 +36,12 @@ describe("jarvis-briefing", () => {
     const insights = buildJarvisInsights(data, "field");
     const fieldCards = insights.filter((i) => i.category === "field");
     expect(fieldCards.length).toBeGreaterThan(0);
+  });
+
+  it("maps HUD graph nodes to briefing ids", () => {
+    expect(insightIdForDeckNode("root")).toBe("deals");
+    expect(insightIdForDeckNode("st-new")).toBe("new-leads");
+    expect(insightIdForDeckNode("st-qualified")).toBe("qualified");
   });
 
   it("builds overview snapshot used by the HUD deck strip", () => {

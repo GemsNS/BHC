@@ -9,6 +9,7 @@ import {
   buildJarvisSnapshot,
   jarvisContextFromPath,
   JARVIS_CATEGORY_LABELS,
+  JARVIS_FOCUS_EVENT,
   type JarvisInsight,
   type JarvisMetricChip,
   type JarvisTone,
@@ -108,16 +109,40 @@ export function JarvisBar({
     [insights.length],
   );
 
+  const selectInsight = useCallback(
+    (i: number) => {
+      setIndex(i);
+      setExpanded(true);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    function onFocusEvent(event: Event) {
+      const insightId = (event as CustomEvent<{ insightId?: string }>).detail?.insightId;
+      if (!insightId) return;
+      const i = insights.findIndex((item) => item.id === insightId);
+      if (i >= 0) selectInsight(i);
+    }
+    window.addEventListener(JARVIS_FOCUS_EVENT, onFocusEvent);
+    return () => window.removeEventListener(JARVIS_FOCUS_EVENT, onFocusEvent);
+  }, [insights, selectInsight]);
+
   const primaryHref =
     active?.primaryAction?.href ?? active?.href;
 
-  function selectInsight(i: number) {
-    setIndex(i);
-    setExpanded(true);
-  }
-
   function toggleExpanded() {
     setExpanded((open) => !open);
+  }
+
+  function onChipActivate(chip: JarvisMetricChip) {
+    if (chip.insightId) {
+      const i = insights.findIndex((item) => item.id === chip.insightId);
+      if (i >= 0) {
+        selectInsight(i);
+        return;
+      }
+    }
   }
 
   if (!active) return null;
@@ -133,6 +158,19 @@ export function JarvisBar({
                 <span className="jarvis-metric-label">{chip.label}</span>
               </>
             );
+            if (isHud) {
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  className={cn("jarvis-metric-chip", chip.tone && TONE_CLASS[chip.tone])}
+                  role="listitem"
+                  onClick={() => onChipActivate(chip)}
+                >
+                  {inner}
+                </button>
+              );
+            }
             return chip.href ? (
               <Link
                 key={chip.id}

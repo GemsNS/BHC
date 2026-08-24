@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { DeckEdge, DeckNode } from "@/lib/command-deck";
 import { DECK_TONE_STROKE } from "@/lib/command-deck";
+import { emitJarvisFocus, insightIdForDeckNode } from "@/lib/jarvis-briefing";
 
 function edgePath(from: DeckNode, to: DeckNode, curved: boolean): string {
   if (!curved) return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
@@ -41,6 +42,8 @@ export function DeckGraph({
     setFocusId((prev) => (prev === id ? null : id));
     setPulseId(id);
     window.setTimeout(() => setPulseId(null), 600);
+    const insightId = insightIdForDeckNode(id);
+    if (insightId) emitJarvisFocus(insightId);
   }, []);
 
   return (

@@ -51,6 +51,8 @@ export type JarvisMetricChip = {
   value: string;
   tone?: JarvisTone;
   href?: string;
+  /** Matching insight id — HUD chips expand this briefing */
+  insightId?: string;
 };
 
 export type JarvisSnapshot = {
@@ -122,6 +124,7 @@ export function buildJarvisSnapshot(
       value: formatCurrency(pipelineValue),
       tone: openDeals.length ? "success" : "neutral",
       href: "/admin/sales?tab=pipeline",
+      insightId: "deals",
     });
     const newLeads = countBy(data.leads, (l) => l.status === "new");
     if (newLeads > 0) {
@@ -131,6 +134,7 @@ export function buildJarvisSnapshot(
         value: String(newLeads),
         tone: "action",
         href: "/admin/sales?tab=pipeline",
+        insightId: "new-leads",
       });
     }
   }
@@ -142,6 +146,7 @@ export function buildJarvisSnapshot(
       value: String(todayKnocks),
       tone: todayKnocks > 0 ? "success" : "neutral",
       href: "/apps/knocker",
+      insightId: "knocks-today",
     });
     if (interestedToday > 0) {
       metrics.push({
@@ -150,6 +155,7 @@ export function buildJarvisSnapshot(
         value: String(interestedToday),
         tone: "action",
         href: "/apps/knocker",
+        insightId: "knocks-today",
       });
     }
   }
@@ -162,6 +168,7 @@ export function buildJarvisSnapshot(
         value: String(openPool),
         tone: "action",
         href: "/apps/schedule",
+        insightId: "shifts",
       });
     }
     if (clockedIn > 0) {
@@ -171,6 +178,7 @@ export function buildJarvisSnapshot(
         value: String(clockedIn),
         tone: "neutral",
         href: "/admin/hours",
+        insightId: "clocked",
       });
     }
   }
@@ -182,6 +190,7 @@ export function buildJarvisSnapshot(
       value: String(unread),
       tone: "warn",
       href: "/admin/dashboard",
+      insightId: "notifications",
     });
   }
 
@@ -195,6 +204,7 @@ export function buildJarvisSnapshot(
       value: String(overdueTodos),
       tone: "warn",
       href: "/apps/knocker",
+      insightId: "knocker-tasks",
     });
   }
 
@@ -791,3 +801,24 @@ export const JARVIS_CATEGORY_LABELS: Record<JarvisCategory, string> = {
   ai: "Mainframe",
   intel: "Intel",
 };
+
+export const JARVIS_FOCUS_EVENT = "bhc-jarvis-focus";
+
+export function emitJarvisFocus(insightId: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(JARVIS_FOCUS_EVENT, { detail: { insightId } }),
+  );
+}
+
+/** Map HUD graph node ids to a briefing card */
+export function insightIdForDeckNode(nodeId: string): string | null {
+  if (nodeId === "root" || nodeId === "sales") return "deals";
+  if (nodeId === "st-new" || nodeId.startsWith("lead-")) return "new-leads";
+  if (nodeId === "st-qualified") return "qualified";
+  if (nodeId === "canvass") return "knocks-today";
+  if (nodeId === "install") return "jobs";
+  if (nodeId === "admin") return "automations";
+  if (nodeId === "market" || nodeId === "mkt") return "market";
+  return null;
+}
