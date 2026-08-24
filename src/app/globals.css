@@ -1365,12 +1365,80 @@
   animation: jarvis-slide-down 240ms var(--ease-out);
 }
 
+.jarvis-stack-hud {
+  position: fixed;
+  left: 50%;
+  bottom: 9.6rem;
+  transform: translateX(-50%);
+  width: min(44rem, calc(100vw - 1.25rem));
+  margin: 0;
+  z-index: 32;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.4rem;
+  pointer-events: none;
+}
+
+.jarvis-stack-hud > * {
+  pointer-events: auto;
+}
+
+.jarvis-stack-hud .jarvis-metrics {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  justify-content: center;
+  scrollbar-width: none;
+}
+
+.jarvis-stack-hud .jarvis-metrics::-webkit-scrollbar {
+  display: none;
+}
+
+.jarvis-stack-hud .jarvis-metric-chip {
+  background: rgba(0, 0, 0, 0.72);
+  border-color: rgba(255, 42, 42, 0.28);
+  padding: 0.28rem 0.5rem;
+}
+
+.jarvis-stack-hud .jarvis-bar {
+  animation: none;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 42, 42, 0.45),
+    rgba(217, 119, 6, 0.35),
+    rgba(0, 229, 255, 0.25)
+  );
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+}
+
+.jarvis-stack-hud .jarvis-bar-inner {
+  padding: 0.45rem 0.7rem;
+  background: rgba(4, 4, 6, 0.92);
+}
+
+.jarvis-stack-hud .jarvis-bar-text {
+  font-size: 0.78rem;
+  min-height: 1.05rem;
+}
+
+.jarvis-stack-hud .jarvis-detail-panel {
+  background: rgba(4, 4, 6, 0.96);
+  border-color: rgba(255, 42, 42, 0.28);
+  max-height: min(42vh, 22rem);
+  overflow-y: auto;
+}
+
+.jarvis-stack-hud .jarvis-detail-enter {
+  animation: jarvis-slide-up 240ms var(--ease-out);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .jarvis-bar,
   .jarvis-orb,
   .jarvis-cursor,
   .jarvis-detail-enter,
-  .jarvis-tab-panel {
+  .jarvis-tab-panel,
+  .jarvis-stack-hud .jarvis-detail-enter {
     animation: none !important;
   }
 }
@@ -1614,6 +1682,10 @@
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes jarvis-slide-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 @media (min-width: 900px) {
   .jarvis-cmd-trigger { display: inline-flex; }
@@ -1761,7 +1833,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 1rem 11rem;
+  padding: 0 1rem 16.5rem;
   min-height: 0;
 }
 .hud-canvas-cta {

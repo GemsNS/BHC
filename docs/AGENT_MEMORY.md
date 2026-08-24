@@ -70,8 +70,9 @@ Persistent log of user preferences, decisions, and chat themes for future agents
 - Richer `buildJarvisInsights()` from full `AppData`: knocker todos, proposals, notifications, automations due, urgent tickets, pinned announcements.
 - Tone-colored orb + category chips; rotation pauses on hover/expand; typing only when collapsed.
 - CSS cleanup: removed duplicate rules, dropped global `.jarvis-content > *` fade, slower border gradient, `prefers-reduced-motion` support.
+- **HUD deck strip:** compact `JarvisBar variant="hud"` sits above the radial dock on `/admin/dashboard` (expand panel grows upward; no typewriter).
 
-**Key files:** `src/lib/jarvis-briefing.ts`, `src/components/JarvisBar.tsx`, `src/components/JarvisDetailPanel.tsx`, `src/app/globals.css` (JARVIS block).
+**Key files:** `src/lib/jarvis-briefing.ts`, `src/components/JarvisBar.tsx`, `src/components/JarvisDetailPanel.tsx`, `src/app/admin/dashboard/page.tsx`, `src/app/globals.css` (JARVIS + HUD blocks).
 
 ---
 

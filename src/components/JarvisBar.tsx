@@ -37,7 +37,11 @@ function refreshData(
   });
 }
 
-export function JarvisBar() {
+export function JarvisBar({
+  variant = "default",
+}: {
+  variant?: "default" | "hud";
+}) {
   const pathname = usePathname();
   const [insights, setInsights] = useState<JarvisInsight[]>([]);
   const [metrics, setMetrics] = useState<JarvisMetricChip[]>([]);
@@ -46,6 +50,7 @@ export function JarvisBar() {
   const [paused, setPaused] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
+  const isHud = variant === "hud";
   const context = jarvisContextFromPath(pathname);
 
   useEffect(() => {
@@ -67,7 +72,7 @@ export function JarvisBar() {
   const active = insights[index % Math.max(insights.length, 1)];
 
   useEffect(() => {
-    if (!active || expanded) {
+    if (!active || expanded || isHud) {
       setTyping(active?.text ?? "");
       return;
     }
@@ -80,7 +85,7 @@ export function JarvisBar() {
       if (i >= text.length) window.clearInterval(timer);
     }, 14);
     return () => window.clearInterval(timer);
-  }, [active, expanded]);
+  }, [active, expanded, isHud]);
 
   useEffect(() => {
     if (insights.length <= 1 || paused || expanded) return;
@@ -118,7 +123,7 @@ export function JarvisBar() {
   if (!active) return null;
 
   return (
-    <div className="jarvis-stack">
+    <div className={cn("jarvis-stack", isHud && "jarvis-stack-hud")}>
       {metrics.length > 0 ? (
         <div className="jarvis-metrics" role="list" aria-label="Live metrics">
           {metrics.map((chip) => {
