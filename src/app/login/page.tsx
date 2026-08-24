@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/session";
 import { homeForRole, ROLE_LABELS } from "@/lib/types";
 
@@ -13,15 +13,23 @@ const DEMO_ACCOUNTS = [
   { login: "riley", pin: "1005", role: "Driver" },
 ];
 
+function safeNextPath(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+  return raw;
+}
+
 export default function LoginPage() {
   const { login, authenticated, homePath, loading } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = safeNextPath(searchParams.get("next"));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && authenticated) router.replace(homePath);
-  }, [loading, authenticated, homePath, router]);
+    if (!loading && authenticated) router.replace(nextPath || homePath);
+  }, [loading, authenticated, homePath, nextPath, router]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -38,13 +46,17 @@ export default function LoginPage() {
     }
     const { loadAppData } = await import("@/lib/client-data");
     const data = await loadAppData();
-    const normalized = loginName.trim().toLowerCase();
+    const normalized =
+      loginName.trim().toLowerCase() === "jordan"
+        ? "cameron"
+        : loginName.trim().toLowerCase();
     const emp = data.employees.find(
       (x) =>
         x.login.toLowerCase() === normalized ||
-        x.email.toLowerCase() === normalized,
+        x.email.toLowerCase() === normalized ||
+        (normalized === "cameron" && x.id === "emp-admin"),
     );
-    router.replace(emp ? homeForRole(emp.role) : "/apps");
+    router.replace(nextPath || (emp ? homeForRole(emp.role) : "/apps"));
   }
 
   function fillDemo(loginName: string, pin: string) {

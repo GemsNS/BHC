@@ -55,13 +55,18 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (loginName: string, pin: string) => {
-      const normalized = loginName.trim().toLowerCase();
+      // Legacy demo alias after admin rename jordan → cameron
+      const normalized =
+        loginName.trim().toLowerCase() === "jordan"
+          ? "cameron"
+          : loginName.trim().toLowerCase();
       const data = await loadAppData();
       const match = data.employees.find(
         (e) =>
           e.active &&
           (e.login.toLowerCase() === normalized ||
-            e.email.toLowerCase() === normalized) &&
+            e.email.toLowerCase() === normalized ||
+            (normalized === "cameron" && e.id === "emp-admin")) &&
           e.pin === pin,
       );
       if (!match) {

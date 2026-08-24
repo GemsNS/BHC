@@ -5,18 +5,24 @@ import { normalizeStore } from "./normalize";
 import { isStaticDemo, withBasePath } from "./paths";
 import type { AppData } from "./types";
 
-const STORAGE_KEY = "bhc-crm-store-v5";
-const LEGACY_STORAGE_KEY = "bhc-crm-store-v4";
+/** Bump when seed credentials/schema must replace stale browser demos */
+const STORAGE_KEY = "bhc-crm-store-v6";
+const LEGACY_STORAGE_KEYS = ["bhc-crm-store-v5", "bhc-crm-store-v4"] as const;
 
 function readLocal(): AppData {
   if (typeof window === "undefined") return buildSeedData();
   try {
     let raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
-      if (legacy) {
-        localStorage.setItem(STORAGE_KEY, legacy);
-        raw = legacy;
+      for (const key of LEGACY_STORAGE_KEYS) {
+        const legacy = localStorage.getItem(key);
+        if (legacy) {
+          // Migrate through normalize (jordan→cameron, etc.) then persist on v6 key
+          const migrated = normalizeStore(JSON.parse(legacy) as Partial<AppData>);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+          raw = JSON.stringify(migrated);
+          break;
+        }
       }
     }
     if (!raw) {
@@ -24,7 +30,9 @@ function readLocal(): AppData {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
       return seed;
     }
-    return normalizeStore(JSON.parse(raw) as Partial<AppData>);
+    const normalized = normalizeStore(JSON.parse(raw) as Partial<AppData>);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    return normalized;
   } catch {
     const seed = buildSeedData();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
