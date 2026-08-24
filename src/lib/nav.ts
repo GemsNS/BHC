@@ -81,6 +81,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     id: "system",
     label: "Administration",
     items: [
+      { href: "/admin/tutorials", label: "Tutorials", short: "Help", perm: "board" },
       { href: "/admin/users", label: "Users", short: "Users", perm: "users" },
     ],
   },
