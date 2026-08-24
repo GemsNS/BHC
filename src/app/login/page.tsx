@@ -134,12 +134,10 @@ function LoginForm() {
         </div>
       </div>
       <div className="login-visual" aria-hidden>
-        <div className="login-visual-inner">
-          <p className="login-visual-brand">BH</p>
-          <p className="login-visual-tag">
-            Contracting ops — knocks to closeout.
-          </p>
-        </div>
+        <p className="login-visual-brand">BH</p>
+        <p className="login-visual-tag">
+          Contracting ops — knocks to closeout.
+        </p>
       </div>
     </div>
   );
