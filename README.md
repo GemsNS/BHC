@@ -1,6 +1,21 @@
 # BH Contracting Co. — All-in-One CRM
 
-Operations CRM + web-hosted field apps for **BH Contracting Co.** (subcontracting): role-based login, announcements, knocker zones, jobs, materials, fuel, fleet, hours, and stats.
+Operations CRM + field PWA for **BH Contracting Co.**: role-based login, Active Knocker, jobs, fleet, AI Mainframe, and a public marketing site.
+
+**Successor / Claude transfer:** start at [`CLAUDE.md`](./CLAUDE.md) then [`docs/HANDOFF.md`](./docs/HANDOFF.md).
+
+## Documentation index
+
+| Doc | Contents |
+|-----|----------|
+| [CLAUDE.md](./CLAUDE.md) | Agent briefing, non-negotiables |
+| [docs/HANDOFF.md](./docs/HANDOFF.md) | Transfer of development + backlog |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Stack, store, auth, GPS, AI |
+| [docs/API.md](./docs/API.md) | REST, webhooks, CLI |
+| [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Local, Pages, Node host, env |
+| [docs/USAGE.md](./docs/USAGE.md) | Login, knocker flow, calendar, AI keys |
+| [docs/KNOCKER.md](./docs/KNOCKER.md) | Map, GPS, proposals, push |
+| [docs/AI.md](./docs/AI.md) | Gemini / OpenAI / Mainframe |
 
 ## Quick start
 
@@ -9,7 +24,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — you land on the **login** page.
+Open [http://localhost:3000](http://localhost:3000) → **login**.
 
 ### Demo accounts
 
@@ -20,16 +35,14 @@ Open [http://localhost:3000](http://localhost:3000) — you land on the **login*
 | Field | `sam` | `1003` |
 | Driver | `riley` | `1005` |
 
-Roles only unlock the sections they are allowed to see (admin sidebar / field apps tabs).
-
 | Surface | URL |
 | --- | --- |
 | Login | `/login` |
-| Admin | `/admin/dashboard` |
-| Announcements | `/admin/board` or `/apps/board` |
-| Field apps hub | `/apps` |
-| Knocker app | `/apps/knocker` |
-| Time clock | `/apps/clock` or `/portal` |
+| Admin deck | `/admin/dashboard` |
+| Mainframe AI | `/admin/assistant` |
+| Active Knocker | `/admin/knocker` · `/apps/knocker` |
+| Field hub | `/apps` |
+| Public site | `/` |
 
 ## Scripts
 
@@ -37,49 +50,30 @@ Roles only unlock the sections they are allowed to see (admin sidebar / field ap
 | --- | --- |
 | `npm run dev` | Dev server `0.0.0.0:3000` |
 | `npm run lint` / `npm test` / `npm run build` | Quality checks |
-| `npm run bhc -- <cmd>` | CLI — `ai status`, `ai chat`, `ai summarize`, `store summary`, `automations list` |
-| `npm run build:gh-pages` | Static demo export to `./out` |
-| `npm run deploy:gh-pages` | Build + publish `gh-pages` branch |
+| `npm run bhc -- <cmd>` | CLI — AI, store, automations |
+| `npm run build:gh-pages` | Static demo → `./out` |
+| `npm run deploy:gh-pages` | Publish `gh-pages` |
 
-## GitHub Pages demo
+## GitHub Pages
 
 ```bash
 npm run deploy:gh-pages
 ```
 
-Repo: [GemsNS/BHC](https://github.com/GemsNS/BHC)
-
-Demo URL (after first deploy + Pages enabled on `gh-pages`):  
-https://gemsns.github.io/BHC/
-
-Static demo uses **localStorage** (no server APIs). Full local/cloud mode uses `data/store.json` + `/api/*`.
+https://gemsns.github.io/BHC/ — localStorage demo (no server APIs). Full AI/webhooks need Node (`npm start`) plus `.env`.
 
 ## Modules
 
-- **Login & roles** — employee login/PIN; permission-gated nav
-- **Tools in/out** — yard asset checkout to crew/jobs
-- **Inventory** — stock levels, issue/receive, optional job material log
-- **Damage reports** — tool/vehicle/site damage with photos
-- **Job progress** — notes + photo uploads + AI summarize (Gemini or OpenAI when configured)
-- **Mainframe AI** — `/admin/assistant` — natural-language CRM commands, automations panel, audit log
-- **Invoices / job reports** — invoice vs full report with progress media
-- **Schedule & shift pool** — team calendar, open pool, overtime (`/admin/schedule`, `/apps/schedule`)
-- **Sales hub** — Pipeline, Client 360°, Automation, Support, Outreach in one place (`/admin/sales`)
-- **JARVIS intelligence layer** — contextual briefing bar + ⌘K command palette on every screen
-- **Announcements** — company message board with optional role audiences
-- **Knocker** — zone assignment, door logs, GPS stamp, lead creation
-- **Jobs / materials / fuel / fleet** — subcontract cost visibility
-- **Statistics & projections** — knocks, spend, pipeline, monthly targets
-
-## Responsive UI
-
-- **Desktop (≥900px):** admin left sidebar; apps top tabs + wider content
-- **Mobile:** admin horizontal section pills; apps bottom tab bar
+- **Login & roles** — PIN auth, permission-gated nav
+- **Active Knocker** — map turfs, GPS, color pins, calendar, proposals + signatures, webhooks
+- **Mainframe AI** — Gemini/OpenAI/local CRM assistant
+- **Job progress** — photos + AI summarize
+- **Invoices / job reports**
+- **Schedule & shift pool**
+- **Sales hub** — pipeline, 360, automation, outreach
+- **JARVIS** — briefing bar + ⌘K
+- **Public site** — BH-branded Seaside port
 
 ## Data
 
-Auto-seeded on first read. Reset:
-
-```bash
-curl -X POST http://localhost:3000/api/seed
-```
+JSON store `data/store.json` (gitignored). Reset: `POST /api/seed`. Browser demos use `bhc-crm-store-v8`.

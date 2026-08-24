@@ -4,11 +4,17 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSession } from "@/lib/session";
 import {
+  completeKnockTodo,
+  createCalendarEvent,
   createKnockPin,
+  createKnockProposal,
+  createKnockTodo,
   createTerritory,
   loadKnockerData,
   pingRepLocation,
   postKnockChat,
+  saveGpsConfigClient,
+  signKnockProposal,
   type KnockerPayload,
 } from "@/lib/knocker/client";
 import { buildKnockerLeaderboard } from "@/lib/knocker/ops";
@@ -17,6 +23,14 @@ import { navigationUrl, optimizeRoute } from "@/lib/knocker/route";
 import type { CanvassOutcome, KnockEvent } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { LatLng } from "@/lib/knocker/geo";
+import { SignaturePad } from "@/components/knocker/SignaturePad";
+import { buildIcs, downloadIcs, googleCalendarUrl } from "@/lib/calendar";
+import {
+  requestBrowserNotificationPermission,
+  showBrowserNotification,
+} from "@/lib/notifications";
+import { DEFAULT_GPS_CONFIG, loadGpsConfig, saveGpsConfig, startGpsTracker } from "@/lib/gps-tracker";
+import type { GpsTrackingConfig, KnockProposal } from "@/lib/types";
 
 const KnockerMap = dynamic(
   () => import("@/components/knocker/KnockerMap").then((m) => m.KnockerMap),
@@ -34,7 +48,7 @@ const OUTCOMES: CanvassOutcome[] = [
   "do_not_knock",
 ];
 
-type Tab = "map" | "pin" | "route" | "tasks" | "team" | "stats";
+type Tab = "map" | "pin" | "route" | "tasks" | "propose" | "team" | "stats";
 
 export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
   const { user, can } = useSession();
@@ -50,6 +64,15 @@ export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
   const [chatInput, setChatInput] = useState("");
   const [placePinMode, setPlacePinMode] = useState(false);
   const [pendingPinLoc, setPendingPinLoc] = useState<LatLng | null>(null);
+  const [gpsCfg, setGpsCfg] = useState(DEFAULT_GPS_CONFIG);
+  const [notifyPerm, setNotifyPerm] = useState("default");
+  const [productIds, setProductIds] = useState<string[]>([]);
+  const [serviceIds, setServiceIds] = useState<string[]>([]);
+  const [signerName, setSignerName] = useState("");
+  const [signature, setSignature] = useState<string | null>(null);
+  const [activeProposal, setActiveProposal] = useState<KnockProposal | null>(null);
+  const [todoTitle, setTodoTitle] = useState("");
+  const [todoDue, setTodoDue] = useState("");
 
   const refresh = useCallback(async () => {
     const payload = await loadKnockerData();
@@ -58,31 +81,40 @@ export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
   }, [zoneId]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (!data) return;
+    const timer = window.setInterval(() => {
+      const now = Date.now();
+      for (const t of data.knockTodos) {
+        if (t.completedAt || !t.dueAt || t.reminderSentAt) continue;
+        const due = new Date(t.dueAt).getTime();
+        if (due <= now + 15 * 60_000 && due >= now - 60_000) {
+          showBrowserNotification("Knocker reminder", t.title, "/apps/knocker");
+          navigator.serviceWorker?.controller?.postMessage({
+            type: "notify",
+            title: "Knocker reminder",
+            body: t.title,
+            href: "/apps/knocker",
+          });
+        }
+      }
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, [data]);
 
   useEffect(() => {
-    if (!navigator.geolocation) return;
-    let last: LatLng | null = null;
-    const watch = navigator.geolocation.watchPosition(
-      (pos) => {
-        const pt = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setCoords(pt);
-        if (user?.id) {
-          const moved =
-            !last ||
-            Math.hypot(pt.lat - last.lat, pt.lng - last.lng) > 0.00025;
-          if (moved) {
-            last = pt;
-            void pingRepLocation(user.id, pt.lat, pt.lng);
-          }
-        }
-      },
-      () => setCoords(null),
-      { enableHighAccuracy: false, maximumAge: 15000, timeout: 10000 },
-    );
-    return () => navigator.geolocation.clearWatch(watch);
-  }, [user?.id]);
+    const cfg = loadGpsConfig();
+    setGpsCfg(cfg);
+    if (typeof Notification !== "undefined") setNotifyPerm(Notification.permission);
+  }, []);
+
+  useEffect(() => {
+    if (!gpsCfg) return;
+    const tracker = startGpsTracker(gpsCfg, (pt) => {
+      setCoords({ lat: pt.lat, lng: pt.lng });
+      if (user?.id) void pingRepLocation(user.id, pt.lat, pt.lng);
+    });
+    return () => tracker?.stop();
+  }, [user?.id, gpsCfg]);
 
   const myZones = useMemo(() => {
     if (!data || !user) return [];
@@ -230,6 +262,7 @@ export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
               ["pin", "Pin"],
               ["route", "Route"],
               ["tasks", "Tasks"],
+              ["propose", "Propose"],
               ["team", "Team"],
               ["stats", "Stats"],
             ] as const
@@ -405,16 +438,230 @@ export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
 
       {tab === "tasks" ? (
         <div className="knocker-tasks">
-          <h2>Pin-linked to-dos</h2>
+          <h2>Pin-linked to-dos + calendar</h2>
+          <form
+            className="knocker-form"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!user || !todoTitle.trim()) return;
+              const todo = await createKnockTodo({
+                pinId: selectedPin?.id ?? null,
+                title: todoTitle.trim(),
+                dueAt: todoDue ? new Date(todoDue).toISOString() : null,
+                assignedToId: user.id,
+                priority: "high",
+              });
+              if (todo.dueAt) {
+                await createCalendarEvent({
+                  title: todo.title,
+                  startAt: todo.dueAt,
+                  location: selectedPin?.address,
+                  pinId: selectedPin?.id,
+                  todoId: todo.id,
+                  employeeId: user.id,
+                });
+              }
+              setTodoTitle("");
+              setTodoDue("");
+              setMessage("Task saved — add to Google Calendar from the list.");
+              await refresh();
+            }}
+          >
+            <input
+              className="field-input"
+              placeholder="Follow-up title"
+              value={todoTitle}
+              onChange={(e) => setTodoTitle(e.target.value)}
+            />
+            <input
+              className="field-input"
+              type="datetime-local"
+              value={todoDue}
+              onChange={(e) => setTodoDue(e.target.value)}
+            />
+            <button type="submit" className="btn-primary">Add task</button>
+          </form>
+          <p className="knocker-hint">
+            Notifications: {notifyPerm}
+            <button
+              type="button"
+              className="knocker-inline-btn"
+              onClick={async () => {
+                const perm = await requestBrowserNotificationPermission();
+                setNotifyPerm(perm);
+                if (perm === "granted") {
+                  showBrowserNotification("BHC Knocker", "Reminders armed for due tasks.");
+                }
+              }}
+            >
+              Enable push
+            </button>
+          </p>
           <ul>
-            {data.knockTodos.map((t) => (
-              <li key={t.id} className={t.completedAt ? "done" : ""}>
-                <strong>{t.title}</strong>
-                <p>{t.body}</p>
-                {t.dueAt ? <span>Due {new Date(t.dueAt).toLocaleString()}</span> : null}
-              </li>
-            ))}
+            {data.knockTodos.map((t) => {
+              const ev = data.knockCalendarEvents.find((c) => c.id === t.calendarEventId) ??
+                data.knockCalendarEvents.find((c) => c.todoId === t.id);
+              return (
+                <li key={t.id} className={t.completedAt ? "done" : ""}>
+                  <strong>{t.title}</strong>
+                  <p>{t.body}</p>
+                  {t.dueAt ? <span>Due {new Date(t.dueAt).toLocaleString()}</span> : null}
+                  <div className="knocker-nav-btns">
+                    {!t.completedAt ? (
+                      <button type="button" onClick={async () => { await completeKnockTodo(t.id); await refresh(); }}>
+                        Complete
+                      </button>
+                    ) : null}
+                    {ev ? (
+                      <>
+                        <a href={googleCalendarUrl({
+                          uid: ev.icsUid,
+                          title: ev.title,
+                          description: ev.description,
+                          location: ev.location,
+                          startAt: ev.startAt,
+                          endAt: ev.endAt,
+                        })} target="_blank" rel="noreferrer">Google</a>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            downloadIcs(
+                              ev.title,
+                              buildIcs({
+                                uid: ev.icsUid,
+                                title: ev.title,
+                                description: ev.description,
+                                location: ev.location,
+                                startAt: ev.startAt,
+                                endAt: ev.endAt,
+                              }),
+                            )
+                          }
+                        >
+                          .ics
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
+        </div>
+      ) : null}
+
+      {tab === "propose" ? (
+        <div className="knocker-propose">
+          <h2>On-site proposal + sign-off</h2>
+          <p className="knocker-hint">
+            Pin: {selectedPin?.address ?? "select a pin on Map/Pin first"}
+          </p>
+          <fieldset>
+            <legend>Products</legend>
+            {data.knockProducts.map((p) => (
+              <label key={p.id} className="board-pin">
+                <input
+                  type="checkbox"
+                  checked={productIds.includes(p.id)}
+                  onChange={(e) =>
+                    setProductIds((ids) =>
+                      e.target.checked ? [...ids, p.id] : ids.filter((x) => x !== p.id),
+                    )
+                  }
+                />
+                {p.name} (${p.unitPrice.toLocaleString()})
+              </label>
+            ))}
+          </fieldset>
+          <fieldset>
+            <legend>Services</legend>
+            {data.knockServices.map((s) => (
+              <label key={s.id} className="board-pin">
+                <input
+                  type="checkbox"
+                  checked={serviceIds.includes(s.id)}
+                  onChange={(e) =>
+                    setServiceIds((ids) =>
+                      e.target.checked ? [...ids, s.id] : ids.filter((x) => x !== s.id),
+                    )
+                  }
+                />
+                {s.name} (${s.basePrice.toLocaleString()})
+              </label>
+            ))}
+          </fieldset>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={!selectedPin || !user}
+            onClick={async () => {
+              if (!selectedPin || !user) return;
+              const p = await createKnockProposal({
+                pinId: selectedPin.id,
+                createdById: user.id,
+                productIds,
+                serviceIds,
+              });
+              setActiveProposal(p);
+              setMessage(`Draft proposal ${p.id.slice(0, 8)} · $${p.total.toLocaleString()}`);
+              await refresh();
+            }}
+          >
+            Build proposal
+          </button>
+          {(activeProposal ?? data.knockProposals[0]) ? (
+            <div className="knocker-proposal-card">
+              {(() => {
+                const p = activeProposal ?? data.knockProposals[0];
+                return (
+                  <>
+                    <h3>Proposal {p.status.toUpperCase()} · ${p.total.toLocaleString()}</h3>
+                    <ul>
+                      {p.lineItems.map((l) => (
+                        <li key={l.label}>{l.label} — ${l.amount.toLocaleString()}</li>
+                      ))}
+                    </ul>
+                    {p.status !== "signed" ? (
+                      <>
+                        <input
+                          className="field-input"
+                          placeholder="Signer legal name"
+                          value={signerName}
+                          onChange={(e) => setSignerName(e.target.value)}
+                        />
+                        <SignaturePad onChange={setSignature} />
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          disabled={!signerName || !signature}
+                          onClick={async () => {
+                            const signed = await signKnockProposal({
+                              proposalId: p.id,
+                              signerName,
+                              signatureDataUrl: signature!,
+                            });
+                            setActiveProposal(signed);
+                            setMessage(`Signed by ${signed.signerName}`);
+                            await refresh();
+                          }}
+                        >
+                          Capture sign-off
+                        </button>
+                      </>
+                    ) : (
+                      <div>
+                        <p>Signed by {p.signerName} at {p.signedAt ? new Date(p.signedAt).toLocaleString() : ""}</p>
+                        {p.signatureDataUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.signatureDataUrl} alt="Customer signature" className="signature-preview" />
+                        ) : null}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -485,8 +732,56 @@ export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
             ))}
           </ul>
           {!admin && !can("manage_zones") ? null : (
-            <p className="knocker-hint">Assign turfs on the Map tab · REST: POST /api/knocker</p>
+            <p className="knocker-hint">Assign turfs on the Map tab · REST: POST /api/knocker · Webhooks: /api/webhooks</p>
           )}
+          <h3>Background GPS (distanceFilter / desiredAccuracy)</h3>
+          <label className="field">
+            Distance filter (m)
+            <input
+              className="field-input"
+              type="number"
+              min={5}
+              max={500}
+              value={gpsCfg.distanceFilterMeters}
+              onChange={(e) => setGpsCfg({ ...gpsCfg, distanceFilterMeters: Number(e.target.value) })}
+            />
+          </label>
+          <label className="field">
+            Accuracy
+            <select
+              className="field-input"
+              value={gpsCfg.desiredAccuracy}
+              onChange={(e) =>
+                setGpsCfg({ ...gpsCfg, desiredAccuracy: e.target.value as GpsTrackingConfig["desiredAccuracy"] })
+              }
+            >
+              <option value="high">High (GPS)</option>
+              <option value="balanced">Balanced</option>
+              <option value="low">Low (battery)</option>
+            </select>
+          </label>
+          <label className="board-pin">
+            <input
+              type="checkbox"
+              checked={gpsCfg.wakeLock}
+              onChange={(e) => setGpsCfg({ ...gpsCfg, wakeLock: e.target.checked })}
+            />
+            Screen wake lock while canvassing
+          </label>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={async () => {
+              saveGpsConfig(gpsCfg);
+              await saveGpsConfigClient({
+                ...gpsCfg,
+                enabled: true,
+              });
+              setMessage("GPS profile saved — tracker restarts with new filters.");
+            }}
+          >
+            Save GPS profile
+          </button>
         </div>
       ) : null}
     </div>

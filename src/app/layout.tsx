@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Share_Tech_Mono, Barlow_Condensed, Source_Sans_3 } from "next/font/google";
 import { SessionProvider } from "@/lib/session";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
 const hud = Share_Tech_Mono({
@@ -40,7 +41,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${display.variable} ${body.variable} ${hud.variable} antialiased`}>
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <ServiceWorkerRegister />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );

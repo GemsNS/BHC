@@ -54,10 +54,12 @@ export function buildKnockerSeed(iso: (daysAgo: number, hour?: number) => string
       title: "Call back — deck pricing",
       body: "Homeowner asked for written estimate by Friday.",
       dueAt: iso(-2, 17),
-      priority: "high",
+      priority: "high" as const,
       assignedToId: "emp-knocker-1",
       completedAt: null,
       createdAt: iso(0, 13),
+      calendarEventId: "cal-1",
+      reminderSentAt: null,
     },
   ];
 
@@ -81,5 +83,31 @@ export function buildKnockerSeed(iso: (daysAgo: number, hour?: number) => string
     ],
     knockRepLocations: [],
     knockColorCodes: DEFAULT_KNOCK_COLORS,
+    knockCalendarEvents: [
+      {
+        id: "cal-1",
+        title: "Callback — 16 Harbor Lane",
+        startAt: iso(-2, 17),
+        endAt: iso(-2, 18),
+        location: "16 Harbor Lane, Seaside",
+        description: "Deck pricing follow-up",
+        pinId: "knock-1",
+        todoId: "todo-1",
+        employeeId: "emp-knocker-1",
+        icsUid: "cal-1@bhcontracting.co",
+        googleEventId: null,
+        createdAt: iso(0, 13),
+      },
+    ],
+    webhookEndpoints: [],
+    webhookDeliveries: [],
+    pushSubscriptions: [],
+    notifications: [],
+    gpsConfig: {
+      distanceFilterMeters: 25,
+      desiredAccuracy: "balanced" as const,
+      enabled: true,
+      wakeLock: true,
+    },
   };
 }

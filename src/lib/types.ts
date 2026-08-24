@@ -543,7 +543,11 @@ export interface KnockTodo {
   assignedToId: string | null;
   completedAt: string | null;
   createdAt: string;
+  calendarEventId?: string | null;
+  reminderSentAt?: string | null;
 }
+
+export type ProposalStatus = "draft" | "presented" | "signed" | "void";
 
 export interface KnockProposal {
   id: string;
@@ -552,10 +556,88 @@ export interface KnockProposal {
   serviceIds: string[];
   lineItems: Array<{ label: string; amount: number }>;
   total: number;
+  taxRate: number;
+  notes: string;
+  status: ProposalStatus;
   signedAt: string | null;
   signatureDataUrl: string | null;
+  signerName: string | null;
+  signerEmail: string | null;
+  appointmentAt: string | null;
   createdAt: string;
   createdById: string;
+}
+
+export interface KnockCalendarEvent {
+  id: string;
+  title: string;
+  startAt: string;
+  endAt: string;
+  location: string;
+  description: string;
+  pinId: string | null;
+  todoId: string | null;
+  employeeId: string;
+  icsUid: string;
+  googleEventId: string | null;
+  createdAt: string;
+}
+
+export type WebhookEventName =
+  | "pin.created"
+  | "pin.updated"
+  | "proposal.created"
+  | "proposal.signed"
+  | "todo.created"
+  | "todo.completed"
+  | "territory.created"
+  | "automation.ran";
+
+export interface WebhookEndpoint {
+  id: string;
+  name: string;
+  url: string;
+  secret: string;
+  events: WebhookEventName[];
+  enabled: boolean;
+  createdAt: string;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  endpointId: string;
+  event: WebhookEventName;
+  payload: Record<string, unknown>;
+  status: "pending" | "ok" | "failed";
+  attempts: number;
+  lastError: string | null;
+  createdAt: string;
+}
+
+export interface PushSubscriptionRecord {
+  id: string;
+  employeeId: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  createdAt: string;
+}
+
+export interface InAppNotification {
+  id: string;
+  employeeId: string | null;
+  title: string;
+  body: string;
+  href: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface GpsTrackingConfig {
+  distanceFilterMeters: number;
+  desiredAccuracy: "high" | "balanced" | "low";
+  enabled: boolean;
+  wakeLock: boolean;
 }
 
 export interface KnockChatMessage {
@@ -677,6 +759,12 @@ export interface AppData {
   knockChat: KnockChatMessage[];
   knockRepLocations: KnockRepLocation[];
   knockColorCodes: KnockColorCode[];
+  knockCalendarEvents: KnockCalendarEvent[];
+  webhookEndpoints: WebhookEndpoint[];
+  webhookDeliveries: WebhookDelivery[];
+  pushSubscriptions: PushSubscriptionRecord[];
+  notifications: InAppNotification[];
+  gpsConfig: GpsTrackingConfig;
   materials: MaterialCost[];
   fuelLogs: FuelLog[];
   projections: SalesProjection[];

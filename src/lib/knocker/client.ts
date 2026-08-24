@@ -15,7 +15,18 @@ import {
 } from "@/lib/knocker/ops";
 import { closePolygon, normalizeAddressKey, simplifyPath, type LatLng } from "@/lib/knocker/geo";
 import { onLeadCreated } from "@/lib/workflows";
-import type { AppData, CanvassOutcome, KnockEvent, Lead } from "@/lib/types";
+import type {
+  AppData,
+  CanvassOutcome,
+  GpsTrackingConfig,
+  KnockCalendarEvent,
+  KnockEvent,
+  KnockProposal,
+  KnockTodo,
+  Lead,
+} from "@/lib/types";
+import { computeProposalTotal, linesFromCatalog, signProposal } from "@/lib/proposals";
+import { defaultEndAt } from "@/lib/calendar";
 
 export type KnockerPayload = Pick<
   AppData,
@@ -31,6 +42,9 @@ export type KnockerPayload = Pick<
   | "knockRepLocations"
   | "knockColorCodes"
   | "employees"
+  | "knockCalendarEvents"
+  | "notifications"
+  | "gpsConfig"
 >;
 
 export async function loadKnockerData(): Promise<KnockerPayload> {
@@ -39,7 +53,29 @@ export async function loadKnockerData(): Promise<KnockerPayload> {
     return pickKnocker(d);
   }
   try {
-    return await fetchJson<KnockerPayload>("/api/knocker");
+    const raw = await fetchJson<Record<string, unknown>>("/api/knocker");
+    return {
+      zones: raw.zones as KnockerPayload["zones"],
+      knocks: raw.knocks as KnockerPayload["knocks"],
+      knockTerritories: (raw.territories ?? raw.knockTerritories) as KnockerPayload["knockTerritories"],
+      knockTags: (raw.tags ?? raw.knockTags) as KnockerPayload["knockTags"],
+      knockProducts: (raw.products ?? raw.knockProducts) as KnockerPayload["knockProducts"],
+      knockServices: (raw.services ?? raw.knockServices) as KnockerPayload["knockServices"],
+      knockTodos: (raw.todos ?? raw.knockTodos) as KnockerPayload["knockTodos"],
+      knockProposals: (raw.proposals ?? raw.knockProposals) as KnockerPayload["knockProposals"],
+      knockChat: (raw.chat ?? raw.knockChat) as KnockerPayload["knockChat"],
+      knockRepLocations: (raw.repLocations ?? raw.knockRepLocations) as KnockerPayload["knockRepLocations"],
+      knockColorCodes: (raw.colorCodes ?? raw.knockColorCodes) as KnockerPayload["knockColorCodes"],
+      employees: raw.employees as KnockerPayload["employees"],
+      knockCalendarEvents: (raw.calendarEvents ?? raw.knockCalendarEvents ?? []) as KnockerPayload["knockCalendarEvents"],
+      notifications: (raw.notifications ?? []) as KnockerPayload["notifications"],
+      gpsConfig: (raw.gpsConfig ?? {
+        distanceFilterMeters: 25,
+        desiredAccuracy: "balanced",
+        enabled: true,
+        wakeLock: true,
+      }) as KnockerPayload["gpsConfig"],
+    };
   } catch {
     return pickKnocker(await loadAppData());
   }
@@ -59,6 +95,9 @@ function pickKnocker(d: AppData): KnockerPayload {
     knockRepLocations: d.knockRepLocations,
     knockColorCodes: d.knockColorCodes,
     employees: d.employees,
+    knockCalendarEvents: d.knockCalendarEvents,
+    notifications: d.notifications,
+    gpsConfig: d.gpsConfig,
   };
 }
 
@@ -236,5 +275,185 @@ export async function postKnockChat(authorId: string, body: string) {
       sharedPinId: null,
       createdAt: clientNowIso(),
     });
+  });
+}
+
+export async function createKnockTodo(input: {
+  pinId?: string | null;
+  title: string;
+  body?: string;
+  dueAt?: string | null;
+  priority?: "low" | "medium" | "high";
+  assignedToId?: string | null;
+}): Promise<KnockTodo> {
+  if (!isStaticDemo()) {
+    const res = await fetchJson<{ todo: KnockTodo }>("/api/knocker", {
+      method: "POST",
+      body: JSON.stringify({ action: "create_todo", ...input }),
+    });
+    return res.todo;
+  }
+  const todo: KnockTodo = {
+    id: clientNewId(),
+    pinId: input.pinId ?? null,
+    title: input.title,
+    body: input.body ?? "",
+    dueAt: input.dueAt ?? null,
+    priority: input.priority ?? "medium",
+    assignedToId: input.assignedToId ?? null,
+    completedAt: null,
+    createdAt: clientNowIso(),
+    calendarEventId: null,
+    reminderSentAt: null,
+  };
+  await mutateAppData((data) => {
+    data.knockTodos.unshift(todo);
+  });
+  return todo;
+}
+
+export async function completeKnockTodo(id: string): Promise<void> {
+  if (!isStaticDemo()) {
+    await fetchJson("/api/knocker", {
+      method: "POST",
+      body: JSON.stringify({ action: "complete_todo", id }),
+    });
+    return;
+  }
+  await mutateAppData((data) => {
+    const t = data.knockTodos.find((x) => x.id === id);
+    if (t) t.completedAt = clientNowIso();
+  });
+}
+
+export async function createKnockProposal(input: {
+  pinId: string;
+  createdById: string;
+  productIds: string[];
+  serviceIds: string[];
+  extras?: Array<{ label: string; amount: number }>;
+  taxRate?: number;
+  notes?: string;
+  appointmentAt?: string | null;
+}): Promise<KnockProposal> {
+  if (!isStaticDemo()) {
+    const res = await fetchJson<{ proposal: KnockProposal }>("/api/knocker", {
+      method: "POST",
+      body: JSON.stringify({ action: "create_proposal", ...input }),
+    });
+    return res.proposal;
+  }
+  let proposal: KnockProposal | null = null;
+  await mutateAppData((data) => {
+    const lineItems = linesFromCatalog(
+      data.knockProducts,
+      data.knockServices,
+      input.productIds,
+      input.serviceIds,
+      input.extras,
+    );
+    const taxRate = input.taxRate ?? 0;
+    proposal = {
+      id: clientNewId(),
+      pinId: input.pinId,
+      productIds: input.productIds,
+      serviceIds: input.serviceIds,
+      lineItems,
+      total: computeProposalTotal(lineItems, taxRate),
+      taxRate,
+      notes: input.notes ?? "",
+      status: "draft",
+      signedAt: null,
+      signatureDataUrl: null,
+      signerName: null,
+      signerEmail: null,
+      appointmentAt: input.appointmentAt ?? null,
+      createdAt: clientNowIso(),
+      createdById: input.createdById,
+    };
+    data.knockProposals.unshift(proposal);
+  });
+  return proposal!;
+}
+
+export async function signKnockProposal(input: {
+  proposalId: string;
+  signerName: string;
+  signerEmail?: string;
+  signatureDataUrl: string;
+}): Promise<KnockProposal> {
+  if (!isStaticDemo()) {
+    const res = await fetchJson<{ proposal: KnockProposal }>("/api/knocker", {
+      method: "POST",
+      body: JSON.stringify({ action: "sign_proposal", ...input }),
+    });
+    return res.proposal;
+  }
+  let signed: KnockProposal | null = null;
+  await mutateAppData((data) => {
+    const p = data.knockProposals.find((x) => x.id === input.proposalId);
+    if (!p) return;
+    Object.assign(
+      p,
+      signProposal(p, {
+        signerName: input.signerName,
+        signerEmail: input.signerEmail,
+        signatureDataUrl: input.signatureDataUrl,
+        nowIso: clientNowIso(),
+      }),
+    );
+    signed = p;
+  });
+  if (!signed) throw new Error("Proposal not found");
+  return signed;
+}
+
+export async function createCalendarEvent(input: {
+  title: string;
+  startAt: string;
+  endAt?: string;
+  location?: string;
+  description?: string;
+  pinId?: string | null;
+  todoId?: string | null;
+  employeeId: string;
+}): Promise<KnockCalendarEvent> {
+  if (!isStaticDemo()) {
+    const res = await fetchJson<{ event: KnockCalendarEvent }>("/api/knocker", {
+      method: "POST",
+      body: JSON.stringify({ action: "create_calendar", ...input }),
+    });
+    return res.event;
+  }
+  const ev: KnockCalendarEvent = {
+    id: clientNewId(),
+    title: input.title,
+    startAt: input.startAt,
+    endAt: input.endAt ?? defaultEndAt(input.startAt),
+    location: input.location ?? "",
+    description: input.description ?? "",
+    pinId: input.pinId ?? null,
+    todoId: input.todoId ?? null,
+    employeeId: input.employeeId,
+    icsUid: `${clientNewId()}@bhcontracting.co`,
+    googleEventId: null,
+    createdAt: clientNowIso(),
+  };
+  await mutateAppData((data) => {
+    data.knockCalendarEvents.unshift(ev);
+  });
+  return ev;
+}
+
+export async function saveGpsConfigClient(cfg: GpsTrackingConfig): Promise<void> {
+  if (!isStaticDemo()) {
+    await fetchJson("/api/knocker", {
+      method: "POST",
+      body: JSON.stringify({ action: "save_gps", ...cfg }),
+    });
+    return;
+  }
+  await mutateAppData((data) => {
+    data.gpsConfig = cfg;
   });
 }

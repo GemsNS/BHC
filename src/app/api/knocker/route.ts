@@ -3,8 +3,12 @@ import { z } from "zod";
 import { bindPinsToTerritory, findDuplicateKnock, appendPinActivity } from "@/lib/knocker/ops";
 import { closePolygon, simplifyPath } from "@/lib/knocker/geo";
 import { onLeadCreated } from "@/lib/workflows";
-import { newId, nowIso, readStore, updateStore } from "@/lib/store";
-import type { KnockEvent, KnockTerritory, Lead } from "@/lib/types";
+import { dispatchWebhooks } from "@/lib/webhooks";
+import { computeProposalTotal, linesFromCatalog, signProposal } from "@/lib/proposals";
+import { defaultEndAt } from "@/lib/calendar";
+import { enqueueNotification } from "@/lib/notifications";
+import { newId, nowIso, readStore, updateStore, writeStore } from "@/lib/store";
+import type { KnockEvent, KnockProposal, KnockTerritory, Lead } from "@/lib/types";
 import { normalizeAddressKey } from "@/lib/knocker/geo";
 
 const outcomeEnum = z.enum([
@@ -33,6 +37,14 @@ export async function GET() {
     repLocations: data.knockRepLocations,
     colorCodes: data.knockColorCodes,
     employees: data.employees,
+    calendarEvents: data.knockCalendarEvents,
+    notifications: data.notifications.slice(0, 30),
+    gpsConfig: data.gpsConfig,
+    webhookEndpoints: data.webhookEndpoints.map((e) => ({
+      ...e,
+      secret: e.secret.slice(0, 4) + "…",
+    })),
+    webhookDeliveries: data.webhookDeliveries.slice(0, 20),
   });
 }
 
@@ -49,6 +61,10 @@ export async function POST(request: Request) {
       "ping_location",
       "post_chat",
       "create_proposal",
+      "sign_proposal",
+      "create_calendar",
+      "save_gps",
+      "create_webhook",
     ])
     .parse(body.action);
 
@@ -73,6 +89,7 @@ export async function POST(request: Request) {
       })
       .parse(body);
 
+    let knockId: string | null = null;
     const stamp = nowIso();
     let duplicateWarning: string | undefined;
     let knock: KnockEvent | null = null;
@@ -132,10 +149,16 @@ export async function POST(request: Request) {
       };
       appendPinActivity(knock, "knock_logged", parsed.outcome, parsed.knockerId, newId, nowIso);
       data.knocks.unshift(knock);
+      knockId = knock.id;
     });
 
     if (duplicateWarning) {
       return NextResponse.json({ error: duplicateWarning, duplicate: true }, { status: 409 });
+    }
+    if (knockId) {
+      const data = await readStore();
+      await dispatchWebhooks(data, "pin.created", { knockId }, newId, nowIso);
+      await writeStore(data);
     }
     return NextResponse.json({ knock, lead }, { status: 201 });
   }
@@ -155,6 +178,7 @@ export async function POST(request: Request) {
     const polygon = closePolygon(simplified).map((p) => [p.lat, p.lng] as [number, number]);
     const stamp = nowIso();
     let territory: KnockTerritory | null = null;
+    let territoryId: string | null = null;
     let bound = 0;
 
     await updateStore((data) => {
@@ -169,10 +193,16 @@ export async function POST(request: Request) {
         createdAt: stamp,
         updatedAt: stamp,
       };
+      territoryId = territory.id;
       data.knockTerritories.unshift(territory);
       bound = bindPinsToTerritory(data, territory, newId, nowIso);
     });
 
+    if (territoryId) {
+      const data = await readStore();
+      await dispatchWebhooks(data, "territory.created", { territoryId, pinsBound: bound }, newId, nowIso);
+      await writeStore(data);
+    }
     return NextResponse.json({ territory, pinsBound: bound }, { status: 201 });
   }
 
@@ -236,12 +266,28 @@ export async function POST(request: Request) {
       dueAt: parsed.dueAt ?? null,
       priority: parsed.priority ?? "medium",
       assignedToId: parsed.assignedToId ?? null,
+      calendarEventId: null,
+      reminderSentAt: null,
       completedAt: null,
       createdAt: nowIso(),
     };
     await updateStore((data) => {
       data.knockTodos.unshift(todo);
+      enqueueNotification(
+        data,
+        {
+          employeeId: todo.assignedToId,
+          title: "New knocker task",
+          body: todo.title,
+          href: "/apps/knocker",
+        },
+        newId,
+        nowIso,
+      );
     });
+    const data = await readStore();
+    await dispatchWebhooks(data, "todo.created", { todoId: todo.id }, newId, nowIso);
+    await writeStore(data);
     return NextResponse.json({ todo }, { status: 201 });
   }
 
@@ -251,6 +297,9 @@ export async function POST(request: Request) {
       const t = data.knockTodos.find((x) => x.id === id);
       if (t) t.completedAt = nowIso();
     });
+    const data = await readStore();
+    await dispatchWebhooks(data, "todo.completed", { todoId: id }, newId, nowIso);
+    await writeStore(data);
     return NextResponse.json({ ok: true });
   }
 
@@ -286,41 +335,155 @@ export async function POST(request: Request) {
         serviceIds: z.array(z.string()).optional(),
       })
       .parse(body);
-    let proposal = null as null | {
-      id: string;
-      pinId: string;
-      productIds: string[];
-      serviceIds: string[];
-      lineItems: Array<{ label: string; amount: number }>;
-      total: number;
-      signedAt: string | null;
-      signatureDataUrl: string | null;
-      createdAt: string;
-      createdById: string;
-    };
+    let proposal: KnockProposal | null = null;
+    let proposalId = "";
     await updateStore((data) => {
-      const products = data.knockProducts.filter((p) => parsed.productIds?.includes(p.id));
-      const services = data.knockServices.filter((s) => parsed.serviceIds?.includes(s.id));
-      const lineItems = [
-        ...products.map((p) => ({ label: p.name, amount: p.unitPrice })),
-        ...services.map((s) => ({ label: s.name, amount: s.basePrice })),
-      ];
-      const total = lineItems.reduce((s, l) => s + l.amount, 0);
+      const productIds = parsed.productIds ?? [];
+      const serviceIds = parsed.serviceIds ?? [];
+      const taxRate = Number(body.taxRate ?? 0);
+      const extras = Array.isArray(body.extras) ? body.extras : [];
+      const lineItems = linesFromCatalog(
+        data.knockProducts,
+        data.knockServices,
+        productIds,
+        serviceIds,
+        extras,
+      );
+      const total = computeProposalTotal(lineItems, taxRate);
       proposal = {
         id: newId(),
         pinId: parsed.pinId,
-        productIds: parsed.productIds ?? [],
-        serviceIds: parsed.serviceIds ?? [],
+        productIds,
+        serviceIds,
         lineItems,
         total,
+        taxRate,
+        notes: String(body.notes ?? ""),
+        status: "draft",
         signedAt: null,
         signatureDataUrl: null,
+        signerName: null,
+        signerEmail: null,
+        appointmentAt: body.appointmentAt ? String(body.appointmentAt) : null,
         createdAt: nowIso(),
         createdById: parsed.createdById,
       };
       data.knockProposals.unshift(proposal);
+      proposalId = proposal.id;
     });
+    const data = await readStore();
+    await dispatchWebhooks(data, "proposal.created", { proposalId }, newId, nowIso);
+    await writeStore(data);
     return NextResponse.json({ proposal }, { status: 201 });
+  }
+
+  if (action === "sign_proposal") {
+    const parsed = z
+      .object({
+        proposalId: z.string(),
+        signerName: z.string().min(1),
+        signerEmail: z.string().optional(),
+        signatureDataUrl: z.string().min(20),
+      })
+      .parse(body);
+    let signedId: string | null = null;
+    await updateStore((data) => {
+      const p = data.knockProposals.find((x) => x.id === parsed.proposalId);
+      if (!p) return;
+      Object.assign(
+        p,
+        signProposal(p, {
+          signerName: parsed.signerName,
+          signerEmail: parsed.signerEmail,
+          signatureDataUrl: parsed.signatureDataUrl,
+          nowIso: nowIso(),
+        }),
+      );
+      signedId = p.id;
+    });
+    if (!signedId) return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+    const data = await readStore();
+    await dispatchWebhooks(data, "proposal.signed", { proposalId: parsed.proposalId }, newId, nowIso);
+    await writeStore(data);
+    const proposal = data.knockProposals.find((p) => p.id === parsed.proposalId);
+    return NextResponse.json({ proposal });
+  }
+
+  if (action === "create_calendar") {
+    const parsed = z
+      .object({
+        title: z.string(),
+        startAt: z.string(),
+        endAt: z.string().optional(),
+        location: z.string().optional(),
+        description: z.string().optional(),
+        pinId: z.string().nullable().optional(),
+        todoId: z.string().nullable().optional(),
+        employeeId: z.string(),
+      })
+      .parse(body);
+    const ev = {
+      id: newId(),
+      title: parsed.title,
+      startAt: parsed.startAt,
+      endAt: parsed.endAt ?? defaultEndAt(parsed.startAt),
+      location: parsed.location ?? "",
+      description: parsed.description ?? "",
+      pinId: parsed.pinId ?? null,
+      todoId: parsed.todoId ?? null,
+      employeeId: parsed.employeeId,
+      icsUid: `${newId()}@bhcontracting.co`,
+      googleEventId: null,
+      createdAt: nowIso(),
+    };
+    await updateStore((data) => {
+      data.knockCalendarEvents.unshift(ev);
+      if (parsed.todoId) {
+        const t = data.knockTodos.find((x) => x.id === parsed.todoId);
+        if (t) t.calendarEventId = ev.id;
+      }
+    });
+    return NextResponse.json({ event: ev }, { status: 201 });
+  }
+
+  if (action === "save_gps") {
+    const parsed = z
+      .object({
+        distanceFilterMeters: z.number().min(5).max(500),
+        desiredAccuracy: z.enum(["high", "balanced", "low"]),
+        enabled: z.boolean(),
+        wakeLock: z.boolean(),
+      })
+      .parse(body);
+    await updateStore((data) => {
+      data.gpsConfig = parsed;
+    });
+    return NextResponse.json({ gpsConfig: parsed });
+  }
+
+  if (action === "create_webhook") {
+    const parsed = z
+      .object({
+        name: z.string(),
+        url: z.string().url(),
+        events: z.array(z.string()).optional(),
+      })
+      .parse(body);
+    const endpoint = {
+      id: newId(),
+      name: parsed.name,
+      url: parsed.url,
+      secret: newId().replace(/-/g, ""),
+      events: (parsed.events ?? ["pin.created", "proposal.signed"]) as Array<
+        "pin.created" | "proposal.signed"
+      >,
+      enabled: true,
+      createdAt: nowIso(),
+    };
+    await updateStore((data) => {
+      data.webhookEndpoints.unshift(endpoint);
+    });
+    return NextResponse.json({ endpoint }, { status: 201 });
   }
 
   return NextResponse.json({ error: "Not implemented" }, { status: 501 });

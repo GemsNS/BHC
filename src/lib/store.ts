@@ -31,6 +31,8 @@ export async function readStore(): Promise<AppData> {
       !parsed.knocks ||
       !parsed.knockTerritories ||
       !parsed.knockTags ||
+      !parsed.knockCalendarEvents ||
+      !parsed.webhookEndpoints ||
       !parsed.materials ||
       !parsed.fuelLogs ||
       !parsed.projections ||
