@@ -106,7 +106,7 @@ function LoginForm() {
             />
           </label>
           {error ? <p className="login-error">{error}</p> : null}
-          <button type="submit" disabled={busy} className="login-submit">
+          <button type="submit" disabled={busy} className="btn-primary login-submit">
             {busy ? "Signing in…" : "Enter workspace"}
           </button>
         </form>
