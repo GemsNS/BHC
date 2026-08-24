@@ -91,6 +91,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     label: "Administration",
     items: [
       { href: "/admin/automation", label: "Automation hub", short: "Auto", perm: "workflows" },
+      { href: "/admin/tutorials", label: "Tutorials", short: "Help", perm: "board" },
       { href: "/admin/users", label: "Users", short: "Users", perm: "users" },
     ],
   },

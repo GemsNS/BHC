@@ -774,6 +774,244 @@
   font-size: 0.88rem;
 }
 
+/* —— Tutorials walkthrough —— */
+.tutorial-lead {
+  margin: 0 0 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.tutorial-lead strong { color: rgba(255, 255, 255, 0.95); }
+.tutorial-role-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+.tutorial-role-chip {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 160ms var(--ease-out), border-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.tutorial-role-chip:hover {
+  border-color: rgba(217, 119, 6, 0.4);
+  color: #fff;
+}
+.tutorial-role-chip-on {
+  background: rgba(217, 119, 6, 0.2);
+  border-color: rgba(217, 119, 6, 0.45);
+  color: var(--amber);
+  font-weight: 600;
+}
+.tutorial-role-chip-mine:not(.tutorial-role-chip-on) {
+  border-style: dashed;
+}
+.tutorial-role-blurb {
+  margin: 0;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.45;
+}
+.tutorial-demo {
+  margin: 0.65rem 0 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+.tutorial-demo code {
+  color: var(--amber);
+  font-size: 0.8rem;
+}
+.tutorial-toggle-all {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.72rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.tutorial-toggle-all:hover {
+  border-color: rgba(217, 119, 6, 0.4);
+  color: var(--amber);
+}
+.tutorial-search-row { margin: 0.85rem 0 0.35rem; }
+.tutorial-search {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  border-radius: 0.55rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+.tutorial-search:focus {
+  outline: 2px solid rgba(217, 119, 6, 0.45);
+  outline-offset: 1px;
+}
+.tutorial-stack {
+  display: grid;
+  gap: 0.55rem;
+}
+.tutorial-path-item {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  gap: 0.55rem;
+  align-items: start;
+}
+.tutorial-path-num {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--amber);
+  border: 1px solid rgba(217, 119, 6, 0.4);
+  background: rgba(217, 119, 6, 0.1);
+  margin-top: 0.85rem;
+}
+.tutorial-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  transition: border-color 180ms var(--ease-out);
+}
+.tutorial-card-focus {
+  border-color: rgba(217, 119, 6, 0.28);
+}
+.tutorial-card-open {
+  border-color: rgba(217, 119, 6, 0.4);
+  background: rgba(217, 119, 6, 0.05);
+}
+.tutorial-card-head {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tutorial-card-kicker {
+  margin: 0;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(217, 119, 6, 0.75);
+}
+.tutorial-card-title {
+  margin: 0.2rem 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.tutorial-card-summary {
+  margin: 0.35rem 0 0;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.4;
+}
+.tutorial-chevron {
+  flex-shrink: 0;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 1.5px solid rgba(255, 255, 255, 0.45);
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.45);
+  transform: rotate(45deg);
+  transition: transform 180ms var(--ease-out);
+  margin-top: 0.55rem;
+}
+.tutorial-chevron-open {
+  transform: rotate(-135deg);
+  margin-top: 0.75rem;
+}
+.tutorial-card-body {
+  padding: 0 1rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  animation: jarvis-fade-in 240ms var(--ease-out);
+}
+.tutorial-steps {
+  margin: 0.85rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.86rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.45;
+}
+.tutorial-tips {
+  margin: 0.75rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  color: rgba(251, 191, 36, 0.85);
+  display: grid;
+  gap: 0.3rem;
+}
+.tutorial-card-actions {
+  margin-top: 0.85rem;
+}
+.tutorial-open-btn {
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(217, 119, 6, 0.18);
+  color: var(--amber);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+}
+.tutorial-open-btn:hover {
+  background: rgba(217, 119, 6, 0.3);
+}
+.tutorial-group {
+  margin-top: 1.25rem;
+}
+.tutorial-group-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 193, 7, 0.65);
+}
+.tutorial-cheat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+.tutorial-cheat-list li {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.18);
+}
+.tutorial-cheat-list a {
+  font-weight: 600;
+  color: var(--amber);
+  font-size: 0.88rem;
+}
+.tutorial-cheat-list span {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
 /* Legacy class aliases used by existing pages */
 .admin-layout, .apps-layout { /* superseded by .cc-shell */ }
 .apps-page-heading {

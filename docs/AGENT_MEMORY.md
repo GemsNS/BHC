@@ -125,6 +125,15 @@ Persistent log of user preferences, decisions, and chat themes for future agents
 
 **Gotchas learned:** `src/middleware.ts` makes Next compile `instrumentation.ts` for Edge too → Node-only libs must be dynamically imported in `scheduler.ts` and Node core modules are stubbed for `nextRuntime === "edge"` in `next.config.ts`; `node:sqlite` must be loaded via `process.getBuiltinModule`. Claude 4.6+ models reject `temperature`.
 
+### Tutorials walkthrough (2026-08-24)
+
+**User request:** Full tutorials page covering every aspect of the system with role-based access.
+
+**Shipped:**
+- `src/lib/tutorials.ts` — modules + ordered role paths for admin/manager/sales/knocker/field/office/driver
+- `/admin/tutorials` + `/apps/tutorials` — interactive guide with role preview, start-here path, search, permission cheat sheet
+- Nav: Administration → Tutorials (`board` so every role can open it); Field hub card
+
 ---
 
 ## Chat themes (for continuity)

@@ -21,6 +21,7 @@
 | Markets | `/admin/markets` |
 | Books / QuickBooks P&L | `/admin/books` |
 | Active Knocker (+ Zones tab) | `/admin/knocker` · `/apps/knocker` |
+| Tutorials (role paths) | `/admin/tutorials` · `/apps/tutorials` |
 
 ## Enable AI (full stack)
 

@@ -23,6 +23,12 @@ const apps = [
     perm: "clock" as const,
   },
   {
+    href: "/apps/tutorials",
+    title: "Tutorials",
+    blurb: "Role-based walkthroughs for every tool you can access.",
+    perm: "board" as const,
+  },
+  {
     href: "/apps/schedule",
     title: "Schedule",
     blurb: "Your shifts plus open pool and overtime to claim.",
