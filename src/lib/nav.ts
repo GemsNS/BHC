@@ -22,6 +22,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/admin/dashboard", label: "Command deck", short: "Deck", perm: "dashboard" },
       { href: "/admin/assistant", label: "Mainframe", short: "AI", perm: "dashboard" },
+      { href: "/admin/books", label: "Books & P&L", short: "Books", perm: "stats" },
       { href: "/admin/markets", label: "Markets", short: "Mkt", perm: "stats" },
       { href: "/admin/stats", label: "Analytics", short: "Stats", perm: "stats" },
       { href: "/admin/board", label: "Announcements", short: "News", perm: "board" },
@@ -39,7 +40,6 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
       },
       { href: "/admin/canvass", label: "Canvassing", short: "Doors", perm: "canvass" },
       { href: "/admin/knocker", label: "Active Knocker", short: "Knock", perm: "zones" },
-      { href: "/admin/zones", label: "Territories", short: "Zones", perm: "zones" },
     ],
   },
   {
@@ -117,6 +117,7 @@ export const LEGACY_REDIRECTS: Record<string, string> = {
   "/admin/sequences": "/admin/sales?tab=automation",
   "/admin/tickets": "/admin/sales?tab=support",
   "/admin/outreach": "/admin/sales?tab=outreach",
+  "/admin/zones": "/admin/knocker?tab=zones",
 };
 
 export function isNavItemActive(pathname: string, href: string): boolean {

@@ -64,6 +64,9 @@ export function KnockerMap({
         if (drawMode && onDraftPoint) onDraftPoint(pt);
         else if (onMapClick) onMapClick(pt);
       });
+      // Fix blank map when container was hidden / resized (common on Pages + tab switches)
+      window.setTimeout(() => map.invalidateSize(), 80);
+      window.setTimeout(() => map.invalidateSize(), 400);
     });
 
     return () => {
