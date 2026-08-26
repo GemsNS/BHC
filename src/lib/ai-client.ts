@@ -84,8 +84,31 @@ export function browserAiStatus(base?: AIStatus | null): AIStatus {
 
 type GeminiPart = {
   text?: string;
-  functionCall?: { name: string; args?: Record<string, unknown> };
+  thoughtSignature?: string;
+  functionCall?: { name: string; args?: Record<string, unknown>; thoughtSignature?: string };
+  /** REST may also return snake_case on some payloads */
+  thought_signature?: string;
 };
+
+/** Keep model parts verbatim so Gemini 3 thoughtSignature survives tool turns. */
+function modelPartsFromResponse(json: {
+  candidates?: Array<{ content?: { parts?: GeminiPart[] } }>;
+}): Array<Record<string, unknown>> {
+  const parts = json.candidates?.[0]?.content?.parts ?? [];
+  return parts.map((p) => {
+    const out: Record<string, unknown> = {};
+    if (p.text != null) out.text = p.text;
+    if (p.functionCall) {
+      out.functionCall = {
+        name: p.functionCall.name,
+        args: p.functionCall.args ?? {},
+      };
+    }
+    const sig = p.thoughtSignature ?? p.thought_signature ?? p.functionCall?.thoughtSignature;
+    if (sig) out.thoughtSignature = sig;
+    return out;
+  });
+}
 
 async function geminiFetch(
   key: string,
@@ -169,6 +192,9 @@ function extractCalls(json: {
 function friendlyGeminiError(status: number, body: string): string {
   if (status === 400 && /API_KEY_INVALID|API key not valid/i.test(body)) {
     return "Gemini rejected this API key (invalid). Paste a fresh key from Google AI Studio and Save again.";
+  }
+  if (status === 400 && /thought_signature|thoughtSignature/i.test(body)) {
+    return "Gemini tool call failed (missing thought signature). Hard-refresh the page and try again — the client must echo Gemini 3 signatures on tool turns.";
   }
   if (status === 403) {
     return "Gemini key is valid but blocked (billing / API not enabled). Enable Generative Language API in Google Cloud.";
@@ -274,9 +300,10 @@ export async function runMainframeWithClientAi(
       const json = await res.json();
       const calls = extractCalls(json);
       if (calls.length) {
+        // Must echo thoughtSignature on functionCall parts (Gemini 3.x requirement).
         contents.push({
           role: "model",
-          parts: calls.map((c) => ({ functionCall: { name: c.name, args: c.args } })),
+          parts: modelPartsFromResponse(json),
         });
         const responseParts: Array<Record<string, unknown>> = [];
         for (const call of calls) {

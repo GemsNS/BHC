@@ -207,7 +207,13 @@ type GeminiResponse = {
     content?: {
       parts?: Array<{
         text?: string;
-        functionCall?: { name: string; args?: Record<string, unknown> };
+        thoughtSignature?: string;
+        thought_signature?: string;
+        functionCall?: {
+          name: string;
+          args?: Record<string, unknown>;
+          thoughtSignature?: string;
+        };
       }>;
     };
   }>;
@@ -227,6 +233,24 @@ function extractGeminiFunctionCalls(json: GeminiResponse): Array<{ name: string;
       name: p.functionCall!.name,
       args: (p.functionCall!.args ?? {}) as Record<string, unknown>,
     }));
+}
+
+/** Echo model parts verbatim so Gemini 3 thoughtSignature survives tool turns. */
+function geminiModelPartsFromResponse(json: GeminiResponse): Array<Record<string, unknown>> {
+  const parts = json.candidates?.[0]?.content?.parts ?? [];
+  return parts.map((p) => {
+    const out: Record<string, unknown> = {};
+    if (p.text != null) out.text = p.text;
+    if (p.functionCall) {
+      out.functionCall = {
+        name: p.functionCall.name,
+        args: p.functionCall.args ?? {},
+      };
+    }
+    const sig = p.thoughtSignature ?? p.thought_signature ?? p.functionCall?.thoughtSignature;
+    if (sig) out.thoughtSignature = sig;
+    return out;
+  });
 }
 
 async function geminiAgentLoop(input: {
@@ -284,7 +308,7 @@ async function geminiAgentLoop(input: {
       if (calls.length) {
         contents.push({
           role: "model",
-          parts: calls.map((c) => ({ functionCall: { name: c.name, args: c.args } })),
+          parts: geminiModelPartsFromResponse(json),
         });
 
         const responseParts: Array<Record<string, unknown>> = [];
