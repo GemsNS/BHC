@@ -97,7 +97,7 @@ export function getAnthropicFastModel(): string {
 }
 
 export function getGeminiModel(): string {
-  return process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+  return process.env.GEMINI_MODEL?.trim() || "gemini-3.6-flash";
 }
 
 export function getOpenAIModel(): string {
