@@ -19,6 +19,8 @@
 | Field hub | `/apps` |
 | Schedule | `/admin/schedule` / `/apps/schedule` |
 | Markets | `/admin/markets` |
+| Books / QuickBooks P&L | `/admin/books` |
+| Active Knocker (+ Zones tab) | `/admin/knocker` · `/apps/knocker` |
 
 ## Enable AI (full stack)
 

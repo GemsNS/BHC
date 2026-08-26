@@ -1,6 +1,5 @@
 import type { StaticImageData } from "next/image";
 
-import F031DE44 from "@/assets/jobshowcase/F031DE44-2881-42B5-886D-BD1080587853.jpg";
 import IMG_0983 from "@/assets/jobshowcase/IMG_0983.jpg";
 import IMG_0984 from "@/assets/jobshowcase/IMG_0984.jpg";
 import IMG_1436 from "@/assets/jobshowcase/IMG_1436.jpg";
@@ -51,12 +50,6 @@ export type JobShowcaseImage = {
 };
 
 export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
-  {
-    src: F031DE44,
-    alt: "Completed BH Contracting Co. exterior project.",
-    title: "Coastal exterior renovation",
-    audience: "residential",
-  },
   {
     src: IMG_0983,
     alt: "Siding and trim installation completed by BH Contracting Co.",

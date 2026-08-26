@@ -31,6 +31,8 @@ import {
 } from "@/lib/notifications";
 import { DEFAULT_GPS_CONFIG, loadGpsConfig, saveGpsConfig, startGpsTracker } from "@/lib/gps-tracker";
 import type { GpsTrackingConfig, KnockProposal } from "@/lib/types";
+import { KnockerZonesPanel } from "@/components/knocker/KnockerZonesPanel";
+import { isStaticDemo } from "@/lib/paths";
 
 const KnockerMap = dynamic(
   () => import("@/components/knocker/KnockerMap").then((m) => m.KnockerMap),
@@ -48,7 +50,9 @@ const OUTCOMES: CanvassOutcome[] = [
   "do_not_knock",
 ];
 
-type Tab = "map" | "pin" | "route" | "tasks" | "propose" | "team" | "stats";
+type Tab = "map" | "zones" | "pin" | "route" | "tasks" | "propose" | "team" | "stats";
+
+const TAB_IDS: Tab[] = ["map", "zones", "pin", "route", "tasks", "propose", "team", "stats"];
 
 export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
   const { user, can } = useSession();
@@ -79,6 +83,15 @@ export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
     setData(payload);
     if (!zoneId && payload.zones[0]) setZoneId(payload.zones[0].id);
   }, [zoneId]);
+
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t && TAB_IDS.includes(t as Tab)) setTab(t as Tab);
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   useEffect(() => {
     if (!data) return;
@@ -234,14 +247,22 @@ export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
       <header className="knocker-command-head">
         <div>
           <p className="knocker-command-eyebrow">ACTIVE KNOCKER · BHC FIELD</p>
-          <h1>{admin ? "Territory command" : "Door knocker"}</h1>
+          <h1>{admin ? "Active Knocker command" : "Door knocker"}</h1>
         </div>
         <div className="knocker-command-stats">
           <span>GPS {coords ? "LIVE" : "OFF"}</span>
           <span>{zoneKnocks.length} pins</span>
           <span>{territories.length} turfs</span>
+          <span>{myZones.length} zones</span>
         </div>
       </header>
+
+      {isStaticDemo() ? (
+        <p className="knocker-msg banner">
+          Static Pages demo — map, zones, pins, and turfs save in this browser (localStorage).
+          Multi-user sync and webhooks need a Node host.
+        </p>
+      ) : null}
 
       <div className="knocker-command-toolbar">
         <select
@@ -249,16 +270,21 @@ export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
           value={activeZone?.id ?? ""}
           onChange={(e) => setZoneId(e.target.value)}
         >
-          {myZones.map((z) => (
-            <option key={z.id} value={z.id}>
-              {z.name} · {z.neighborhood}
-            </option>
-          ))}
+          {myZones.length ? (
+            myZones.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.name} · {z.neighborhood}
+              </option>
+            ))
+          ) : (
+            <option value="">No zones — open Zones tab to create one</option>
+          )}
         </select>
         <nav className="knocker-tabs">
           {(
             [
               ["map", "Map"],
+              ["zones", "Zones"],
               ["pin", "Pin"],
               ["route", "Route"],
               ["tasks", "Tasks"],
@@ -280,6 +306,15 @@ export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
       </div>
 
       {message ? <p className="knocker-msg banner">{message}</p> : null}
+
+      {tab === "zones" ? (
+        <KnockerZonesPanel
+          zones={data.zones}
+          knocks={data.knocks}
+          employees={data.employees}
+          onChanged={refresh}
+        />
+      ) : null}
 
       {tab === "map" ? (
         <div className="knocker-map-panel">

@@ -1,0 +1,194 @@
+import { NextRequest, NextResponse } from "next/server";
+
+type TokenResponse = {
+  access_token: string;
+  refresh_token?: string;
+  expires_in: number;
+};
+
+function qbBase(env: "sandbox" | "production") {
+  return env === "production"
+    ? "https://quickbooks.api.intuit.com"
+    : "https://sandbox-quickbooks.api.intuit.com";
+}
+
+async function refreshAccessToken(input: {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+}): Promise<TokenResponse> {
+  const basic = Buffer.from(`${input.clientId}:${input.clientSecret}`).toString("base64");
+  const res = await fetch("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: input.refreshToken,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`QuickBooks token refresh failed (${res.status}): ${text.slice(0, 240)}`);
+  }
+  return res.json() as Promise<TokenResponse>;
+}
+
+type QbReportRow = {
+  Header?: { ColData?: Array<{ value?: string }> };
+  Summary?: { ColData?: Array<{ value?: string }> };
+  Rows?: { Row?: QbReportRow[] };
+  ColData?: Array<{ value?: string }>;
+  group?: string;
+};
+
+function parseAmount(value?: string): number {
+  if (!value) return 0;
+  const n = Number(String(value).replace(/[,$]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function flattenRows(
+  rows: QbReportRow[] | undefined,
+  bucket: Array<{ label: string; amount: number; group?: string }>,
+  group?: string,
+) {
+  if (!rows) return;
+  for (const row of rows) {
+    const nextGroup = row.group || group;
+    if (row.Header?.ColData?.[0]?.value) {
+      const label = row.Header.ColData[0].value;
+      const amount = parseAmount(row.Summary?.ColData?.[1]?.value ?? row.ColData?.[1]?.value);
+      if (label) bucket.push({ label, amount, group: nextGroup });
+    }
+    if (row.ColData?.[0]?.value) {
+      bucket.push({
+        label: row.ColData[0].value,
+        amount: parseAmount(row.ColData[1]?.value),
+        group: nextGroup,
+      });
+    }
+    flattenRows(row.Rows?.Row, bucket, nextGroup);
+  }
+}
+
+export async function GET() {
+  const configured = Boolean(
+    process.env.QUICKBOOKS_CLIENT_ID?.trim() &&
+      process.env.QUICKBOOKS_CLIENT_SECRET?.trim() &&
+      process.env.QUICKBOOKS_REALM_ID?.trim() &&
+      process.env.QUICKBOOKS_REFRESH_TOKEN?.trim(),
+  );
+  return NextResponse.json({
+    ok: true,
+    envConfigured: configured,
+    hint: "POST { clientId, clientSecret, realmId, refreshToken, environment } to fetch a 2-year ProfitAndLoss report.",
+  });
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const json = (await req.json().catch(() => ({}))) as Partial<{
+      clientId: string;
+      clientSecret: string;
+      realmId: string;
+      refreshToken: string;
+      environment: "sandbox" | "production";
+    }>;
+
+    const clientId = json.clientId?.trim() || process.env.QUICKBOOKS_CLIENT_ID?.trim();
+    const clientSecret =
+      json.clientSecret?.trim() || process.env.QUICKBOOKS_CLIENT_SECRET?.trim();
+    const realmId = json.realmId?.trim() || process.env.QUICKBOOKS_REALM_ID?.trim();
+    const refreshToken =
+      json.refreshToken?.trim() || process.env.QUICKBOOKS_REFRESH_TOKEN?.trim();
+    const environment =
+      json.environment ||
+      (process.env.QUICKBOOKS_ENV?.trim() as "sandbox" | "production" | undefined) ||
+      "sandbox";
+
+    if (!clientId || !clientSecret || !realmId || !refreshToken) {
+      return NextResponse.json(
+        {
+          error:
+            "Missing QuickBooks credentials. Provide clientId, clientSecret, realmId, refreshToken (or set QUICKBOOKS_* env vars).",
+        },
+        { status: 400 },
+      );
+    }
+
+    const tokens = await refreshAccessToken({ clientId, clientSecret, refreshToken });
+    const end = new Date();
+    const start = new Date();
+    start.setFullYear(end.getFullYear() - 2);
+
+    const startDate = start.toISOString().slice(0, 10);
+    const endDate = end.toISOString().slice(0, 10);
+    const url = new URL(
+      `${qbBase(environment)}/v3/company/${realmId}/reports/ProfitAndLoss`,
+    );
+    url.searchParams.set("start_date", startDate);
+    url.searchParams.set("end_date", endDate);
+    url.searchParams.set("summarize_column_by", "Year");
+
+    const reportRes = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${tokens.access_token}`,
+        Accept: "application/json",
+      },
+    });
+    if (!reportRes.ok) {
+      const text = await reportRes.text();
+      return NextResponse.json(
+        {
+          error: `QuickBooks P&L fetch failed (${reportRes.status}): ${text.slice(0, 300)}`,
+        },
+        { status: 502 },
+      );
+    }
+
+    const report = await reportRes.json();
+    const flat: Array<{ label: string; amount: number; group?: string }> = [];
+    flattenRows(report?.Rows?.Row as QbReportRow[] | undefined, flat);
+
+    const income = flat
+      .filter((r) => /income|revenue/i.test(`${r.group ?? ""} ${r.label}`))
+      .reduce((s, r) => s + Math.abs(r.amount), 0);
+    const cogs = flat
+      .filter((r) => /cost of goods|cogs/i.test(`${r.group ?? ""} ${r.label}`))
+      .reduce((s, r) => s + Math.abs(r.amount), 0);
+    const expenses = flat
+      .filter(
+        (r) =>
+          /expense/i.test(`${r.group ?? ""} ${r.label}`) &&
+          !/cost of goods/i.test(`${r.group ?? ""} ${r.label}`),
+      )
+      .reduce((s, r) => s + Math.abs(r.amount), 0);
+
+    return NextResponse.json({
+      source: "quickbooks",
+      generatedAt: new Date().toISOString(),
+      currency: "USD",
+      range: { startDate, endDate },
+      refreshToken: tokens.refresh_token ?? refreshToken,
+      accessTokenExpiresIn: tokens.expires_in,
+      totals: {
+        revenue: income,
+        cogs,
+        grossProfit: income - cogs,
+        opex: expenses,
+        netIncome: income - cogs - expenses,
+      },
+      lines: flat.slice(0, 80),
+      rawHeader: report?.Header ?? null,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "QuickBooks request failed" },
+      { status: 500 },
+    );
+  }
+}
