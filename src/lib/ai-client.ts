@@ -18,11 +18,13 @@ import type { AIStatus } from "./ai-provider";
 const STORAGE_KEY = "bhc-gemini-api-key";
 export const CLIENT_AI_KEY_EVENT = "bhc-client-ai-key-changed";
 
+const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
+
 const MODEL_CANDIDATES = [
   process.env.NEXT_PUBLIC_GEMINI_MODEL?.trim(),
+  DEFAULT_GEMINI_MODEL,
   "gemini-2.0-flash",
   "gemini-1.5-flash",
-  "gemini-2.5-flash",
 ].filter((m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i);
 
 export function getClientGeminiKey(): string | undefined {
@@ -46,7 +48,7 @@ export function clearClientGeminiKey(): void {
 }
 
 export function getClientGeminiModel(): string {
-  return MODEL_CANDIDATES[0] ?? "gemini-2.0-flash";
+  return MODEL_CANDIDATES[0] ?? DEFAULT_GEMINI_MODEL;
 }
 
 export function hasClientAiKey(): boolean {
@@ -107,19 +109,39 @@ async function geminiFetchWithFallback(
   key: string,
   body: Record<string, unknown>,
 ): Promise<{ res: Response; model: string; errorText?: string }> {
+  const tried = new Set<string>();
+  const queue = [...MODEL_CANDIDATES];
   let lastError = "";
-  for (const model of MODEL_CANDIDATES) {
+  let lastModel = queue[0] ?? DEFAULT_GEMINI_MODEL;
+
+  while (queue.length) {
+    const model = queue.shift()!;
+    if (tried.has(model)) continue;
+    tried.add(model);
+    lastModel = model;
     const res = await geminiFetch(key, model, body);
     if (res.ok) return { res, model };
     lastError = await res.text().catch(() => res.statusText);
-    // Try next model on 404 (unknown model) only
-    if (res.status !== 404) {
-      return { res, model, errorText: lastError };
+
+    if (res.status === 404) {
+      // Prefer "Please update … to use models/X"; fall back to any untried model id in the body.
+      const updateHint = lastError.match(/use models\/([a-z0-9._-]+)/i)?.[1];
+      const allMentioned = [
+        ...lastError.matchAll(/models\/([a-z0-9._-]+)/gi),
+      ].map((m) => m[1]);
+      for (const suggested of [updateHint, ...allMentioned]) {
+        if (suggested && !tried.has(suggested) && !queue.includes(suggested)) {
+          queue.unshift(suggested);
+        }
+      }
+      continue;
     }
+    return { res, model, errorText: lastError };
   }
+
   return {
     res: new Response(null, { status: 404 }),
-    model: MODEL_CANDIDATES[0] ?? "gemini-2.0-flash",
+    model: lastModel,
     errorText: lastError || "No Gemini model available",
   };
 }

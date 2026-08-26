@@ -47,7 +47,7 @@ Enable Pages on `gh-pages` branch. URL: https://gemsns.github.io/BHC/
 | Variable | Used by | Notes |
 |----------|---------|-------|
 | `GEMINI_API_KEY` / `GOOGLE_API_KEY` | Server AI | Preferred. Header `x-goog-api-key` |
-| `GEMINI_MODEL` | Server AI | default `gemini-2.0-flash` |
+| `GEMINI_MODEL` | Server AI | default `gemini-3.6-flash` |
 | `NEXT_PUBLIC_GEMINI_API_KEY` | Browser AI | **insecure**, Pages testing |
 | `NEXT_PUBLIC_GEMINI_MODEL` | Browser AI | |
 | `OPENAI_API_KEY` | Server AI fallback | |
