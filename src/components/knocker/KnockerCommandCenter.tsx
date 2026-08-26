@@ -90,6 +90,10 @@ export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
   }, []);
 
   useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
     if (!data) return;
     const timer = window.setInterval(() => {
       const now = Date.now();
