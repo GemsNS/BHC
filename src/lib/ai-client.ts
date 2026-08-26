@@ -13,8 +13,17 @@ import {
 } from "./mainframe-agent";
 import { executeMainframeTool, type MainframeToolName, type ToolContext } from "./mainframe-tools";
 import type { AppData } from "./types";
+import type { AIStatus } from "./ai-provider";
 
 const STORAGE_KEY = "bhc-gemini-api-key";
+export const CLIENT_AI_KEY_EVENT = "bhc-client-ai-key-changed";
+
+const MODEL_CANDIDATES = [
+  process.env.NEXT_PUBLIC_GEMINI_MODEL?.trim(),
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-2.5-flash",
+].filter((m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i);
 
 export function getClientGeminiKey(): string | undefined {
   if (typeof window === "undefined") return undefined;
@@ -27,19 +36,48 @@ export function getClientGeminiKey(): string | undefined {
 export function setClientGeminiKey(key: string): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, key.trim());
+  window.dispatchEvent(new Event(CLIENT_AI_KEY_EVENT));
 }
 
 export function clearClientGeminiKey(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(STORAGE_KEY);
+  window.dispatchEvent(new Event(CLIENT_AI_KEY_EVENT));
 }
 
 export function getClientGeminiModel(): string {
-  return process.env.NEXT_PUBLIC_GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+  return MODEL_CANDIDATES[0] ?? "gemini-2.0-flash";
 }
 
 export function hasClientAiKey(): boolean {
   return Boolean(getClientGeminiKey());
+}
+
+/** Status object that includes a pasted browser Gemini key */
+export function browserAiStatus(base?: AIStatus | null): AIStatus {
+  const key = hasClientAiKey();
+  if (key) {
+    return {
+      provider: "gemini",
+      configured: true,
+      model: getClientGeminiModel(),
+      chat: true,
+      summarize: true,
+      gemini: true,
+      openai: base?.openai ?? false,
+    };
+  }
+  return (
+    base ?? {
+      provider: "none",
+      configured: false,
+      model: null,
+      chat: false,
+      summarize: false,
+      gemini: false,
+      openai: false,
+    }
+  );
 }
 
 type GeminiPart = {
@@ -49,9 +87,9 @@ type GeminiPart = {
 
 async function geminiFetch(
   key: string,
+  model: string,
   body: Record<string, unknown>,
 ): Promise<Response> {
-  const model = getClientGeminiModel();
   return fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
@@ -63,6 +101,27 @@ async function geminiFetch(
       body: JSON.stringify(body),
     },
   );
+}
+
+async function geminiFetchWithFallback(
+  key: string,
+  body: Record<string, unknown>,
+): Promise<{ res: Response; model: string; errorText?: string }> {
+  let lastError = "";
+  for (const model of MODEL_CANDIDATES) {
+    const res = await geminiFetch(key, model, body);
+    if (res.ok) return { res, model };
+    lastError = await res.text().catch(() => res.statusText);
+    // Try next model on 404 (unknown model) only
+    if (res.status !== 404) {
+      return { res, model, errorText: lastError };
+    }
+  }
+  return {
+    res: new Response(null, { status: 404 }),
+    model: MODEL_CANDIDATES[0] ?? "gemini-2.0-flash",
+    errorText: lastError || "No Gemini model available",
+  };
 }
 
 function extractText(json: {
@@ -85,6 +144,20 @@ function extractCalls(json: {
     }));
 }
 
+function friendlyGeminiError(status: number, body: string): string {
+  if (status === 400 && /API_KEY_INVALID|API key not valid/i.test(body)) {
+    return "Gemini rejected this API key (invalid). Paste a fresh key from Google AI Studio and Save again.";
+  }
+  if (status === 403) {
+    return "Gemini key is valid but blocked (billing / API not enabled). Enable Generative Language API in Google Cloud.";
+  }
+  if (status === 429) {
+    return "Gemini rate limit hit — wait a minute and try again.";
+  }
+  const snippet = body.replace(/\s+/g, " ").slice(0, 180);
+  return `Gemini request failed (${status})${snippet ? `: ${snippet}` : ""}.`;
+}
+
 export async function clientCompleteChat(input: {
   system: string;
   user: string;
@@ -92,7 +165,7 @@ export async function clientCompleteChat(input: {
   const key = getClientGeminiKey();
   if (!key) return null;
   try {
-    const res = await geminiFetch(key, {
+    const { res } = await geminiFetchWithFallback(key, {
       systemInstruction: { parts: [{ text: input.system }] },
       contents: [{ role: "user", parts: [{ text: input.user }] }],
       generationConfig: { temperature: 0.3 },
@@ -131,11 +204,15 @@ export async function clientSummarizeProgress(input: {
 const MAINFRAME_SYSTEM = `You are BHC MAINFRAME — admin AI for BH Contracting Co. CRM.
 Execute CRM actions via tools. Outreach always pending approval. Be concise.`;
 
+export type ClientAiResult =
+  | { ok: true; result: ChatTurnResult }
+  | { ok: false; error: string };
+
 export async function runMainframeWithClientAi(
   data: AppData,
   messages: ChatMessage[],
   ctx: ToolContext,
-): Promise<ChatTurnResult | null> {
+): Promise<ClientAiResult | null> {
   const key = getClientGeminiKey();
   if (!key) return null;
 
@@ -157,39 +234,68 @@ export async function runMainframeWithClientAi(
     parameters: t.parameters,
   }));
 
-  for (let step = 0; step < 5; step++) {
-    const res = await geminiFetch(key, {
-      systemInstruction: { parts: [{ text: systemText }] },
-      contents,
-      tools: [{ functionDeclarations }],
-      toolConfig: { functionCallingConfig: { mode: "AUTO" } },
-      generationConfig: { temperature: 0.2 },
-    });
-    if (!res.ok) return toolRuns.length ? { reply: toolRuns.map((r) => r.summary).join("\n"), source: "ai", toolRuns } : null;
-    const json = await res.json();
-    const calls = extractCalls(json);
-    if (calls.length) {
-      contents.push({
-        role: "model",
-        parts: calls.map((c) => ({ functionCall: { name: c.name, args: c.args } })),
+  try {
+    for (let step = 0; step < 5; step++) {
+      const { res, errorText } = await geminiFetchWithFallback(key, {
+        systemInstruction: { parts: [{ text: systemText }] },
+        contents,
+        tools: [{ functionDeclarations }],
+        toolConfig: { functionCallingConfig: { mode: "AUTO" } },
+        generationConfig: { temperature: 0.2 },
       });
-      const responseParts: Array<Record<string, unknown>> = [];
-      for (const call of calls) {
-        const result = executeMainframeTool(data, call.name as MainframeToolName, call.args, ctx);
-        toolRuns.push({ tool: call.name, summary: result.summary, ok: result.ok });
-        responseParts.push({
-          functionResponse: {
-            name: call.name,
-            response: { result: result.summary, ok: result.ok },
-          },
-        });
+      if (!res.ok) {
+        return {
+          ok: false,
+          error: friendlyGeminiError(res.status, errorText ?? ""),
+        };
       }
-      contents.push({ role: "user", parts: responseParts });
-      continue;
+      const json = await res.json();
+      const calls = extractCalls(json);
+      if (calls.length) {
+        contents.push({
+          role: "model",
+          parts: calls.map((c) => ({ functionCall: { name: c.name, args: c.args } })),
+        });
+        const responseParts: Array<Record<string, unknown>> = [];
+        for (const call of calls) {
+          const result = executeMainframeTool(data, call.name as MainframeToolName, call.args, ctx);
+          toolRuns.push({ tool: call.name, summary: result.summary, ok: result.ok });
+          responseParts.push({
+            functionResponse: {
+              name: call.name,
+              response: { result: result.summary, ok: result.ok },
+            },
+          });
+        }
+        contents.push({ role: "user", parts: responseParts });
+        continue;
+      }
+      const reply = extractText(json);
+      if (reply) return { ok: true, result: { reply, source: "ai", toolRuns } };
+      if (toolRuns.length) {
+        return {
+          ok: true,
+          result: { reply: toolRuns.map((r) => r.summary).join("\n"), source: "ai", toolRuns },
+        };
+      }
+      return {
+        ok: false,
+        error: "Gemini returned an empty response. Try again or switch model via NEXT_PUBLIC_GEMINI_MODEL.",
+      };
     }
-    const reply = extractText(json);
-    if (reply) return { reply, source: "ai", toolRuns };
-    return toolRuns.length ? { reply: toolRuns.map((r) => r.summary).join("\n"), source: "ai", toolRuns } : null;
+    return {
+      ok: true,
+      result: toolRuns.length
+        ? { reply: toolRuns.map((r) => r.summary).join("\n"), source: "ai", toolRuns }
+        : { reply: "Done.", source: "ai", toolRuns },
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err instanceof Error
+          ? `Browser Gemini call failed: ${err.message}`
+          : "Browser Gemini call failed (network or CORS).",
+    };
   }
-  return null;
 }

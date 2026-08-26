@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import {
   clearClientGeminiKey,
   getClientGeminiKey,
+  getClientGeminiModel,
+  hasClientAiKey,
   setClientGeminiKey,
 } from "@/lib/ai-client";
 
@@ -11,32 +13,41 @@ import {
 export function AiKeyPanel({ onChange }: { onChange?: () => void }) {
   const [key, setKey] = useState("");
   const [saved, setSaved] = useState(false);
+  const [active, setActive] = useState(false);
 
   useEffect(() => {
-    setKey(getClientGeminiKey() ?? "");
+    const existing = getClientGeminiKey() ?? "";
+    setKey(existing);
+    setActive(Boolean(existing));
   }, []);
 
   function save(e: FormEvent) {
     e.preventDefault();
-    if (key.trim()) setClientGeminiKey(key);
-    else clearClientGeminiKey();
+    if (key.trim()) {
+      setClientGeminiKey(key);
+      setActive(true);
+    } else {
+      clearClientGeminiKey();
+      setActive(false);
+    }
     setSaved(true);
     onChange?.();
-    window.setTimeout(() => setSaved(false), 2000);
+    window.setTimeout(() => setSaved(false), 2500);
   }
 
   return (
     <form className="mainframe-ai-key-panel" onSubmit={save}>
       <p className="mainframe-profile-label">BROWSER AI KEY (TEST)</p>
       <p className="mainframe-profile-meta">
-        Paste Gemini key for client-side Mainframe + summarize on Pages. Stored in localStorage only.
+        Paste a Gemini API key from Google AI Studio. Saved in this browser only
+        (localStorage). Works on GitHub Pages without a server .env.
       </p>
       <input
         type="password"
         className="field-input"
         value={key}
         onChange={(e) => setKey(e.target.value)}
-        placeholder="AQ… or AIza…"
+        placeholder="AIza… Gemini API key"
         autoComplete="off"
       />
       <div className="mainframe-ai-key-actions">
@@ -49,13 +60,23 @@ export function AiKeyPanel({ onChange }: { onChange?: () => void }) {
           onClick={() => {
             clearClientGeminiKey();
             setKey("");
+            setActive(false);
             onChange?.();
           }}
         >
           Clear
         </button>
       </div>
-      {saved ? <p className="mainframe-ai-key-saved">Saved — refresh chat to use Gemini.</p> : null}
+      {active || hasClientAiKey() ? (
+        <p className="mainframe-ai-key-saved">
+          Active · {getClientGeminiModel()} — chat uses browser Gemini now.
+        </p>
+      ) : null}
+      {saved ? (
+        <p className="mainframe-ai-key-saved">
+          Saved — status updates immediately (no page refresh needed).
+        </p>
+      ) : null}
     </form>
   );
 }

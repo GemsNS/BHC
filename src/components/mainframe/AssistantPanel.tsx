@@ -5,6 +5,7 @@ import { loadAppData, saveAppData, fetchJson, clientNewId } from "@/lib/client-d
 import { isStaticDemo } from "@/lib/paths";
 import { runDailyAutomations, runAutomation } from "@/lib/mainframe-automations";
 import type { AIStatus } from "@/lib/ai-provider";
+import { browserAiStatus, CLIENT_AI_KEY_EVENT, hasClientAiKey } from "@/lib/ai-client";
 import type { AssistantAuditEntry, AssistantDailyAutomation } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -23,15 +24,7 @@ export function AssistantPanel({ onMessage }: { onMessage?: (text: string) => vo
     if (isStaticDemo()) {
       const store = await loadAppData();
       const hour = new Date().getHours();
-      setAiStatus({
-        provider: "none",
-        configured: false,
-        model: null,
-        chat: false,
-        summarize: false,
-        gemini: false,
-        openai: false,
-      });
+      setAiStatus(browserAiStatus(null));
       setData({
         automations: store.assistantAutomations,
         audit: store.assistantAudit.slice(0, 8),
@@ -53,10 +46,11 @@ export function AssistantPanel({ onMessage }: { onMessage?: (text: string) => vo
         fetchJson<AIStatus>("/api/ai/status"),
         fetchJson<AssistantData>("/api/assistant"),
       ]);
-      setAiStatus(status);
+      setAiStatus(browserAiStatus(status));
       setData(assistant);
     } catch {
       const store = await loadAppData();
+      setAiStatus(browserAiStatus(null));
       setData({
         automations: store.assistantAutomations,
         audit: store.assistantAudit.slice(0, 8),
@@ -67,6 +61,11 @@ export function AssistantPanel({ onMessage }: { onMessage?: (text: string) => vo
 
   useEffect(() => {
     refresh();
+    const onKey = () => {
+      void refresh();
+    };
+    window.addEventListener(CLIENT_AI_KEY_EVENT, onKey);
+    return () => window.removeEventListener(CLIENT_AI_KEY_EVENT, onKey);
   }, [refresh]);
 
   async function runDaily(force = false) {
@@ -116,7 +115,7 @@ export function AssistantPanel({ onMessage }: { onMessage?: (text: string) => vo
 
   const providerLabel =
     aiStatus?.configured && aiStatus.provider !== "none"
-      ? `${aiStatus.provider.toUpperCase()} · ${aiStatus.model ?? "model"}`
+      ? `${hasClientAiKey() ? "BROWSER GEMINI" : aiStatus.provider.toUpperCase()} · ${aiStatus.model ?? "model"}`
       : "LOCAL PARSER";
 
   return (
@@ -133,7 +132,7 @@ export function AssistantPanel({ onMessage }: { onMessage?: (text: string) => vo
         </p>
         {!aiStatus?.configured ? (
           <p className="mainframe-profile-meta">
-            Set GEMINI_API_KEY or OPENAI_API_KEY in .env for full natural-language control.
+            Paste a Gemini key above (Save), or set GEMINI_API_KEY in .env on a Node host.
           </p>
         ) : null}
       </div>

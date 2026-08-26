@@ -27,9 +27,17 @@ export async function sendMainframeMessage(
       newId: clientNewId,
       nowIso: clientNowIso,
     });
-    if (ai) {
+    if (ai?.ok) {
       await saveAppData(data);
-      return ai;
+      return ai.result;
+    }
+    if (ai && !ai.ok) {
+      // Key is present but Gemini failed — surface the real error, don't pretend there's no key
+      return {
+        reply: `BROWSER GEMINI ERROR\n${ai.error}\n\nFix the key in the sidebar (Save), or clear it to use the local command parser / server .env key.`,
+        source: "mainframe",
+        toolRuns: [],
+      };
     }
   }
 

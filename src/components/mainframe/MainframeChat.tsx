@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { ChatMessage } from "@/lib/mainframe-agent";
 import { sendMainframeMessage } from "@/lib/mainframe-client";
 import { fetchJson, loadAppData } from "@/lib/client-data";
-import { hasClientAiKey } from "@/lib/ai-client";
+import { hasClientAiKey, browserAiStatus, CLIENT_AI_KEY_EVENT } from "@/lib/ai-client";
 import type { AIStatus } from "@/lib/ai-provider";
 import { isStaticDemo } from "@/lib/paths";
 import type { AssistantCriteriaProfile } from "@/lib/types";
@@ -63,25 +63,23 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
     );
     if (!isStaticDemo()) {
       try {
-        setAiStatus(await fetchJson<AIStatus>("/api/ai/status"));
+        const server = await fetchJson<AIStatus>("/api/ai/status");
+        setAiStatus(browserAiStatus(server));
       } catch {
-        setAiStatus(null);
+        setAiStatus(browserAiStatus(null));
       }
     } else {
-      setAiStatus({
-        provider: "none",
-        configured: false,
-        model: null,
-        chat: false,
-        summarize: false,
-        gemini: false,
-        openai: false,
-      });
+      setAiStatus(browserAiStatus(null));
     }
   }, []);
 
   useEffect(() => {
     refreshMeta();
+    const onKey = () => {
+      void refreshMeta();
+    };
+    window.addEventListener(CLIENT_AI_KEY_EVENT, onKey);
+    return () => window.removeEventListener(CLIENT_AI_KEY_EVENT, onKey);
   }, [refreshMeta]);
 
   useEffect(() => {
@@ -134,7 +132,7 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
                 aiStatus.configured ? "mainframe-ai-live" : "mainframe-ai-local",
               )}
             >
-              {aiStatus.configured || hasClientAiKey()
+              {aiStatus.configured
                 ? `${hasClientAiKey() ? "BROWSER GEMINI" : aiStatus.provider.toUpperCase()} · ${aiStatus.model ?? "AI"}`
                 : "LOCAL PARSER — paste key in sidebar or set GEMINI_API_KEY"}
             </p>
