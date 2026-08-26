@@ -95,19 +95,8 @@ function modelPartsFromResponse(json: {
   candidates?: Array<{ content?: { parts?: GeminiPart[] } }>;
 }): Array<Record<string, unknown>> {
   const parts = json.candidates?.[0]?.content?.parts ?? [];
-  return parts.map((p) => {
-    const out: Record<string, unknown> = {};
-    if (p.text != null) out.text = p.text;
-    if (p.functionCall) {
-      out.functionCall = {
-        name: p.functionCall.name,
-        args: p.functionCall.args ?? {},
-      };
-    }
-    const sig = p.thoughtSignature ?? p.thought_signature ?? p.functionCall?.thoughtSignature;
-    if (sig) out.thoughtSignature = sig;
-    return out;
-  });
+  // Deep-clone the API parts as-is (thoughtSignature must not be rebuilt away).
+  return JSON.parse(JSON.stringify(parts)) as Array<Record<string, unknown>>;
 }
 
 async function geminiFetch(

@@ -238,19 +238,7 @@ function extractGeminiFunctionCalls(json: GeminiResponse): Array<{ name: string;
 /** Echo model parts verbatim so Gemini 3 thoughtSignature survives tool turns. */
 function geminiModelPartsFromResponse(json: GeminiResponse): Array<Record<string, unknown>> {
   const parts = json.candidates?.[0]?.content?.parts ?? [];
-  return parts.map((p) => {
-    const out: Record<string, unknown> = {};
-    if (p.text != null) out.text = p.text;
-    if (p.functionCall) {
-      out.functionCall = {
-        name: p.functionCall.name,
-        args: p.functionCall.args ?? {},
-      };
-    }
-    const sig = p.thoughtSignature ?? p.thought_signature ?? p.functionCall?.thoughtSignature;
-    if (sig) out.thoughtSignature = sig;
-    return out;
-  });
+  return JSON.parse(JSON.stringify(parts)) as Array<Record<string, unknown>>;
 }
 
 async function geminiAgentLoop(input: {
