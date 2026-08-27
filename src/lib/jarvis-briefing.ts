@@ -2,6 +2,27 @@ import type { AppData } from "./types";
 import { openPoolShifts } from "./shifts";
 import { formatCurrency, labelize } from "./utils";
 
+/** When browsing /admin, prefer admin twins so Jarvis never dumps ops into /apps. */
+export function deskAwareHref(href: string | undefined, pathname: string): string | undefined {
+  if (!href) return href;
+  if (!pathname.startsWith("/admin")) return href;
+  const map: Record<string, string> = {
+    "/apps": "/admin/dashboard",
+    "/apps/knocker": "/admin/knocker",
+    "/apps/schedule": "/admin/schedule",
+    "/apps/board": "/admin/board",
+    "/apps/progress": "/admin/progress",
+    "/apps/tools": "/admin/tools",
+    "/apps/damage": "/admin/damage",
+    "/apps/clock": "/admin/hours",
+  };
+  if (map[href]) return map[href];
+  for (const [from, to] of Object.entries(map)) {
+    if (href.startsWith(from + "?")) return href.replace(from, to);
+  }
+  return href;
+}
+
 export type JarvisContext =
   | "overview"
   | "sales"

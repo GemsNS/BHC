@@ -44,12 +44,43 @@ export function CommandPalette() {
         });
       }
     }
-    const field: CommandEntry[] = [
-      { id: "apps", label: "Field home", href: "/apps", group: "Field" },
-      { id: "schedule", label: "My schedule", href: "/apps/schedule", group: "Field" },
-      { id: "knocker", label: "Knocker app", href: "/apps/knocker", group: "Field" },
-      { id: "clock", label: "Time clock", href: "/apps/clock", group: "Field" },
-    ];
+    const field: CommandEntry[] = can("apps")
+      ? [
+          {
+            id: "apps",
+            label: "Switch to field modes",
+            hint: "Leave admin · open /apps",
+            href: "/apps",
+            group: "Mode switch",
+          },
+          {
+            id: "schedule",
+            label: "Field schedule",
+            href: "/apps/schedule",
+            group: "Mode switch",
+          },
+          {
+            id: "knocker",
+            label: "Field knocker",
+            href: "/apps/knocker",
+            group: "Mode switch",
+          },
+          {
+            id: "clock",
+            label: "Time clock",
+            href: "/apps/clock",
+            group: "Mode switch",
+          },
+        ]
+      : [];
+    if (can("dashboard")) {
+      field.unshift({
+        id: "ops-home",
+        label: "Ops overview (admin)",
+        href: "/admin/dashboard",
+        group: "Mode switch",
+      });
+    }
     for (const f of field) {
       list.push(f);
     }

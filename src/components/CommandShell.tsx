@@ -69,8 +69,18 @@ function MobileSectionNav({ pathname }: { pathname: string }) {
 function MobileBottomBar({ pathname }: { pathname: string }) {
   const { can } = useSession();
   const tabs = APP_FIELD_TABS.filter((t) => can(t.perm));
+  const showOpsReturn = can("dashboard");
   return (
     <nav className="cc-bottom-bar" aria-label="Field apps">
+      {showOpsReturn ? (
+        <Link
+          href="/admin/dashboard"
+          className="cc-bottom-tab cc-bottom-tab-ops"
+          title="Back to admin ops"
+        >
+          Ops
+        </Link>
+      ) : null}
       {tabs.map((tab) => {
         const active = tab.exact
           ? pathname === tab.href
@@ -110,7 +120,8 @@ function CommandShellInner({
       return can(n.perm);
     });
     if (allowedNav.length === 0) {
-      router.replace(homePath === "/admin/dashboard" ? "/apps" : homePath);
+      // Never bounce desk users into field apps — land on role home or login.
+      router.replace(homePath.startsWith("/admin") ? homePath : "/login");
       return;
     }
     const match = ADMIN_NAV.find((n) => pathname.startsWith(n.href));
@@ -199,13 +210,17 @@ function CommandShellInner({
                   </div>
                 ) : null}
                 {mode === "admin" && can("apps") ? (
-                  <Link href="/apps" className="cc-topbar-link">
+                  <Link href="/apps" className="cc-topbar-link" title="Switch to field apps">
                     Field
                   </Link>
                 ) : null}
                 {mode === "apps" && can("dashboard") ? (
-                  <Link href="/admin/dashboard" className="cc-topbar-link desktop-only">
-                    Overview
+                  <Link
+                    href="/admin/dashboard"
+                    className="cc-topbar-link cc-topbar-link-ops"
+                    title="Back to admin ops / Jarvis"
+                  >
+                    Ops
                   </Link>
                 ) : null}
                 <button type="button" className="cc-topbar-link" onClick={signOut}>
