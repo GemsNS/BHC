@@ -199,9 +199,9 @@ export function buildLocalPnl(data: AppData, years = 2): PnlReport {
     periods,
     totals,
     notes: [
-      "Local P&L aggregates BHC CRM data (not a certified accounting statement).",
+      "Local P&L aggregates BHC CRM data (estimate — not a certified accounting statement).",
       "Paid/sent invoices + signed proposals + closed-won deals count as revenue.",
-      "Connect QuickBooks Online below for official books P&L.",
+      "QuickBooks Online is the official books source for payroll and certified P&L.",
       `Sample totals: revenue ${formatCurrency(totals.revenue)}, net ${formatCurrency(totals.netIncome)}.`,
     ],
   };
