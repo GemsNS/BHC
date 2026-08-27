@@ -101,18 +101,22 @@ export function KnockerCommandCenter({ admin = false }: { admin?: boolean }) {
         if (t.completedAt || !t.dueAt || t.reminderSentAt) continue;
         const due = new Date(t.dueAt).getTime();
         if (due <= now + 15 * 60_000 && due >= now - 60_000) {
-          showBrowserNotification("Knocker reminder", t.title, "/apps/knocker");
+          showBrowserNotification(
+            "Knocker reminder",
+            t.title,
+            admin ? "/admin/knocker" : "/apps/knocker",
+          );
           navigator.serviceWorker?.controller?.postMessage({
             type: "notify",
             title: "Knocker reminder",
             body: t.title,
-            href: "/apps/knocker",
+            href: admin ? "/admin/knocker" : "/apps/knocker",
           });
         }
       }
     }, 60_000);
     return () => window.clearInterval(timer);
-  }, [data]);
+  }, [data, admin]);
 
   useEffect(() => {
     const cfg = loadGpsConfig();

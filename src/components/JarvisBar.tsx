@@ -7,6 +7,7 @@ import { loadAppData } from "@/lib/client-data";
 import {
   buildJarvisInsights,
   buildJarvisSnapshot,
+  deskAwareHref,
   jarvisContextFromPath,
   JARVIS_CATEGORY_LABELS,
   JARVIS_FOCUS_EVENT,
@@ -128,8 +129,10 @@ export function JarvisBar({
     return () => window.removeEventListener(JARVIS_FOCUS_EVENT, onFocusEvent);
   }, [insights, selectInsight]);
 
-  const primaryHref =
-    active?.primaryAction?.href ?? active?.href;
+  const primaryHref = deskAwareHref(
+    active?.primaryAction?.href ?? active?.href,
+    pathname,
+  );
 
   function toggleExpanded() {
     setExpanded((open) => !open);
@@ -174,7 +177,7 @@ export function JarvisBar({
             return chip.href ? (
               <Link
                 key={chip.id}
-                href={chip.href}
+                href={deskAwareHref(chip.href, pathname) ?? chip.href}
                 className={cn("jarvis-metric-chip", chip.tone && TONE_CLASS[chip.tone])}
                 role="listitem"
               >

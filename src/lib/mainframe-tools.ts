@@ -6,6 +6,8 @@ import type {
   AssistantCriteriaProfile,
   InvoiceDoc,
   InvoiceLine,
+  Job,
+  JobStatus,
   Lead,
   LeadStatus,
 } from "./types";
@@ -15,6 +17,7 @@ import {
   processSequenceSteps,
   runSingleWorkflow,
 } from "./workflows";
+import { queueQbOp, qbConnectionSummary } from "./quickbooks-ops";
 
 export type ToolContext = {
   authorId: string;
@@ -33,16 +36,31 @@ export const MAINFRAME_TOOL_NAMES = [
   "list_leads",
   "create_lead",
   "update_lead_status",
+  "update_lead",
   "list_jobs",
+  "create_job",
+  "update_job_status",
+  "list_invoices",
   "create_invoice",
+  "update_invoice_status",
+  "list_tasks",
+  "create_task",
+  "complete_task",
+  "list_automations",
+  "set_automation",
   "run_workflow",
   "process_sequences",
   "approve_outreach",
   "find_prospects",
   "hunt_leads",
   "save_criteria_profile",
-  "create_task",
   "run_daily_automations",
+  "list_time_entries",
+  "qb_status",
+  "qb_get_pnl",
+  "qb_sync_customer",
+  "qb_sync_invoice",
+  "qb_sync_payroll_hours",
 ] as const;
 
 export type MainframeToolName = (typeof MAINFRAME_TOOL_NAMES)[number];
@@ -62,10 +80,30 @@ export function executeMainframeTool(
       return toolCreateLead(data, args, ctx);
     case "update_lead_status":
       return toolUpdateLeadStatus(data, args, ctx);
+    case "update_lead":
+      return toolUpdateLead(data, args, ctx);
     case "list_jobs":
       return toolListJobs(data, args);
+    case "create_job":
+      return toolCreateJob(data, args, ctx);
+    case "update_job_status":
+      return toolUpdateJobStatus(data, args, ctx);
+    case "list_invoices":
+      return toolListInvoices(data, args);
     case "create_invoice":
       return toolCreateInvoice(data, args, ctx);
+    case "update_invoice_status":
+      return toolUpdateInvoiceStatus(data, args, ctx);
+    case "list_tasks":
+      return toolListTasks(data, args);
+    case "create_task":
+      return toolCreateTask(data, args, ctx);
+    case "complete_task":
+      return toolCompleteTask(data, args, ctx);
+    case "list_automations":
+      return toolListAutomations(data);
+    case "set_automation":
+      return toolSetAutomation(data, args, ctx);
     case "run_workflow":
       return toolRunWorkflow(data, args, ctx);
     case "process_sequences":
@@ -78,10 +116,16 @@ export function executeMainframeTool(
       return toolHuntLeads(data, args);
     case "save_criteria_profile":
       return toolSaveProfile(data, args, ctx);
-    case "create_task":
-      return toolCreateTask(data, args, ctx);
     case "run_daily_automations":
       return toolRunDaily(data, args, ctx);
+    case "list_time_entries":
+      return toolListTimeEntries(data, args);
+    case "qb_status":
+    case "qb_get_pnl":
+    case "qb_sync_customer":
+    case "qb_sync_invoice":
+    case "qb_sync_payroll_hours":
+      return toolQbPlaceholder(tool, args);
     default:
       return { ok: false, summary: `Unknown tool: ${tool}` };
   }
@@ -93,11 +137,13 @@ function toolGetSummary(data: AppData): ToolExecution {
   const activeJobs = data.jobs.filter((j) =>
     ["scheduled", "in_progress"].includes(j.status),
   ).length;
+  const openTasks = data.activities.filter((a) => a.type === "task" && !a.completedAt).length;
   const profile = data.assistantProfiles.find((p) => p.enabled);
+  const qb = qbConnectionSummary();
   return {
     ok: true,
-    summary: `CRM summary: ${openLeads} open leads, ${activeJobs} active jobs, ${pending} outreach draft(s) pending approval. Hunt profile: ${profile?.name ?? "none"}. ${data.assistantAutomations.filter((a) => a.enabled).length} daily automation(s) armed.`,
-    data: { openLeads, pending, activeJobs },
+    summary: `CRM summary: ${openLeads} open leads, ${activeJobs} active jobs, ${openTasks} open task(s), ${pending} outreach draft(s) pending approval. Hunt profile: ${profile?.name ?? "none"}. ${data.assistantAutomations.filter((a) => a.enabled).length} daily automation(s) armed. QuickBooks: ${qb}.`,
+    data: { openLeads, pending, activeJobs, openTasks },
   };
 }
 
@@ -445,4 +491,307 @@ function toolRunDaily(
     };
   }
   return { ok: true, summary: results.join("\n") };
+}
+
+function findLead(data: AppData, query: string): Lead | undefined {
+  const q = query.trim().toLowerCase();
+  if (!q) return undefined;
+  return data.leads.find(
+    (l) => l.id === query || l.name.toLowerCase().includes(q) || l.email.toLowerCase() === q,
+  );
+}
+
+function findJob(data: AppData, query: string): Job | undefined {
+  const q = query.trim().toLowerCase();
+  if (!q) return undefined;
+  return data.jobs.find(
+    (j) =>
+      j.id === query ||
+      j.title.toLowerCase().includes(q) ||
+      j.customerName.toLowerCase().includes(q),
+  );
+}
+
+function toolUpdateLead(
+  data: AppData,
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): ToolExecution {
+  const lead = findLead(data, String(args.lead ?? args.leadId ?? args.id ?? ""));
+  if (!lead) return { ok: false, summary: "Lead not found — pass lead name or id." };
+  if (args.notes != null) lead.notes = String(args.notes);
+  if (args.phone != null) lead.phone = String(args.phone);
+  if (args.email != null) lead.email = String(args.email);
+  if (args.city != null) lead.city = String(args.city);
+  if (args.address != null) lead.address = String(args.address);
+  if (args.assignedToId != null) lead.assignedToId = String(args.assignedToId) || null;
+  if (args.source != null) lead.source = String(args.source);
+  lead.updatedAt = ctx.nowIso();
+  return {
+    ok: true,
+    summary: `Updated lead ${lead.name} (${lead.id}).`,
+    data: { leadId: lead.id },
+  };
+}
+
+function toolCreateJob(
+  data: AppData,
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): ToolExecution {
+  const title = String(args.title ?? "").trim();
+  if (!title) return { ok: false, summary: "Job title is required." };
+  const lead = findLead(data, String(args.lead ?? args.leadId ?? ""));
+  const stamp = ctx.nowIso();
+  const job: Job = {
+    id: ctx.newId(),
+    title,
+    customerName: String(args.customerName ?? lead?.name ?? "Customer TBD"),
+    address: String(args.address ?? lead?.address ?? "TBD"),
+    jobType: args.jobType === "commercial" ? "commercial" : "residential",
+    status: (String(args.status ?? "scheduled") as JobStatus) || "scheduled",
+    leadId: lead?.id ?? null,
+    crewLeadId: args.crewLeadId ? String(args.crewLeadId) : null,
+    startDate: String(args.startDate ?? stamp.slice(0, 10)),
+    estimatedValue: Number(args.estimatedValue ?? 0),
+    contractValue: Number(args.contractValue ?? args.estimatedValue ?? 0),
+    notes: String(args.notes ?? "Created by Mainframe."),
+    createdAt: stamp,
+  };
+  data.jobs.unshift(job);
+  return {
+    ok: true,
+    summary: `Created job "${job.title}" for ${job.customerName} [${job.id}] (${job.status}).`,
+    data: { jobId: job.id },
+  };
+}
+
+function toolUpdateJobStatus(
+  data: AppData,
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): ToolExecution {
+  const job = findJob(data, String(args.job ?? args.jobId ?? args.id ?? ""));
+  if (!job) return { ok: false, summary: "Job not found — pass title or id." };
+  const status = String(args.status ?? "") as JobStatus;
+  const allowed: JobStatus[] = [
+    "scheduled",
+    "in_progress",
+    "on_hold",
+    "completed",
+    "invoiced",
+  ];
+  if (!allowed.includes(status)) {
+    return { ok: false, summary: `Invalid status. Use: ${allowed.join(", ")}` };
+  }
+  job.status = status;
+  if (args.notes != null) job.notes = `${job.notes}\n${String(args.notes)}`.trim();
+  void ctx;
+  return {
+    ok: true,
+    summary: `Job "${job.title}" → ${status}.`,
+    data: { jobId: job.id, status },
+  };
+}
+
+function toolListInvoices(data: AppData, args: Record<string, unknown>): ToolExecution {
+  let list = data.invoices;
+  if (args.status) list = list.filter((i) => i.status === String(args.status));
+  if (args.job) {
+    const q = String(args.job).toLowerCase();
+    list = list.filter(
+      (i) =>
+        i.jobId.toLowerCase().includes(q) ||
+        i.customerName.toLowerCase().includes(q),
+    );
+  }
+  const top = list.slice(0, 10).map((i) => ({
+    id: i.id,
+    customer: i.customerName,
+    status: i.status,
+    kind: i.kind,
+    total: i.lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0),
+  }));
+  return {
+    ok: true,
+    summary: `${list.length} invoice(s). Top: ${
+      top.map((i) => `${i.id} ${i.customer} [${i.status}] $${i.total.toLocaleString()}`).join("; ") ||
+      "none"
+    }.`,
+    data: { invoices: top, total: list.length },
+  };
+}
+
+function toolUpdateInvoiceStatus(
+  data: AppData,
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): ToolExecution {
+  const q = String(args.invoice ?? args.invoiceId ?? args.id ?? "");
+  const inv = data.invoices.find(
+    (i) =>
+      i.id === q ||
+      i.customerName.toLowerCase().includes(q.toLowerCase()) ||
+      i.jobId === q,
+  );
+  if (!inv) return { ok: false, summary: "Invoice not found." };
+  const status = String(args.status ?? "") as InvoiceDoc["status"];
+  if (!["draft", "sent", "paid", "void"].includes(status)) {
+    return { ok: false, summary: "Status must be draft, sent, paid, or void." };
+  }
+  inv.status = status;
+  void ctx;
+  return {
+    ok: true,
+    summary: `Invoice ${inv.id} (${inv.customerName}) → ${status}.`,
+    data: { invoiceId: inv.id, status },
+  };
+}
+
+function toolListTasks(data: AppData, args: Record<string, unknown>): ToolExecution {
+  let tasks = data.activities.filter((a) => a.type === "task");
+  if (args.openOnly !== false && args.open !== false) {
+    if (args.includeCompleted !== true) {
+      tasks = tasks.filter((t) => !t.completedAt);
+    }
+  }
+  if (args.query) {
+    const q = String(args.query).toLowerCase();
+    tasks = tasks.filter(
+      (t) =>
+        t.subject.toLowerCase().includes(q) ||
+        t.body.toLowerCase().includes(q) ||
+        t.relatedId.toLowerCase().includes(q),
+    );
+  }
+  const top = tasks.slice(0, 12).map((t) => ({
+    id: t.id,
+    subject: t.subject,
+    related: `${t.relatedType}:${t.relatedId}`,
+    dueAt: t.dueAt,
+    done: Boolean(t.completedAt),
+  }));
+  return {
+    ok: true,
+    summary: `${tasks.length} task(s). ${
+      top.map((t) => `${t.done ? "✓" : "○"} ${t.subject} [${t.id}]`).join("; ") || "none"
+    }.`,
+    data: { tasks: top },
+  };
+}
+
+function toolCompleteTask(
+  data: AppData,
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): ToolExecution {
+  const q = String(args.task ?? args.taskId ?? args.id ?? args.subject ?? "");
+  const task = data.activities.find(
+    (a) =>
+      a.type === "task" &&
+      (a.id === q || a.subject.toLowerCase().includes(q.toLowerCase())),
+  );
+  if (!task) return { ok: false, summary: "Task not found — pass id or subject." };
+  if (task.completedAt) {
+    return { ok: true, summary: `Task already completed: ${task.subject}.` };
+  }
+  task.completedAt = ctx.nowIso();
+  return {
+    ok: true,
+    summary: `Completed task: ${task.subject} [${task.id}].`,
+    data: { taskId: task.id },
+  };
+}
+
+function toolListAutomations(data: AppData): ToolExecution {
+  const rows = data.assistantAutomations.map((a) => ({
+    id: a.id,
+    name: a.name,
+    enabled: a.enabled,
+    runHour: a.runHour,
+    action: a.action,
+    lastRunAt: a.lastRunAt,
+  }));
+  return {
+    ok: true,
+    summary: rows
+      .map(
+        (a) =>
+          `${a.enabled ? "ON" : "OFF"} ${a.name} [${a.id}] @${a.runHour}:00 (${a.action})`,
+      )
+      .join("\n"),
+    data: { automations: rows },
+  };
+}
+
+function toolSetAutomation(
+  data: AppData,
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): ToolExecution {
+  const q = String(args.automation ?? args.id ?? args.name ?? "");
+  const auto = data.assistantAutomations.find(
+    (a) =>
+      a.id === q || a.name.toLowerCase().includes(q.toLowerCase()),
+  );
+  if (!auto) return { ok: false, summary: "Automation not found." };
+  if (args.enabled != null) auto.enabled = Boolean(args.enabled);
+  if (args.runHour != null) auto.runHour = Number(args.runHour);
+  void ctx;
+  return {
+    ok: true,
+    summary: `Automation "${auto.name}" → enabled=${auto.enabled}, runHour=${auto.runHour}.`,
+    data: { id: auto.id, enabled: auto.enabled, runHour: auto.runHour },
+  };
+}
+
+function toolListTimeEntries(data: AppData, args: Record<string, unknown>): ToolExecution {
+  let entries = data.timeEntries;
+  if (args.employeeId) {
+    entries = entries.filter((e) => e.employeeId === String(args.employeeId));
+  }
+  if (args.openOnly) {
+    entries = entries.filter((e) => !e.clockOut);
+  }
+  const top = entries.slice(0, 15).map((e) => {
+    const emp = data.employees.find((x) => x.id === e.employeeId);
+    return {
+      id: e.id,
+      employee: emp?.name ?? e.employeeId,
+      clockIn: e.clockIn,
+      clockOut: e.clockOut,
+      jobId: e.jobId,
+    };
+  });
+  return {
+    ok: true,
+    summary: `${entries.length} time entr(y/ies). ${
+      top
+        .map(
+          (e) =>
+            `${e.employee} ${e.clockIn.slice(0, 16)}${e.clockOut ? " → " + e.clockOut.slice(0, 16) : " (open)"}`,
+        )
+        .join("; ") || "none"
+    }.`,
+    data: { entries: top },
+  };
+}
+
+function toolQbPlaceholder(
+  tool: MainframeToolName,
+  args: Record<string, unknown>,
+): ToolExecution {
+  if (tool === "qb_status") {
+    return {
+      ok: true,
+      summary: `QuickBooks: ${qbConnectionSummary()}. Use Books & P&L to connect credentials. Sync tools queue payroll/invoice/customer pushes.`,
+      data: { connected: qbConnectionSummary().startsWith("connected") },
+    };
+  }
+  const queued = queueQbOp(tool, args);
+  return {
+    ok: queued.ok,
+    summary: queued.summary,
+    data: queued.data,
+  };
 }

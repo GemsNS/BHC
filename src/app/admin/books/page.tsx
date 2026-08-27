@@ -13,6 +13,7 @@ import {
   type PnlReport,
   type QbConnection,
 } from "@/lib/quickbooks";
+import { flushQbQueue, loadQbQueue, qbConnectionSummary } from "@/lib/quickbooks-ops";
 import { formatCurrency } from "@/lib/utils";
 
 type QbRemote = {
@@ -108,7 +109,7 @@ function BooksInner() {
     <PageFrame
       context="Finance"
       title="Books & P&L"
-      subtitle="Two-year profit & loss from BHC CRM data, plus an optional QuickBooks Online hook."
+      subtitle="CRM estimate P&L plus first-class QuickBooks Online — payroll hours, customers, and invoices sync through Mainframe and this desk."
     >
       <MetricStrip items={metrics} />
 
@@ -168,12 +169,12 @@ function BooksInner() {
         )}
       </Panel>
 
-      <Panel title="QuickBooks Online hook">
+      <Panel title="QuickBooks Online (payroll & books)">
         <p className="tutorial-lead">
-          Paste Intuit app credentials (sandbox or production). We refresh the OAuth
-          token server-side and pull the official ProfitAndLoss report for the past two
-          years. Tokens stay in this browser unless you also set QUICKBOOKS_* in .env on
-          the server.
+          First-class Intuit connection for official P&amp;L, customer sync, invoice push, and
+          payroll TimeActivity. Paste app credentials (sandbox or production) here — Mainframe
+          uses the same connection for <code>qb_*</code> tools. Tokens stay in this browser;
+          production hosts can also set <code>QUICKBOOKS_*</code> in .env.
         </p>
         <form className="books-qb-form" onSubmit={onSaveConn}>
           <label>
@@ -241,6 +242,27 @@ function BooksInner() {
               onClick={fetchQb}
             >
               {busy ? "Fetching…" : "Fetch 2-year P&L"}
+            </button>
+            <button
+              type="button"
+              className="mainframe-panel-btn"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setMessage(null);
+                try {
+                  const notes = await flushQbQueue(fetchJson);
+                  setMessage(
+                    `${qbConnectionSummary()}\nQueued ops: ${loadQbQueue().length}\n${notes.join("\n")}`,
+                  );
+                } catch (err) {
+                  setMessage(err instanceof Error ? err.message : "Flush failed");
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Flush Mainframe QB queue
             </button>
             <button
               type="button"
