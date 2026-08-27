@@ -14,6 +14,22 @@ import {
 } from "@/lib/client-data";
 import { getClientGeminiKey, runMainframeWithClientAi } from "@/lib/ai-client";
 import { isStaticDemo } from "@/lib/paths";
+import { flushQbQueue } from "@/lib/quickbooks-ops";
+
+async function maybeFlushQuickBooks(result: ChatTurnResult): Promise<ChatTurnResult> {
+  const usedQb = result.toolRuns.some((t) => t.tool.startsWith("qb_"));
+  if (!usedQb || isStaticDemo()) return result;
+  try {
+    const notes = await flushQbQueue(fetchJson);
+    if (!notes.length) return result;
+    return {
+      ...result,
+      reply: `${result.reply}\n\nQuickBooks flush:\n${notes.join("\n")}`,
+    };
+  } catch {
+    return result;
+  }
+}
 
 export async function sendMainframeMessage(
   messages: ChatMessage[],
@@ -29,7 +45,7 @@ export async function sendMainframeMessage(
     });
     if (ai?.ok) {
       await saveAppData(data);
-      return ai.result;
+      return maybeFlushQuickBooks(ai.result);
     }
     if (ai && !ai.ok) {
       // Key is present but Gemini failed — surface the real error, don't pretend there's no key
@@ -43,10 +59,11 @@ export async function sendMainframeMessage(
 
   if (!isStaticDemo()) {
     try {
-      return await fetchJson<ChatTurnResult>("/api/ai/chat", {
+      const remote = await fetchJson<ChatTurnResult>("/api/ai/chat", {
         method: "POST",
         body: JSON.stringify({ messages, authorId }),
       });
+      return maybeFlushQuickBooks(remote);
     } catch {
       /* fall through to local */
     }
@@ -59,5 +76,5 @@ export async function sendMainframeMessage(
     nowIso: clientNowIso,
   });
   await saveAppData(data);
-  return result;
+  return maybeFlushQuickBooks(result);
 }

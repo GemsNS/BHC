@@ -20,11 +20,13 @@ type UiMessage = ChatMessage & {
 
 const QUICK = [
   "CRM summary",
+  "List open tasks",
   "Hunt leads using my criteria",
   "Approve all outreach",
   "Run daily automations",
   "List qualified leads",
   "Generate invoice for Harbor Lane",
+  "QuickBooks status",
   "help",
 ];
 
@@ -33,7 +35,7 @@ const WELCOME: UiMessage = {
   role: "assistant",
   source: "mainframe",
   content:
-    "BHC MAINFRAME online. I execute CRM actions — leads, workflows, invoices, prospect hunting, and daily automations. Outreach always queues for your approval before send.\n\nFeed me criteria (regions, keywords, job types) or say \"help\" for commands.",
+    "BHC MAINFRAME online. I run the CRM end-to-end — leads, jobs, invoices, tasks, automations, prospect hunting — and QuickBooks sync for customers, invoices, and payroll hours. Outreach always queues for your approval before send.\n\nFeed me criteria or say \"help\" for commands.",
 };
 
 export function MainframeChat({ embedded = false }: { embedded?: boolean }) {

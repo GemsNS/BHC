@@ -238,8 +238,9 @@ export async function clientSummarizeProgress(input: {
   return { summary: text, source: "ai" };
 }
 
-const MAINFRAME_SYSTEM = `You are BHC MAINFRAME — admin AI for BH Contracting Co. CRM.
-Execute CRM actions via tools. Outreach always pending approval. Be concise.`;
+const MAINFRAME_SYSTEM = `You are BHC MAINFRAME — admin AI for BH Contracting Co. CRM + QuickBooks.
+Execute CRM actions via tools (leads, jobs, invoices, tasks, automations) and qb_* QuickBooks sync.
+Outreach always pending approval. Be concise.`;
 
 export type ClientAiResult =
   | { ok: true; result: ChatTurnResult }

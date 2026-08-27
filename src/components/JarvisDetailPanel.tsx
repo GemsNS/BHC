@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
+  deskAwareHref,
   JARVIS_CATEGORY_LABELS,
   type JarvisInsight,
   type JarvisTone,
@@ -22,7 +24,13 @@ export function JarvisDetailPanel({
   insight: JarvisInsight;
   onClose: () => void;
 }) {
-  const primary = insight.primaryAction ?? (insight.href ? { label: "Open", href: insight.href, kind: "primary" as const } : null);
+  const pathname = usePathname();
+  const rawPrimary =
+    insight.primaryAction ??
+    (insight.href ? { label: "Open", href: insight.href, kind: "primary" as const } : null);
+  const primary = rawPrimary
+    ? { ...rawPrimary, href: deskAwareHref(rawPrimary.href, pathname) }
+    : null;
 
   return (
     <div
@@ -80,7 +88,7 @@ export function JarvisDetailPanel({
           action.href ? (
             <Link
               key={action.label}
-              href={action.href}
+              href={deskAwareHref(action.href, pathname) ?? action.href}
               className="jarvis-detail-btn jarvis-detail-btn-secondary"
             >
               {action.label}
