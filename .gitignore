@@ -34,6 +34,7 @@ yarn-error.log*
 .env
 .env.*
 !.env.example
+deploy/gcp/vm/AGENT_SECRETS.env
 
 # vercel
 .vercel

@@ -293,28 +293,76 @@ Add QuickBooks secrets the same way when configured.
 
 ---
 
-## 9. Compute Engine runbook (alternative)
+## 9. Compute Engine + Apache (recommended when user wants Apache / VM)
 
-```bash
-# On VM after git clone
-sudo apt-get update && sudo apt-get install -y nodejs npm  # or nvm install 20
-cd /opt/bhc && git clone https://github.com/GemsNS/BHC.git .
-npm ci && npm run build
+Use when the deploy agent should run a **traditional VM** with **Apache** reverse proxy. Scripts: `deploy/gcp/vm/`.
 
-# Persistent data
-sudo mkdir -p /var/bhc/data
-sudo ln -sf /var/bhc/data /opt/bhc/data
+### 9.1 Architecture
 
-# systemd unit /etc/systemd/system/bhc.service
-# EnvironmentFile=/etc/bhc.env
-# WorkingDirectory=/opt/bhc
-# ExecStart=/usr/bin/npm start
-# Restart=always
-
-sudo systemctl enable --now bhc
+```
+Internet :80 / :443
+    → Apache 2 (reverse proxy, certbot TLS after DNS)
+    → Node.js Next.js (systemd bhc.service) 127.0.0.1:3000
+    → /var/bhc/data/store.json (persistent disk)
 ```
 
-Put Caddy/Nginx in front on `:443` proxying to `127.0.0.1:3000`.
+**HTTP first:** certbot/Let's Encrypt requires the domain A-record to point at the VM. The agent provisions everything on HTTP; run `post-dns-https.sh` after DNS propagates.
+
+### 9.2 Workstation — create VM
+
+```bash
+export GCP_PROJECT=bhc-production
+export GCP_ZONE=us-central1-a
+bash deploy/gcp/vm/create-gce-vm.sh
+```
+
+Opens firewall TCP 80/443. Note the **external IP**.
+
+### 9.3 VM — provision Node + Apache
+
+```bash
+gcloud compute ssh bhc-app-1 --zone=us-central1-a
+sudo git clone https://github.com/GemsNS/BHC.git /opt/bhc
+sudo mkdir -p /etc/bhc
+sudo cp /opt/bhc/deploy/gcp/vm/bhc.env.example /etc/bhc/bhc.env
+# Edit /etc/bhc/bhc.env — set GEMINI_API_KEY, chmod 600
+sudo bash /opt/bhc/deploy/gcp/vm/provision-vm.sh
+```
+
+### 9.4 Apache vhost
+
+Installed to `/etc/apache2/sites-available/bhc.conf` from `deploy/gcp/vm/apache-bhc.conf`:
+
+- `ProxyPass / http://127.0.0.1:3000/`
+- `X-Forwarded-Proto` / `X-Forwarded-Port` headers
+- WebSocket upgrade rewrite for Next.js
+- `LimitRequestBody 50MB` for photo uploads
+
+### 9.5 HTTPS after DNS
+
+User creates **A record** → VM IP. Then on VM:
+
+```bash
+sudo bash /opt/bhc/deploy/gcp/vm/post-dns-https.sh ops.example.com admin@example.com
+```
+
+Uses `certbot --apache --redirect`.
+
+### 9.6 systemd
+
+`deploy/gcp/vm/bhc.service` — runs `npm start` as `www-data`, loads `/etc/bhc/bhc.env`.
+
+```bash
+sudo systemctl status bhc
+sudo journalctl -u bhc -f
+```
+
+### 9.7 Verify
+
+```bash
+curl -sS http://VM_IP/api/ai/status
+curl -sS http://VM_IP/login
+```
 
 ---
 
