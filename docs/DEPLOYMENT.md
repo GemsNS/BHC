@@ -33,14 +33,16 @@ Enable Pages on `gh-pages` branch. URL: https://gemsns.github.io/BHC/
 
 **Limitations:** no `/api/*`. Client uses localStorage. Calendar ICS download still works client-side. Webhooks require a Node host. Browser AI: paste key on `/admin/assistant` or set `NEXT_PUBLIC_GEMINI_API_KEY` at **build time** (visible in JS — testing only).
 
-### 3. Node host (Fly, Railway, VPS, Cloud Run)
+### 3. Node host (Fly, Railway, VPS, Cloud Run, **Google Cloud**)
 
 - Node 20+
-- `npm ci && npm run build && npm start`
-- Persist `/workspace/data` (or `data/`) as a volume
+- `npm ci && npm run build && npm start` (listens on `$PORT`, default `3000`)
+- Persist `data/` as a volume (`data/store.json` is the CRM database)
 - Set env vars from `.env.example`
 - Put a reverse proxy (TLS) in front
 - **Do not expose this demo auth model to the public internet without hardening**
+
+**Google Cloud (Grok / autonomous agents):** see [`docs/GCP_GROK_DEPLOY.md`](./GCP_GROK_DEPLOY.md) and `deploy/gcp/` (Dockerfile, Cloud Build, Cloud Run example). Covers egress allowlist, Secret Manager, Filestore persistence, and QuickBooks connectivity.
 
 ## Environment variables
 
@@ -56,6 +58,11 @@ Enable Pages on `gh-pages` branch. URL: https://gemsns.github.io/BHC/
 | `NEXT_PUBLIC_STATIC_DEMO` | Static export | `1` |
 | `NEXT_PUBLIC_BASE_PATH` | Nested hosting | `/BHC` |
 | `RESEND_API_KEY` | Contact form | optional |
+| `QUICKBOOKS_CLIENT_ID` | QuickBooks Online | Node host; with secret, realm, refresh token |
+| `QUICKBOOKS_CLIENT_SECRET` | QuickBooks Online | |
+| `QUICKBOOKS_REALM_ID` | QuickBooks Online | |
+| `QUICKBOOKS_REFRESH_TOKEN` | QuickBooks Online | Rotates on refresh |
+| `QUICKBOOKS_ENV` | QuickBooks Online | `sandbox` or `production` |
 | `GOOGLE_CALENDAR_CLIENT_ID` | Future OAuth | unused until OAuth implemented |
 | `WEBHOOK_RETRY` | Future | not wired |
 

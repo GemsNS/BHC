@@ -13,6 +13,7 @@ Operations CRM + field PWA for **BH Contracting Co.**: role-based login, Active 
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Stack, store, auth, GPS, AI |
 | [docs/API.md](./docs/API.md) | REST, webhooks, CLI |
 | [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Local, Pages, Node host, env |
+| [docs/GCP_GROK_DEPLOY.md](./docs/GCP_GROK_DEPLOY.md) | **Google Cloud** runbook for Grok / agents |
 | [docs/USAGE.md](./docs/USAGE.md) | Login, knocker flow, calendar, AI keys |
 | [docs/KNOCKER.md](./docs/KNOCKER.md) | Map, GPS, proposals, push |
 | [docs/AI.md](./docs/AI.md) | Gemini / OpenAI / Mainframe |

@@ -18,7 +18,7 @@
 - **HUD command deck:** `/admin/dashboard` — immersive neon ops viz (SALES / INSTALL / ADMIN / NET / MKT radial dock) plus a compact JARVIS strip above the dock. Append `?classic=1` for the list-based ops wall.
 - **Market terminal:** `/admin/markets` — Bloomberg-style ticker, competitor $/sqft grid, decision signals, Open-Meteo field weather; auto-refreshes every 30s. Uses terminal immersive chrome (no top bar / JARVIS bar); watchlist is a horizontal chip strip so it does not mirror the nav rail.
 - Static demo localStorage key: `bhc-crm-store-v8` (bump when `AppData` schema changes). **Do not** pass `withBasePath()` to Next.js `Link` or `router.push` — Next adds `basePath` automatically; use `withBasePath` for `fetch` only.
-- **Transfer docs:** `CLAUDE.md` + `docs/` (HANDOFF, ARCHITECTURE, API, DEPLOYMENT, USAGE, KNOCKER, AI).
+- **Transfer docs:** `CLAUDE.md` + `docs/` (HANDOFF, ARCHITECTURE, API, DEPLOYMENT, **GCP_GROK_DEPLOY**, USAGE, KNOCKER, AI).
 - **Client AI (Pages testing):** paste Gemini key in `/admin/assistant` sidebar (localStorage) or set `NEXT_PUBLIC_GEMINI_API_KEY` — browser calls Gemini directly; status updates immediately after Save; invalid keys surface a real error (not “no API key”). Not for production secrets.
 - **Active Knocker:** `/apps/knocker` (field) · `/admin/knocker` (command) — Map + **Zones** tab (former Territories page redirects here), GPS, color pins, routes, tasks, proposals, webhooks. Works on Pages via localStorage (no multi-user sync).
 - **Books & P&L:** `/admin/books` — local 2-year P&L from CRM data + optional QuickBooks Online hook (`QUICKBOOKS_*` env or paste credentials; Node host required for QB API).
