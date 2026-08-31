@@ -258,7 +258,7 @@ function buildSignals(data: AppData, competitors: CompetitorIntel[]): MarketSign
 export async function fetchWeatherIntel(): Promise<WeatherIntel | null> {
   try {
     const url =
-      "https://api.open-meteo.com/v1/forecast?latitude=39.7392&longitude=-104.9903&current=temperature_2m,precipitation,wind_speed_10m,weather_code&timezone=America%2FDenver";
+      "https://api.open-meteo.com/v1/forecast?latitude=44.6488&longitude=-63.5752&current=temperature_2m,precipitation,wind_speed_10m,weather_code&timezone=America%2FHalifax";
     const res = await fetch(url, { next: { revalidate: 300 } });
     if (!res.ok) return null;
     const json = (await res.json()) as {
@@ -287,7 +287,7 @@ export async function fetchWeatherIntel(): Promise<WeatherIntel | null> {
           ? "Harness checks mandatory; consider afternoon cutoffs."
           : "Green light for field installs and canvass routes.";
     return {
-      location: "Denver Metro",
+      location: "Halifax Regional Municipality",
       tempF,
       precipMm: c.precipitation,
       windMph,

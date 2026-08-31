@@ -15,7 +15,7 @@ describe("mainframe tools", () => {
     const result = executeMainframeTool(
       data,
       "create_lead",
-      { name: "Test Mainframe Lead", city: "Denver", jobType: "residential" },
+      { name: "Test Mainframe Lead", city: "Halifax", jobType: "residential" },
       ctx,
     );
     expect(result.ok).toBe(true);

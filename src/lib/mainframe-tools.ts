@@ -4,8 +4,12 @@ import { findProspectsForLead, scoreLead } from "./lead-automation";
 import type {
   AppData,
   AssistantCriteriaProfile,
+  AssistantMemoryEntry,
+  Employee,
+  EmployeeRole,
   InvoiceDoc,
   InvoiceLine,
+  Job,
   Lead,
   LeadStatus,
 } from "./types";
@@ -32,8 +36,10 @@ export const MAINFRAME_TOOL_NAMES = [
   "get_summary",
   "list_leads",
   "create_lead",
+  "update_lead",
   "update_lead_status",
   "list_jobs",
+  "create_job",
   "create_invoice",
   "run_workflow",
   "process_sequences",
@@ -43,6 +49,11 @@ export const MAINFRAME_TOOL_NAMES = [
   "save_criteria_profile",
   "create_task",
   "run_daily_automations",
+  "remember_knowledge",
+  "search_knowledge",
+  "import_data",
+  "create_employee",
+  "lookup_hrm",
 ] as const;
 
 export type MainframeToolName = (typeof MAINFRAME_TOOL_NAMES)[number];
@@ -60,10 +71,14 @@ export function executeMainframeTool(
       return toolListLeads(data, args);
     case "create_lead":
       return toolCreateLead(data, args, ctx);
+    case "update_lead":
+      return toolUpdateLead(data, args, ctx);
     case "update_lead_status":
       return toolUpdateLeadStatus(data, args, ctx);
     case "list_jobs":
       return toolListJobs(data, args);
+    case "create_job":
+      return toolCreateJob(data, args, ctx);
     case "create_invoice":
       return toolCreateInvoice(data, args, ctx);
     case "run_workflow":
@@ -82,6 +97,20 @@ export function executeMainframeTool(
       return toolCreateTask(data, args, ctx);
     case "run_daily_automations":
       return toolRunDaily(data, args, ctx);
+    case "remember_knowledge":
+      return toolRememberKnowledge(data, args, ctx);
+    case "search_knowledge":
+      return toolSearchKnowledge(data, args);
+    case "import_data":
+      return toolImportData(data, args, ctx);
+    case "create_employee":
+      return toolCreateEmployee(data, args, ctx);
+    case "lookup_hrm":
+      return {
+        ok: false,
+        summary:
+          "lookup_hrm requires server async — use from AI chat on Node host (not local parser).",
+      };
     default:
       return { ok: false, summary: `Unknown tool: ${tool}` };
   }
@@ -132,10 +161,10 @@ function toolCreateLead(
   const lead: Lead = {
     id: ctx.newId(),
     name,
-    phone: String(args.phone ?? "(555) 000-0000"),
+    phone: String(args.phone ?? "(902) 000-0000"),
     email: String(args.email ?? ""),
     address: String(args.address ?? "TBD"),
-    city: String(args.city ?? "Denver"),
+    city: String(args.city ?? "Halifax"),
     source: String(args.source ?? "Mainframe AI"),
     status: (args.status as LeadStatus) ?? "new",
     jobType: args.jobType === "commercial" ? "commercial" : "residential",
@@ -263,7 +292,7 @@ function toolRunWorkflow(
   args: Record<string, unknown>,
   ctx: ToolContext,
 ): ToolExecution {
-  const wfId = String(args.workflowId ?? "wf-2");
+  const wfId = String(args.workflowId ?? "wf-new-lead");
   const leadId = args.leadId ? String(args.leadId) : undefined;
   const runs = runSingleWorkflow(data, wfId, {
     leadId,
@@ -380,7 +409,7 @@ function toolSaveProfile(
       (args.jobTypes as AssistantCriteriaProfile["jobTypes"]) ??
       existing?.jobTypes ??
       (["residential"] as const),
-    regions: (args.regions as string[]) ?? existing?.regions ?? ["Denver"],
+    regions: (args.regions as string[]) ?? existing?.regions ?? ["Halifax", "Dartmouth"],
     keywords: (args.keywords as string[]) ?? existing?.keywords ?? ["roof"],
     minLeadScore: Number(args.minLeadScore ?? existing?.minLeadScore ?? 55),
     outreachTone: String(args.outreachTone ?? existing?.outreachTone ?? "Professional."),
@@ -445,4 +474,261 @@ function toolRunDaily(
     };
   }
   return { ok: true, summary: results.join("\n") };
+}
+
+function findLead(data: AppData, query: string): Lead | undefined {
+  const q = query.trim().toLowerCase();
+  if (!q) return undefined;
+  return data.leads.find(
+    (l) => l.id === q || l.name.toLowerCase().includes(q) || l.email.toLowerCase() === q,
+  );
+}
+
+function toolUpdateLead(
+  data: AppData,
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): ToolExecution {
+  const lead = findLead(data, String(args.leadId ?? args.lead ?? args.id ?? ""));
+  if (!lead) return { ok: false, summary: "Lead not found." };
+  const prevStatus = lead.status;
+  if (args.name) lead.name = String(args.name);
+  if (args.phone) lead.phone = String(args.phone);
+  if (args.email) lead.email = String(args.email);
+  if (args.address) lead.address = String(args.address);
+  if (args.city) lead.city = String(args.city);
+  if (args.notes) lead.notes = String(args.notes);
+  if (args.source) lead.source = String(args.source);
+  if (args.jobType) lead.jobType = args.jobType === "commercial" ? "commercial" : "residential";
+  if (args.status) lead.status = args.status as LeadStatus;
+  if (args.assignedToId) lead.assignedToId = String(args.assignedToId);
+  lead.leadScore = scoreLead(lead);
+  lead.updatedAt = ctx.nowIso();
+  if (args.status && args.status !== prevStatus) {
+    onLeadStatusChanged(data, lead, ctx.authorId);
+  }
+  return {
+    ok: true,
+    summary: `Updated lead "${lead.name}" (${lead.city}, ${lead.status}, score ${lead.leadScore}).`,
+    data: { leadId: lead.id },
+  };
+}
+
+function toolCreateJob(
+  data: AppData,
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): ToolExecution {
+  const title = String(args.title ?? "").trim();
+  if (!title) return { ok: false, summary: "Job title is required." };
+  const lead = args.leadId || args.lead ? findLead(data, String(args.leadId ?? args.lead)) : undefined;
+  const stamp = ctx.nowIso();
+  const job: Job = {
+    id: ctx.newId(),
+    title,
+    customerName: String(args.customerName ?? lead?.name ?? "TBD"),
+    address: String(args.address ?? lead?.address ?? "TBD"),
+    jobType: args.jobType === "commercial" ? "commercial" : "residential",
+    status: "scheduled",
+    leadId: lead?.id ?? null,
+    crewLeadId: args.crewLeadId ? String(args.crewLeadId) : "emp-field-1",
+    startDate: String(args.startDate ?? stamp.slice(0, 10)),
+    estimatedValue: Number(args.estimatedValue ?? 0),
+    contractValue: Number(args.contractValue ?? args.estimatedValue ?? 0),
+    notes: String(args.notes ?? "Created by Mainframe AI."),
+    createdAt: stamp,
+  };
+  data.jobs.unshift(job);
+  return {
+    ok: true,
+    summary: `Created job "${job.title}" for ${job.customerName} at ${job.address}.`,
+    data: { jobId: job.id, leadId: lead?.id },
+  };
+}
+
+function toolRememberKnowledge(
+  data: AppData,
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): ToolExecution {
+  const topic = String(args.topic ?? "general").trim();
+  const content = String(args.content ?? "").trim();
+  if (!content) return { ok: false, summary: "content is required to remember." };
+  const tags = Array.isArray(args.tags)
+    ? (args.tags as string[]).map(String)
+    : String(args.tags ?? "")
+        .split(/[,;]/)
+        .map((t) => t.trim())
+        .filter(Boolean);
+  const entry: AssistantMemoryEntry = {
+    id: ctx.newId(),
+    topic,
+    content,
+    tags,
+    source: String(args.source ?? "mainframe_chat"),
+    createdAt: ctx.nowIso(),
+    authorId: ctx.authorId,
+  };
+  data.assistantMemory.unshift(entry);
+  data.assistantAudit.unshift({
+    id: ctx.newId(),
+    action: "memory_saved",
+    detail: `Remembered: ${topic} — ${content.slice(0, 120)}`,
+    createdAt: ctx.nowIso(),
+  });
+  return {
+    ok: true,
+    summary: `Saved knowledge "${topic}" (${tags.join(", ") || "no tags"}). Mainframe will recall this in future turns.`,
+    data: { memoryId: entry.id },
+  };
+}
+
+function toolSearchKnowledge(data: AppData, args: Record<string, unknown>): ToolExecution {
+  const q = String(args.query ?? args.topic ?? "").toLowerCase();
+  if (!q) {
+    const recent = data.assistantMemory.slice(0, 5);
+    return {
+      ok: true,
+      summary: `Recent memory (${data.assistantMemory.length} total): ${recent.map((m) => m.topic).join("; ") || "empty"}.`,
+      data: { memories: recent },
+    };
+  }
+  const hits = data.assistantMemory.filter(
+    (m) =>
+      m.topic.toLowerCase().includes(q) ||
+      m.content.toLowerCase().includes(q) ||
+      m.tags.some((t) => t.toLowerCase().includes(q)),
+  );
+  return {
+    ok: true,
+    summary: `Found ${hits.length} memory entries for "${q}". ${hits
+      .slice(0, 3)
+      .map((m) => `${m.topic}: ${m.content.slice(0, 80)}`)
+      .join(" | ")}`,
+    data: { memories: hits.slice(0, 8) },
+  };
+}
+
+function toolImportData(
+  data: AppData,
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): ToolExecution {
+  const records = args.records as unknown;
+  if (!Array.isArray(records)) {
+    return {
+      ok: false,
+      summary:
+        'import_data expects { records: [...] } with items type "lead" | "job" | "company" | "memory".',
+    };
+  }
+  let leads = 0;
+  let jobs = 0;
+  let companies = 0;
+  let memories = 0;
+  for (const raw of records) {
+    if (!raw || typeof raw !== "object") continue;
+    const rec = raw as Record<string, unknown>;
+    const type = String(rec.type ?? "lead").toLowerCase();
+    if (type === "lead") {
+      const r = toolCreateLead(data, rec, ctx);
+      if (r.ok) leads++;
+    } else if (type === "job") {
+      const r = toolCreateJob(data, rec, ctx);
+      if (r.ok) jobs++;
+    } else if (type === "company") {
+      const stamp = ctx.nowIso();
+      data.companies.unshift({
+        id: ctx.newId(),
+        name: String(rec.name ?? "Imported company"),
+        domain: String(rec.domain ?? rec.website ?? ""),
+        industry: String(rec.industry ?? ""),
+        phone: String(rec.phone ?? ""),
+        address: String(rec.address ?? ""),
+        city: String(rec.city ?? "Halifax"),
+        notes: String(rec.notes ?? "Imported by Mainframe."),
+        createdAt: stamp,
+      });
+      companies++;
+    } else if (type === "memory") {
+      const r = toolRememberKnowledge(data, rec, ctx);
+      if (r.ok) memories++;
+    }
+  }
+  return {
+    ok: true,
+    summary: `Imported ${leads} lead(s), ${jobs} job(s), ${companies} company(ies), ${memories} memory entries.`,
+    data: { leads, jobs, companies, memories },
+  };
+}
+
+function toolCreateEmployee(
+  data: AppData,
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): ToolExecution {
+  const name = String(args.name ?? "").trim();
+  const login = String(args.login ?? "").trim().toLowerCase();
+  const role = String(args.role ?? "field") as EmployeeRole;
+  if (!name || !login) return { ok: false, summary: "name and login are required." };
+  if (data.employees.some((e) => e.login.toLowerCase() === login)) {
+    return { ok: false, summary: `Login "${login}" already exists.` };
+  }
+  const generatedPin = String(args.pin ?? Math.floor(100000 + Math.random() * 900000));
+  const emp: Employee = {
+    id: ctx.newId(),
+    name,
+    email: String(args.email ?? `${login}@bhcontracting.co`),
+    login,
+    pin: generatedPin,
+    role,
+    phone: String(args.phone ?? "(902) 000-0000"),
+    hireDate: ctx.nowIso().slice(0, 10),
+    hourlyRate: Number(args.hourlyRate ?? 24),
+    active: true,
+  };
+  data.employees.push(emp);
+  return {
+    ok: true,
+    summary: `Created employee ${emp.name} (login: ${emp.login}, PIN: ${emp.pin}, role: ${emp.role}). Share PIN securely.`,
+    data: { employeeId: emp.id, login: emp.login, pin: emp.pin },
+  };
+}
+
+/** Async HRM public API lookup — server-side only */
+export async function toolLookupHrmAsync(
+  args: Record<string, unknown>,
+): Promise<ToolExecution> {
+  const { buildHrmContextSummary, fetchHrmWeather, geocodeNovaScotia } = await import(
+    "./hrm-public"
+  );
+  const mode = String(args.mode ?? "summary").toLowerCase();
+  try {
+    if (mode === "weather") {
+      const w = await fetchHrmWeather();
+      return {
+        ok: true,
+        summary: `HRM weather: ${w.summary}, ${w.temperatureC}°C, wind ${w.windKmh} km/h.`,
+        data: w as unknown as Record<string, unknown>,
+      };
+    }
+    if (mode === "geocode") {
+      const q = String(args.query ?? args.address ?? "");
+      const hits = await geocodeNovaScotia(q);
+      return {
+        ok: true,
+        summary: hits.length
+          ? `Geocoded "${q}": ${hits[0].displayName} (${hits[0].lat}, ${hits[0].lon})`
+          : `No geocode results for "${q}" in Nova Scotia.`,
+        data: { results: hits },
+      };
+    }
+    const summary = await buildHrmContextSummary();
+    return { ok: true, summary, data: {} };
+  } catch (err) {
+    return {
+      ok: false,
+      summary: err instanceof Error ? err.message : "HRM lookup failed",
+    };
+  }
 }

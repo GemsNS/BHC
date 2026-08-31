@@ -433,6 +433,17 @@ export interface AssistantAuditEntry {
   createdAt: string;
 }
 
+/** Persistent facts Mainframe learns from chat, imports, and APIs */
+export interface AssistantMemoryEntry {
+  id: string;
+  topic: string;
+  content: string;
+  tags: string[];
+  source: string;
+  createdAt: string;
+  authorId: string | null;
+}
+
 export interface Job {
   id: string;
   title: string;
@@ -789,6 +800,7 @@ export interface AppData {
   assistantProfiles: AssistantCriteriaProfile[];
   assistantAutomations: AssistantDailyAutomation[];
   assistantAudit: AssistantAuditEntry[];
+  assistantMemory: AssistantMemoryEntry[];
 }
 
 export const ROLE_LABELS: Record<EmployeeRole, string> = {

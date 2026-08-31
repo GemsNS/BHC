@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSeedData } from "../src/lib/seed";
+import { buildDemoSeedData } from "../src/lib/demo-seed";
 import { onLeadCreated, onLeadStatusChanged } from "../src/lib/workflows";
 import { scoreLead, findProspectsForLead } from "../src/lib/lead-automation";
 import type { Lead } from "../src/lib/types";
@@ -7,7 +7,7 @@ import type { Lead } from "../src/lib/types";
 describe("lead automation", () => {
   it("scores leads with contact info higher", () => {
     const lead: Lead = {
-      ...buildSeedData().leads[0],
+      ...buildDemoSeedData().leads[0],
       source: "Referral",
       jobType: "commercial",
       email: "a@b.com",
@@ -17,7 +17,7 @@ describe("lead automation", () => {
   });
 
   it("finds prospects for qualified commercial leads", () => {
-    const data = buildSeedData();
+    const data = buildDemoSeedData();
     const lead = data.leads.find((l) => l.id === "lead-2")!;
     const prospects = findProspectsForLead(data, lead, 2);
     expect(prospects.length).toBeGreaterThan(0);
@@ -27,7 +27,7 @@ describe("lead automation", () => {
 
 describe("workflows", () => {
   it("runs lead_created workflow and enrolls sequence", () => {
-    const data = buildSeedData();
+    const data = buildDemoSeedData();
     const stamp = new Date().toISOString();
     const lead: Lead = {
       id: "lead-test",
@@ -55,7 +55,7 @@ describe("workflows", () => {
   });
 
   it("queues outreach when lead becomes qualified", () => {
-    const data = buildSeedData();
+    const data = buildDemoSeedData();
     const lead = data.leads.find((l) => l.id === "lead-3")!;
     lead.status = "qualified";
     const before = data.outreachQueue.length;

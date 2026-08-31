@@ -1,8 +1,10 @@
+/**
+ * HRM prospect pools for lead hunting — Nova Scotia local market.
+ */
 import { findProspectsForLead, scoreLead } from "./lead-automation";
 import type {
   AppData,
   AssistantCriteriaProfile,
-  JobType,
   Lead,
   OutreachQueueItem,
 } from "./types";
@@ -11,42 +13,50 @@ const REGION_PROSPECTS: Record<
   string,
   Array<{ name: string; email: string; phone: string; subject: string }>
 > = {
-  Denver: [
+  Halifax: [
     {
-      name: "Mile High Property Alliance",
-      email: "ops@milehighproperty.org",
-      phone: "(303) 555-4100",
-      subject: "Roof & envelope partners — Denver metro",
+      name: "Peninsula Property Managers",
+      email: "ops@peninsulapm.ca",
+      phone: "(902) 555-4100",
+      subject: "Envelope maintenance — Halifax peninsula",
     },
     {
-      name: "Capitol Hill HOA Board",
-      email: "maintenance@caphillhoa.org",
-      phone: "(303) 555-4200",
+      name: "Hydrostone Heritage HOA",
+      email: "board@hydrostonehoa.ca",
+      phone: "(902) 555-4200",
+      subject: "Heritage district exterior upgrades",
+    },
+  ],
+  Dartmouth: [
+    {
+      name: "Dartmouth Commercial Parks",
+      email: "facilities@dartmouthparks.ca",
+      phone: "(902) 555-4300",
+      subject: "Multi-tenant roof & siding programs",
+    },
+  ],
+  Bedford: [
+    {
+      name: "Bedford Residential Assoc.",
+      email: "maintenance@bedfordres.ca",
+      phone: "(902) 555-4400",
       subject: "Storm-season roof inspections",
     },
   ],
-  Aurora: [
+  Sackville: [
     {
-      name: "Aurora Commercial Parks",
-      email: "facilities@auroracommercial.com",
-      phone: "(303) 555-4300",
-      subject: "Multi-tenant envelope maintenance",
+      name: "Sackville Business Park",
+      email: "facilities@sackvillebp.ca",
+      phone: "(902) 555-4500",
+      subject: "Commercial envelope contractors",
     },
   ],
-  Seaside: [
+  "Cole Harbour": [
     {
-      name: "Coastal Homeowners Assoc.",
-      email: "board@coastalhoa.org",
-      phone: "(555) 770-2200",
-      subject: "Exterior upgrades for coastal homes",
-    },
-  ],
-  "Harbor City": [
-    {
-      name: "Harbor City Retail Group",
-      email: "facilities@harborcityretail.com",
-      phone: "(555) 660-1100",
-      subject: "Storefront envelope maintenance",
+      name: "Cole Harbour Community Board",
+      email: "projects@coleharbour.ca",
+      phone: "(902) 555-4600",
+      subject: "Residential renovation partners",
     },
   ],
 };
@@ -56,12 +66,12 @@ function defaultProfile(data: AppData): AssistantCriteriaProfile {
     data.assistantProfiles.find((p) => p.enabled) ??
     data.assistantProfiles[0] ?? {
       id: "default",
-      name: "Default",
+      name: "HRM default",
       jobTypes: ["residential", "commercial"],
-      regions: [],
+      regions: ["Halifax", "Dartmouth"],
       keywords: ["roof"],
       minLeadScore: 50,
-      outreachTone: "Professional and local.",
+      outreachTone: "Professional Nova Scotia contractor.",
       enabled: true,
       updatedAt: new Date().toISOString(),
     }
@@ -78,113 +88,77 @@ function leadMatchesProfile(lead: Lead, profile: AssistantCriteriaProfile): bool
   if (profile.keywords.length) {
     const blob = `${lead.notes} ${lead.source} ${lead.address}`.toLowerCase();
     if (!profile.keywords.some((k) => blob.includes(k.toLowerCase()))) {
-      if (lead.status !== "qualified" && lead.status !== "estimate") return false;
+      return false;
     }
   }
-  return !["won", "lost"].includes(lead.status);
+  return true;
 }
 
-function draftMessage(
-  profile: AssistantCriteriaProfile,
-  lead: Lead,
-  prospectName: string,
-): string {
-  const region = lead.city ? ` in ${lead.city}` : "";
-  return `Hi ${prospectName.split(" ")[0]} — BH Contracting Co. handles ${lead.jobType} exterior work${region}. ${profile.outreachTone} Reply if you'd like a scope call this week.`;
-}
-
-/** Score in-CRM leads + queue synthetic prospects from criteria regions */
 export function huntLeadsFromCriteria(
   data: AppData,
   profileId?: string,
   limit = 5,
 ): { matchedLeads: Lead[]; queued: number; notes: string[] } {
   const profile = profileId
-    ? data.assistantProfiles.find((p) => p.id === profileId) ?? defaultProfile(data)
+    ? (data.assistantProfiles.find((p) => p.id === profileId) ?? defaultProfile(data))
     : defaultProfile(data);
 
+  const matchedLeads = data.leads
+    .filter((l) => leadMatchesProfile(l, profile))
+    .sort((a, b) => b.leadScore - a.leadScore)
+    .slice(0, limit);
+
   const notes: string[] = [];
-  const matchedLeads = data.leads.filter((l) => {
-    l.leadScore = scoreLead(l);
-    return leadMatchesProfile(l, profile);
-  });
-
-  notes.push(
-    `Profile "${profile.name}": ${matchedLeads.length} in-CRM lead(s) match criteria.`,
-  );
-
   let queued = 0;
-  const existing = new Set(
-    data.outreachQueue.map((o) => o.prospectEmail.toLowerCase()),
-  );
   const stamp = new Date().toISOString();
 
-  for (const lead of matchedLeads.slice(0, 3)) {
+  for (const lead of matchedLeads) {
     const prospects = findProspectsForLead(data, lead, 2);
     for (const p of prospects) {
-      if (existing.has(p.prospectEmail.toLowerCase())) continue;
-      data.outreachQueue.unshift({
+      const item: OutreachQueueItem = {
         ...p,
-        message: draftMessage(profile, lead, p.prospectName),
         id: `out-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
         status: "pending_approval",
         workflowRunId: null,
         sentAt: null,
         createdAt: stamp,
-      });
-      existing.add(p.prospectEmail.toLowerCase());
-      queued += 1;
+        channel: p.channel ?? "email",
+        scheduledAt: stamp,
+      };
+      data.outreachQueue.unshift(item);
+      queued++;
     }
+    notes.push(`${lead.name} (${lead.city}) score ${lead.leadScore}`);
   }
 
   for (const region of profile.regions) {
-    const pool = REGION_PROSPECTS[region] ?? [];
-    for (const p of pool) {
-      if (queued >= limit) break;
-      if (existing.has(p.email.toLowerCase())) continue;
-      const anchor =
-        matchedLeads[0] ??
-        data.leads.find((l) => l.city.toLowerCase().includes(region.toLowerCase()));
-      const jobType: JobType = profile.jobTypes[0] ?? "residential";
-      const syntheticLead: Lead = anchor ?? {
-        id: "synthetic",
-        name: "Criteria hunt",
-        phone: "",
-        email: "",
-        address: region,
-        city: region,
-        source: "Mainframe AI",
-        status: "qualified",
-        jobType,
-        notes: profile.keywords.join(", "),
-        assignedToId: null,
-        companyId: null,
-        leadScore: profile.minLeadScore,
-        createdAt: stamp,
-        updatedAt: stamp,
-      };
+    const pool = REGION_PROSPECTS[region];
+    if (!pool?.length) continue;
+    const pick = pool[queued % pool.length];
+    data.outreachQueue.unshift({
+      id: `out-region-${Date.now()}-${region}`,
+      leadId: null,
+      prospectName: pick.name,
+      prospectEmail: pick.email,
+      prospectPhone: pick.phone,
+      channel: "email",
+      subject: pick.subject,
+      message: `${profile.outreachTone}\n\nReaching out regarding ${pick.subject} in ${region}, NS.`,
+      status: "pending_approval",
+      workflowRunId: null,
+      scheduledAt: stamp,
+      sentAt: null,
+      createdAt: stamp,
+    });
+    queued++;
+    notes.push(`Regional prospect: ${pick.name} (${region})`);
+  }
 
-      const item: OutreachQueueItem = {
-        id: `out-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
-        leadId: anchor?.id ?? null,
-        prospectName: p.name,
-        prospectEmail: p.email,
-        prospectPhone: p.phone,
-        channel: "email",
-        subject: p.subject,
-        message: draftMessage(profile, syntheticLead, p.name),
-        status: "pending_approval",
-        workflowRunId: null,
-        scheduledAt: stamp,
-        sentAt: null,
-        createdAt: stamp,
-      };
-      data.outreachQueue.unshift(item);
-      existing.add(p.email.toLowerCase());
-      queued += 1;
-      notes.push(`Queued regional prospect ${p.name} (${region}).`);
-    }
+  if (!matchedLeads.length && !queued) {
+    notes.push("No matching leads — import leads via Mainframe or create manually.");
   }
 
   return { matchedLeads, queued, notes };
 }
+
+export { scoreLead };

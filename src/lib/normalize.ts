@@ -139,5 +139,6 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     assistantProfiles: raw.assistantProfiles ?? seed.assistantProfiles,
     assistantAutomations: raw.assistantAutomations ?? seed.assistantAutomations,
     assistantAudit: raw.assistantAudit ?? seed.assistantAudit,
+    assistantMemory: raw.assistantMemory ?? seed.assistantMemory,
   };
 }

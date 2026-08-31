@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSeedData } from "../src/lib/seed";
+import { buildDemoSeedData } from "../src/lib/demo-seed";
 import {
   buildJarvisInsights,
   buildJarvisSnapshot,
@@ -16,7 +16,7 @@ describe("jarvis-briefing", () => {
   });
 
   it("returns prioritized insights with detail payloads", () => {
-    const data = buildSeedData();
+    const data = buildDemoSeedData();
     const insights = buildJarvisInsights(data, "overview");
     expect(insights.length).toBeGreaterThan(0);
     expect(insights.length).toBeLessThanOrEqual(8);
@@ -26,13 +26,13 @@ describe("jarvis-briefing", () => {
   });
 
   it("includes pipeline metric chips on sales context", () => {
-    const data = buildSeedData();
+    const data = buildDemoSeedData();
     const snapshot = buildJarvisSnapshot(data, "sales");
     expect(snapshot.metrics.some((m) => m.id === "pipeline")).toBe(true);
   });
 
   it("surfaces knocker tasks on field context", () => {
-    const data = buildSeedData();
+    const data = buildDemoSeedData();
     const insights = buildJarvisInsights(data, "field");
     const fieldCards = insights.filter((i) => i.category === "field");
     expect(fieldCards.length).toBeGreaterThan(0);
@@ -45,7 +45,7 @@ describe("jarvis-briefing", () => {
   });
 
   it("builds overview snapshot used by the HUD deck strip", () => {
-    const data = buildSeedData();
+    const data = buildDemoSeedData();
     const snapshot = buildJarvisSnapshot(data, "overview");
     expect(snapshot.metrics.length).toBeGreaterThan(0);
     const insights = buildJarvisInsights(data, "overview");

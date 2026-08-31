@@ -4,14 +4,7 @@ import Link from "next/link";
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/session";
-import { homeForRole, ROLE_LABELS } from "@/lib/types";
-
-const DEMO_ACCOUNTS = [
-  { login: "cameron", pin: "1001", role: "Admin" },
-  { login: "jamie", pin: "1007", role: "Knocker" },
-  { login: "sam", pin: "1003", role: "Field" },
-  { login: "riley", pin: "1005", role: "Driver" },
-];
+import { homeForRole } from "@/lib/types";
 
 function safeNextPath(raw: string | null): string | null {
   if (!raw) return null;
@@ -46,24 +39,13 @@ function LoginForm() {
     }
     const { loadAppData } = await import("@/lib/client-data");
     const data = await loadAppData();
-    const normalized =
-      loginName.trim().toLowerCase() === "jordan"
-        ? "cameron"
-        : loginName.trim().toLowerCase();
+    const normalized = loginName.trim().toLowerCase();
     const emp = data.employees.find(
       (x) =>
         x.login.toLowerCase() === normalized ||
-        x.email.toLowerCase() === normalized ||
-        (normalized === "cameron" && x.id === "emp-admin"),
+        x.email.toLowerCase() === normalized,
     );
     router.replace(nextPath || (emp ? homeForRole(emp.role) : "/apps"));
-  }
-
-  function fillDemo(loginName: string, pin: string) {
-    const loginEl = document.getElementById("login") as HTMLInputElement | null;
-    const pinEl = document.getElementById("pin") as HTMLInputElement | null;
-    if (loginEl) loginEl.value = loginName;
-    if (pinEl) pinEl.value = pin;
   }
 
   return (
@@ -73,7 +55,7 @@ function LoginForm() {
           <p className="login-eyebrow">BH Contracting Co.</p>
           <h1 className="login-title">Sign in</h1>
           <p className="login-sub">
-            Your role unlocks only the tools you need — admin desk or field apps.{" "}
+            Staff workspace — Halifax Regional Municipality ops.{" "}
             <Link href="/" className="login-home-link">
               ← Public site
             </Link>
@@ -88,7 +70,7 @@ function LoginForm() {
               name="login"
               required
               autoComplete="username"
-              placeholder="cameron"
+              placeholder="your login"
               className="field-input"
             />
           </label>
@@ -101,7 +83,7 @@ function LoginForm() {
               type="password"
               inputMode="numeric"
               autoComplete="current-password"
-              placeholder="••••"
+              placeholder="••••••"
               className="field-input"
             />
           </label>
@@ -111,33 +93,13 @@ function LoginForm() {
           </button>
         </form>
 
-        <div className="demo-accounts">
-          <p className="demo-label">Demo accounts — tap to fill</p>
-          <div className="demo-grid">
-            {DEMO_ACCOUNTS.map((a) => (
-              <button
-                key={a.login}
-                type="button"
-                className="demo-chip"
-                onClick={() => fillDemo(a.login, a.pin)}
-              >
-                <strong>{a.role}</strong>
-                <span>
-                  {a.login} / {a.pin}
-                </span>
-              </button>
-            ))}
-          </div>
-          <p className="demo-hint">
-            Roles: {Object.values(ROLE_LABELS).join(" · ")}
-          </p>
-        </div>
+        <p className="login-sub" style={{ marginTop: "1.25rem", fontSize: "0.85rem" }}>
+          Credentials are issued by your administrator. Contact ops if you need access.
+        </p>
       </div>
       <div className="login-visual" aria-hidden>
         <p className="login-visual-brand">BH</p>
-        <p className="login-visual-tag">
-          Contracting ops — knocks to closeout.
-        </p>
+        <p className="login-visual-tag">HRM contracting ops — knocks to closeout.</p>
       </div>
     </div>
   );
