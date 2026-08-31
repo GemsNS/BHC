@@ -58,7 +58,7 @@ export function findProspectsForLead(
   );
 
   const cityHint = lead.city ? ` in ${lead.city}` : "";
-  const messageBase = `Hi — BH Contracting Co. helps properties${cityHint} with ${lead.jobType} exterior work. Based on similar projects, we'd love to connect.`;
+  const messageBase = `Hi — BH Contracting LTD. helps properties${cityHint} with ${lead.jobType} exterior work. Based on similar projects, we'd love to connect.`;
 
   return pool
     .filter((p) => !existing.has(p.email.toLowerCase()))

@@ -252,7 +252,7 @@ export function ExteriorDesigner({ pricingItems }: ExteriorDesignerProps) {
 
   const summary = useMemo(() => {
     const lines: string[] = [
-      "[Exterior configuration — BH Contracting Co. website]",
+      "[Exterior configuration — BH Contracting LTD. website]",
       "",
       "── SIDING ──",
       `Material: ${SIDING_MATERIALS.find((m) => m.id === sidingMaterial)?.label ?? sidingMaterial}`,

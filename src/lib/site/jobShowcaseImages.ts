@@ -52,7 +52,7 @@ export type JobShowcaseImage = {
 export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   {
     src: IMG_0983,
-    alt: "Siding and trim installation completed by BH Contracting Co.",
+    alt: "Siding and trim installation completed by BH Contracting LTD.",
     title: "Siding and trim package",
     audience: "commercial",
   },
@@ -64,7 +64,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_1436,
-    alt: "Commercial facade detail from a multi-unit exterior project by BH Contracting Co.",
+    alt: "Commercial facade detail from a multi-unit exterior project by BH Contracting LTD.",
     title: "Commercial facade detail",
     audience: "commercial",
   },
@@ -118,7 +118,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_1886,
-    alt: "Completed residential facade upgrade by BH Contracting Co.",
+    alt: "Completed residential facade upgrade by BH Contracting LTD.",
     title: "Residential facade upgrade",
     audience: "residential",
   },
@@ -154,7 +154,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_2203,
-    alt: "Home exterior update completed by BH Contracting Co. team.",
+    alt: "Home exterior update completed by BH Contracting LTD. team.",
     title: "Whole-home exterior update",
     audience: "residential",
   },
@@ -172,7 +172,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_2358,
-    alt: "Completed project photo from BH Contracting Co. portfolio.",
+    alt: "Completed project photo from BH Contracting LTD. portfolio.",
     title: "Portfolio exterior completion",
     audience: "commercial",
   },
@@ -208,7 +208,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_2597,
-    alt: "BH Contracting Co. completed project detail image.",
+    alt: "BH Contracting LTD. completed project detail image.",
     title: "Full residential siding overhaul",
     audience: "residential",
   },
@@ -232,7 +232,7 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_2836,
-    alt: "Nova Scotia residential job completed by BH Contracting Co.",
+    alt: "Nova Scotia residential job completed by BH Contracting LTD.",
     title: "Garage and bay window facade",
     audience: "residential",
   },
@@ -262,13 +262,13 @@ export const JOB_SHOWCASE_IMAGES: JobShowcaseImage[] = [
   },
   {
     src: IMG_3266,
-    alt: "Completed construction portfolio image from BH Contracting Co.",
+    alt: "Completed construction portfolio image from BH Contracting LTD.",
     title: "Portfolio exterior project",
     audience: "commercial",
   },
   {
     src: IMAGE_000000,
-    alt: "Completed job showcase image from BH Contracting Co.",
+    alt: "Completed job showcase image from BH Contracting LTD.",
     title: "Completed exterior showcase",
     audience: "commercial",
   },

@@ -10,13 +10,44 @@ curl -X POST http://localhost:3000/api/seed
 
 Optional: set `SEED_SECRET` in `.env` and pass header `x-seed-secret`.
 
-Response includes **`credentials`** — one-time staff logins and PINs. Also written to `data/staff-credentials.json` (gitignored).
+Response lists **one account per role** with default bootstrap PIN **`0000`**. No random PINs are generated.
 
-## What you get
+## First-time staff login
+
+1. Go to `/login`
+2. Sign in with role login (e.g. `admin`) and PIN **`0000`**
+3. Set a personal password (min 6 characters)
+4. Continue to the workspace
+
+## Manage users (Admin → Team)
+
+Use **Admin → Team** (`/admin/team`) to:
+
+- View staff, roles, and password status
+- Add team members (default PIN `0000`, must set password on first login)
+- Reset a password (restores PIN `0000` and forces password setup)
+- Activate / deactivate accounts
+
+No CLI seeding or credential files required.
+
+## Default production accounts
+
+| Login | Role |
+|-------|------|
+| `admin` | Admin |
+| `manager` | Manager |
+| `sales` | Sales |
+| `knocker` | Knocker |
+| `field` | Field |
+| `office` | Office |
+| `driver` | Driver |
+
+All accounts start with PIN **`0000`** until a password is set.
+
+## What you get after seed
 
 - Empty leads, jobs, invoices (start from scratch)
 - Halifax Regional Municipality knocker zones + HRM assistant profile
-- 8 staff accounts with random 6-digit PINs
 - Mainframe **assistant memory** seeded with HRM ops context
 - Public API hooks: Open-Meteo weather, OSM Nominatim geocoding (`/api/hrm`, Mainframe `lookup_hrm`)
 
@@ -31,19 +62,6 @@ Paste customer lists or dictation in `/admin/assistant`. The AI uses:
 | `remember_knowledge` | Save facts for future sessions |
 | `search_knowledge` | Recall saved facts |
 | `lookup_hrm` | Weather + geocode Nova Scotia addresses |
-
-## Staff roles (default seed)
-
-| Role | Typical login pattern |
-|------|------------------------|
-| Admin | `liam` |
-| Manager | `sarah` |
-| Sales | `noah` |
-| Knocker | `emma`, `james` |
-| Field | `olivia`, `ethan` |
-| Driver | `maya` |
-
-**PINs change every seed** — always read the `credentials` array from the seed response.
 
 ## Browser demos
 

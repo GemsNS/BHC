@@ -1,4 +1,5 @@
 import type { AppData, Employee, KnockEvent } from "./types";
+import { DEFAULT_STAFF_PIN } from "./auth-credentials";
 import { buildSeedData } from "./seed";
 import { normalizeAddressKey } from "./knocker/geo";
 import { DEFAULT_KNOCK_COLORS } from "./knocker/colors";
@@ -23,8 +24,11 @@ function withLoginFields(emp: Employee & { login?: string; pin?: string }): Empl
     emp.login ||
     emp.email.split("@")[0] ||
     emp.name.toLowerCase().replace(/\s+/g, ".");
-  const pin = emp.pin || "1234";
-  return { ...emp, login, pin };
+  const pin = emp.pin || DEFAULT_STAFF_PIN;
+  const passwordHash = emp.passwordHash ?? null;
+  const mustChangePassword =
+    emp.mustChangePassword ?? (!passwordHash && pin === DEFAULT_STAFF_PIN);
+  return { ...emp, login, pin, passwordHash, mustChangePassword };
 }
 
 /**
@@ -33,11 +37,11 @@ function withLoginFields(emp: Employee & { login?: string; pin?: string }): Empl
  */
 function migrateEmployee(emp: Employee): Employee {
   let next = emp;
-  if (
-    emp.id === "emp-admin" ||
+  const isLegacyJordan =
     emp.login?.toLowerCase() === "jordan" ||
-    emp.email?.toLowerCase().startsWith("jordan@")
-  ) {
+    emp.email?.toLowerCase().startsWith("jordan@") ||
+    emp.name?.toLowerCase().includes("jordan");
+  if (isLegacyJordan) {
     next = {
       ...emp,
       name: emp.name?.toLowerCase().includes("jordan")

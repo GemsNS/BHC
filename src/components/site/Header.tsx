@@ -1,11 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, Phone, X } from "lucide-react";
-import { withBasePath } from "@/lib/site/withBasePath";
+import { BhLogo } from "@/components/brand/BhLogo";
 import { headerNavForPathname, quoteCtaHref } from "@/lib/site/siteNav";
 
 export function Header() {
@@ -50,15 +49,7 @@ export function Header() {
 
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8 lg:py-4">
         <Link href="/" className="flex min-w-0 items-center gap-3">
-          <Image
-            src={withBasePath("/brand/bh-logo-dark.svg")}
-            alt="BH Contracting Co."
-            width={200}
-            height={56}
-            className="h-11 w-auto max-w-[200px] object-contain object-left sm:h-12"
-            priority
-            unoptimized
-          />
+          <BhLogo priority />
         </Link>
 
         <nav className="hidden items-center gap-8 text-sm font-medium lg:flex" aria-label="Primary">

@@ -26,7 +26,7 @@ describe("utils", () => {
 describe("production seed data", () => {
   it("includes HRM production starter collections", () => {
     const seed = buildSeedData();
-    expect(seed.employees.length).toBe(8);
+    expect(seed.employees.length).toBe(7);
     expect(seed.leads.length).toBe(0);
     expect(seed.jobs.length).toBe(0);
     expect(seed.zones.length).toBeGreaterThan(0);
@@ -34,11 +34,12 @@ describe("production seed data", () => {
     expect(seed.assistantProfiles[0]?.regions).toContain("Halifax");
   });
 
-  it("gives every employee a login and pin", () => {
+  it("gives every employee a login and default bootstrap PIN", () => {
     const seed = buildSeedData();
     for (const emp of seed.employees) {
       expect(emp.login.length).toBeGreaterThan(0);
-      expect(emp.pin.length).toBeGreaterThanOrEqual(6);
+      expect(emp.pin).toBe("0000");
+      expect(emp.mustChangePassword).toBe(true);
     }
   });
 });

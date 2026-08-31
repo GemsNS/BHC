@@ -221,10 +221,14 @@ export interface Employee {
   id: string;
   name: string;
   email: string;
-  /** Login username (usually email local-part) */
+  /** Login username */
   login: string;
-  /** Simple PIN for demo / field login */
+  /** Bootstrap PIN — default 0000 until password is set */
   pin: string;
+  /** SHA-256 hash; set after first-login password setup */
+  passwordHash?: string | null;
+  /** When true, user must set a password after signing in with default PIN */
+  mustChangePassword?: boolean;
   role: EmployeeRole;
   phone: string;
   hireDate: string;

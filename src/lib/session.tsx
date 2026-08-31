@@ -10,17 +10,27 @@ import {
 } from "react";
 import type { Employee, Permission } from "./types";
 import { ROLE_PERMISSIONS, homeForRole } from "./types";
-import { loadAppData } from "./client-data";
+import { loadAppData, mutateAppData } from "./client-data";
 import { isStaticDemo, withBasePath } from "./paths";
+import {
+  hashPasswordBrowser,
+  needsPasswordSetup,
+  verifyStaffSecretBrowser,
+} from "./auth-credentials";
 
 const SESSION_KEY = "bhc-auth-user-id";
+
+type LoginResult =
+  | { ok: true; mustChangePassword?: boolean }
+  | { ok: false; error: string };
 
 type SessionCtx = {
   user: Employee | null;
   employees: Employee[];
   loading: boolean;
   authenticated: boolean;
-  login: (loginName: string, pin: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  login: (loginName: string, password: string) => Promise<LoginResult>;
+  setPassword: (currentPassword: string, newPassword: string) => Promise<LoginResult>;
   logout: () => void;
   can: (perm: Permission) => boolean;
   homePath: string;
@@ -53,44 +63,87 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
-  const login = useCallback(
-    async (loginName: string, pin: string) => {
-      // Legacy demo alias after admin rename jordan → cameron
-      const normalized =
-        loginName.trim().toLowerCase() === "jordan"
-          ? "cameron"
-          : loginName.trim().toLowerCase();
-      const data = await loadAppData();
-      const match = data.employees.find(
-        (e) =>
-          e.active &&
-          (e.login.toLowerCase() === normalized ||
-            e.email.toLowerCase() === normalized ||
-            (normalized === "cameron" && e.id === "emp-admin")) &&
-          e.pin === pin,
-      );
-      if (!match) {
-        return { ok: false as const, error: "Invalid login or PIN" };
+  const login = useCallback(async (loginName: string, password: string): Promise<LoginResult> => {
+    const normalized = loginName.trim().toLowerCase();
+
+    if (!isStaticDemo()) {
+      try {
+        const res = await fetch(withBasePath("/api/auth/login"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ login: normalized, password }),
+        });
+        const json = (await res.json()) as {
+          employee?: Employee;
+          mustChangePassword?: boolean;
+          error?: string;
+        };
+        if (!res.ok || !json.employee) {
+          return { ok: false, error: json.error ?? "Invalid login or password" };
+        }
+        localStorage.setItem(SESSION_KEY, json.employee.id);
+        setUserIdState(json.employee.id);
+        await refresh();
+        return { ok: true, mustChangePassword: json.mustChangePassword };
+      } catch {
+        return { ok: false, error: "Could not reach server" };
+      }
+    }
+
+    const data = await loadAppData();
+    const match = data.employees.find(
+      (e) =>
+        e.active &&
+        (e.login.toLowerCase() === normalized || e.email.toLowerCase() === normalized),
+    );
+    if (!match || !(await verifyStaffSecretBrowser(match, password))) {
+      return { ok: false, error: "Invalid login or password" };
+    }
+    localStorage.setItem(SESSION_KEY, match.id);
+    setUserIdState(match.id);
+    setEmployees(data.employees.filter((e) => e.active));
+    return { ok: true, mustChangePassword: needsPasswordSetup(match) };
+  }, [refresh]);
+
+  const setPassword = useCallback(
+    async (currentPassword: string, newPassword: string): Promise<LoginResult> => {
+      const id = userId ?? localStorage.getItem(SESSION_KEY);
+      if (!id) return { ok: false, error: "Not signed in" };
+
+      if (newPassword.trim().length < 6) {
+        return { ok: false, error: "Password must be at least 6 characters" };
       }
 
       if (!isStaticDemo()) {
-        try {
-          await fetch(withBasePath("/api/auth/login"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ login: normalized, pin }),
-          });
-        } catch {
-          /* client-side auth is source of truth for demo */
-        }
+        const res = await fetch(withBasePath("/api/auth/login"), {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            employeeId: id,
+            currentPassword,
+            newPassword,
+          }),
+        });
+        const json = (await res.json()) as { ok?: boolean; error?: string };
+        if (!res.ok) return { ok: false, error: json.error ?? "Could not update password" };
+        await refresh();
+        return { ok: true };
       }
 
-      localStorage.setItem(SESSION_KEY, match.id);
-      setEmployees(data.employees.filter((e) => e.active));
-      setUserIdState(match.id);
-      return { ok: true as const };
+      const hash = await hashPasswordBrowser(newPassword);
+      let ok = false;
+      await mutateAppData(async (data) => {
+        const emp = data.employees.find((e) => e.id === id);
+        if (!emp || !(await verifyStaffSecretBrowser(emp, currentPassword))) return;
+        emp.passwordHash = hash;
+        emp.mustChangePassword = false;
+        ok = true;
+      });
+      if (!ok) return { ok: false, error: "Current password is incorrect" };
+      await refresh();
+      return { ok: true };
     },
-    [],
+    [refresh, userId],
   );
 
   const logout = useCallback(() => {
@@ -120,12 +173,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       loading,
       authenticated: !!user,
       login,
+      setPassword,
       logout,
       can,
       homePath,
       refresh,
     }),
-    [user, employees, loading, login, logout, can, homePath, refresh],
+    [user, employees, loading, login, setPassword, logout, can, homePath, refresh],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -135,4 +189,10 @@ export function useSession() {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error("useSession must be used within SessionProvider");
   return ctx;
+}
+
+export function useMustChangePassword(): boolean {
+  const { user } = useSession();
+  if (!user) return false;
+  return needsPasswordSetup(user);
 }

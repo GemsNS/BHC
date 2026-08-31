@@ -22,7 +22,7 @@ export function buildIcs(event: CalendarEventInput): string {
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//BH Contracting Co.//BHC Knocker//EN",
+    "PRODID:-//BH Contracting LTD.//BHC Knocker//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",

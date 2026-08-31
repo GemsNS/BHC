@@ -5,6 +5,7 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/session";
 import { homeForRole } from "@/lib/types";
+import { DEFAULT_STAFF_PIN } from "@/lib/auth-credentials";
 
 function safeNextPath(raw: string | null): string | null {
   if (!raw) return null;
@@ -30,20 +31,24 @@ function LoginForm() {
     setError(null);
     const form = new FormData(e.currentTarget);
     const loginName = String(form.get("login") || "");
-    const pin = String(form.get("pin") || "");
-    const result = await login(loginName, pin);
+    const password = String(form.get("password") || "");
+    const result = await login(loginName, password);
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
+      return;
+    }
+    if (result.mustChangePassword) {
+      router.replace(
+        `/login/set-password${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`,
+      );
       return;
     }
     const { loadAppData } = await import("@/lib/client-data");
     const data = await loadAppData();
     const normalized = loginName.trim().toLowerCase();
     const emp = data.employees.find(
-      (x) =>
-        x.login.toLowerCase() === normalized ||
-        x.email.toLowerCase() === normalized,
+      (x) => x.login.toLowerCase() === normalized || x.email.toLowerCase() === normalized,
     );
     router.replace(nextPath || (emp ? homeForRole(emp.role) : "/apps"));
   }
@@ -52,10 +57,10 @@ function LoginForm() {
     <div className="login-shell">
       <div className="login-panel">
         <div className="login-brand">
-          <p className="login-eyebrow">BH Contracting Co.</p>
+          <p className="login-eyebrow">BH Contracting LTD.</p>
           <h1 className="login-title">Sign in</h1>
           <p className="login-sub">
-            Staff workspace — Halifax Regional Municipality ops.{" "}
+            First time? Use default PIN <strong>{DEFAULT_STAFF_PIN}</strong>, then set your password.{" "}
             <Link href="/" className="login-home-link">
               ← Public site
             </Link>
@@ -70,18 +75,17 @@ function LoginForm() {
               name="login"
               required
               autoComplete="username"
-              placeholder="your login"
+              placeholder="admin"
               className="field-input"
             />
           </label>
           <label className="field">
-            <span>PIN</span>
+            <span>Password or PIN</span>
             <input
-              id="pin"
-              name="pin"
+              id="password"
+              name="password"
               required
               type="password"
-              inputMode="numeric"
               autoComplete="current-password"
               placeholder="••••••"
               className="field-input"
@@ -92,14 +96,10 @@ function LoginForm() {
             {busy ? "Signing in…" : "Enter workspace"}
           </button>
         </form>
-
-        <p className="login-sub" style={{ marginTop: "1.25rem", fontSize: "0.85rem" }}>
-          Credentials are issued by your administrator. Contact ops if you need access.
-        </p>
       </div>
       <div className="login-visual" aria-hidden>
         <p className="login-visual-brand">BH</p>
-        <p className="login-visual-tag">HRM contracting ops — knocks to closeout.</p>
+        <p className="login-visual-tag">Halifax Regional Municipality ops.</p>
       </div>
     </div>
   );

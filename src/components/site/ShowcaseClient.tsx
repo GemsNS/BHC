@@ -16,8 +16,8 @@ import {
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { audienceFromSearchParam, filterShowcaseByAudience, type ProjectAudience } from "@/lib/site/audience";
+import { BhLogo } from "@/components/brand/BhLogo";
 import { JOB_SHOWCASE_IMAGES, type JobShowcaseImage } from "@/lib/site/jobShowcaseImages";
-import { withBasePath } from "@/lib/site/withBasePath";
 import "@/styles/showcase.css";
 
 type ShowcaseGalleryItem = {
@@ -190,13 +190,10 @@ export function ShowcaseClient() {
         }`}
       >
         <Link href={siteRoot} className="flex min-w-0 items-center gap-3">
-          <Image
-            src={withBasePath("/brand/bh-logo-dark.svg")}
-            alt="BH Contracting Co."
+          <BhLogo
+            className="h-9 w-auto max-w-[160px] object-contain object-left md:h-10"
             width={200}
             height={56}
-            className="h-9 w-auto max-w-[160px] object-contain object-left md:h-10"
-            unoptimized
             priority
           />
         </Link>
@@ -333,7 +330,7 @@ export function ShowcaseClient() {
           </div>
           <div className="max-w-2xl space-y-8 text-xl leading-relaxed text-slate-600">
             <p>
-              BH Contracting Co. delivers modern design and uncompromising craftsmanship across Halifax
+              BH Contracting LTD. delivers modern design and uncompromising craftsmanship across Halifax
               and coastal Nova Scotia—from renovations and finish carpentry to custom decks, siding,
               windows, and doors.
             </p>
@@ -469,7 +466,7 @@ export function ShowcaseClient() {
             </p>
             <div className="flex items-center gap-12 border-t border-slate-100 pt-12">
               <div>
-                <h4 className="text-2xl font-bold">BH Contracting Co.</h4>
+                <h4 className="text-2xl font-bold">BH Contracting LTD.</h4>
                 <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   Halifax &amp; coastal Nova Scotia
                 </p>
@@ -658,13 +655,10 @@ export function ShowcaseClient() {
         <div className="relative z-10 mb-32 grid grid-cols-1 gap-20 md:grid-cols-4">
           <div className="space-y-8 md:col-span-2">
             <Link href={siteRoot} className="inline-flex items-center gap-3">
-              <Image
-                src={withBasePath("/brand/bh-logo-dark.svg")}
-                alt="BH Contracting Co."
+              <BhLogo
+                className="h-12 w-auto max-w-[280px] object-contain object-left"
                 width={280}
                 height={80}
-                className="h-12 w-auto object-contain object-left"
-                unoptimized
               />
             </Link>
             <p className="max-w-sm text-lg text-slate-400">
@@ -749,7 +743,7 @@ export function ShowcaseClient() {
         </div>
 
         <div className="relative z-10 flex flex-col justify-between gap-6 border-t border-white/10 pt-12 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 md:flex-row">
-          <p>© {new Date().getFullYear()} BH Contracting Co. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} BH Contracting LTD. All rights reserved.</p>
           <div className="flex gap-8">
             <Link href="/" className="transition hover:text-white">
               Choose audience

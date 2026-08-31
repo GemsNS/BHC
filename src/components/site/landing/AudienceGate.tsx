@@ -1,12 +1,11 @@
 "use client";
 
-import { motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Building2, Home } from "lucide-react";
+import { BhLogo } from "@/components/brand/BhLogo";
 import { easeArchitectural } from "@/components/site/motion/easing";
 import { usePrefersReducedMotion } from "@/components/site/motion/usePrefersReducedMotion";
-import { withBasePath } from "@/lib/site/withBasePath";
 
 const panelBase =
   "group relative flex min-h-[42vh] flex-1 flex-col justify-end overflow-hidden border border-white/10 bg-zinc-950 px-8 py-12 transition-[transform,box-shadow] duration-500 ease-out sm:min-h-[50vh] md:px-12 md:py-16 lg:min-h-0 lg:py-24";
@@ -20,15 +19,11 @@ export function AudienceGate() {
       aria-labelledby="audience-gate-heading"
     >
       <div className="pointer-events-none absolute inset-0">
-        <Image
-          src={withBasePath("/brand/bh-logo-dark.svg")}
-          alt=""
-          width={480}
-          height={140}
-          className="absolute left-1/2 top-[14%] h-12 w-auto -translate-x-1/2 opacity-[0.07] sm:top-[12%] sm:h-16"
-          aria-hidden
-          unoptimized
-        />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.07]">
+          <div className="absolute left-1/2 top-[12%] -translate-x-1/2 sm:top-[10%]">
+            <BhLogo width={280} height={80} className="h-14 w-auto sm:h-16" />
+          </div>
+        </div>
         <div
           className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(45,212,191,0.12),transparent_55%)]"
           aria-hidden
@@ -39,7 +34,7 @@ export function AudienceGate() {
       <div className="relative z-10 mx-auto flex min-h-[100dvh] max-w-7xl flex-col px-4 pb-10 pt-28 sm:px-6 sm:pb-14 sm:pt-32 lg:px-8 lg:pb-16 lg:pt-36">
         <header className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-primary-aqua">
-            BH Contracting Co.
+            BH Contracting LTD.
           </p>
           <h1
             id="audience-gate-heading"

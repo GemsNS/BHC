@@ -1,10 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { withBasePath } from "@/lib/site/withBasePath";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { NovaScotiaFlag } from "@/components/site/NovaScotiaFlag";
+import { BhLogo } from "@/components/brand/BhLogo";
 import { footerQuickLinksForPathname } from "@/lib/site/siteNav";
 
 export function Footer() {
@@ -21,13 +20,10 @@ export function Footer() {
         <div className="grid gap-12 border-b border-white/10 pb-12 sm:grid-cols-2 lg:grid-cols-12 lg:gap-10 lg:pb-14">
           <div className="lg:col-span-5">
             <Link href="/" className="inline-block">
-              <Image
-                src={withBasePath("/brand/bh-logo-dark.svg")}
-                alt="BH Contracting Co."
+              <BhLogo
+                className="h-auto w-auto max-w-[260px] object-contain object-left sm:max-w-[280px]"
                 width={320}
                 height={100}
-                unoptimized
-                className="h-auto w-auto max-w-[260px] object-contain object-left sm:max-w-[280px]"
               />
             </Link>
             <p className="mt-6 max-w-md text-sm leading-relaxed text-zinc-400">{tagline}</p>
@@ -75,7 +71,7 @@ export function Footer() {
         </div>
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-zinc-500">© {new Date().getFullYear()} BH Contracting Co. All rights reserved.</p>
+          <p className="text-xs text-zinc-500">© {new Date().getFullYear()} BH Contracting LTD. All rights reserved.</p>
           <p className="text-xs text-zinc-600">
             <Link
               href="/brand-preview"

@@ -18,6 +18,7 @@ import { CommandPalette, CommandPaletteTrigger } from "./CommandPalette";
 import { CommandAtmosphere } from "./CommandAtmosphere";
 import { MainframeLauncher } from "./mainframe/MainframeLauncher";
 import { CommandRail, useRailCollapsed, APP_FIELD_TABS } from "./CommandRail";
+import { BhLogo } from "@/components/brand/BhLogo";
 
 function canSeeSales(can: (p: Permission) => boolean) {
   return (
@@ -184,7 +185,11 @@ function CommandShellInner({
           ) : (
             <header className="cc-topbar">
               <div className="cc-topbar-left">
-                <p className="cc-topbar-brand mobile-only">BHC</p>
+                <BhLogo
+                  className="cc-topbar-brand mobile-only h-8 w-auto max-w-[140px] object-contain"
+                  width={140}
+                  height={36}
+                />
                 <div className="desktop-only-block">
                   <p className="cc-topbar-context">{contextLabel}</p>
                   <p className="cc-topbar-shift">{shiftContext}</p>

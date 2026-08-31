@@ -201,7 +201,7 @@ export async function clientSummarizeProgress(input: {
   return { summary: text, source: "ai" };
 }
 
-const MAINFRAME_SYSTEM = `You are BHC MAINFRAME — admin AI for BH Contracting Co. CRM.
+const MAINFRAME_SYSTEM = `You are BHC MAINFRAME — admin AI for BH Contracting LTD. CRM.
 Execute CRM actions via tools. Outreach always pending approval. Be concise.`;
 
 export type ClientAiResult =

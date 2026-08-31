@@ -63,7 +63,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
         perm: "schedule_manage",
       },
       { href: "/admin/hours", label: "Payroll", short: "Hours", perm: "hours" },
-      { href: "/admin/team", label: "Team roster", short: "Team", perm: "team" },
+      { href: "/admin/team", label: "Team & access", short: "Team", perm: "manage_users" },
     ],
   },
   {

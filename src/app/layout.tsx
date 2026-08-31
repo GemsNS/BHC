@@ -23,9 +23,9 @@ const body = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "BH Contracting Co. | All-in-One CRM",
+  title: "BH Contracting LTD. | All-in-One CRM",
   description:
-    "Operations CRM and field apps for BH Contracting Co. — knocker, jobs, fleet, fuel, materials, and payroll.",
+    "Operations CRM and field apps for BH Contracting LTD. — knocker, jobs, fleet, fuel, materials, and payroll.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
