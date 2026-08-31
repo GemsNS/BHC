@@ -52,7 +52,7 @@ npm run deploy:gh-pages
 | AI | `src/lib/ai-provider.ts`, `src/lib/ai-client.ts`, `src/lib/mainframe-agent.ts` |
 | CLI | `scripts/bhc-cli.ts` |
 | Nav | `src/lib/nav.ts` |
-| Docs | `docs/` |
+| Docs | `docs/` (GCP: `docs/GCP_GROK_DEPLOY.md`, `deploy/gcp/`) |
 
 ## Demo accounts
 
