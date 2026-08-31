@@ -6,8 +6,14 @@ import { isStaticDemo, withBasePath } from "./paths";
 import type { AppData } from "./types";
 
 /** Bump when seed credentials/schema must replace stale browser demos */
-const STORAGE_KEY = "bhc-crm-store-v8";
-const LEGACY_STORAGE_KEYS = ["bhc-crm-store-v7", "bhc-crm-store-v6", "bhc-crm-store-v5", "bhc-crm-store-v4"] as const;
+const STORAGE_KEY = "bhc-crm-store-v9";
+const LEGACY_STORAGE_KEYS = [
+  "bhc-crm-store-v8",
+  "bhc-crm-store-v7",
+  "bhc-crm-store-v6",
+  "bhc-crm-store-v5",
+  "bhc-crm-store-v4",
+] as const;
 
 function readLocal(): AppData {
   if (typeof window === "undefined") return buildSeedData();

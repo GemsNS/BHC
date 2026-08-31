@@ -42,7 +42,8 @@ export async function readStore(): Promise<AppData> {
       !parsed.invoices ||
       !parsed.shifts ||
       !parsed.workflows ||
-      !parsed.companies
+      !parsed.companies ||
+      !parsed.assistantMemory
     ) {
       await writeStore(normalized);
     }

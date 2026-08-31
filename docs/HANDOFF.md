@@ -4,7 +4,7 @@ Audience: a new engineer or Claude session taking over this repo with no prior c
 
 ## Product snapshot
 
-BH Contracting Co. runs sales, canvassing, jobs, and field ops from one Next.js app. Staff authenticate with **login + PIN**. Data lives in `data/store.json` (server) or `localStorage` key `bhc-crm-store-v8` (static GitHub Pages demo).
+BH Contracting LTD. runs sales, canvassing, jobs, and field ops from one Next.js app. Staff authenticate with **login + password** (default PIN `0000` on first sign-in, then set password). Data lives in `data/store.json` (server) or `localStorage` key `bhc-crm-store-v9` (static GitHub Pages demo). Manage users in **Admin → Team**.
 
 Two deployment modes:
 

@@ -6,6 +6,7 @@ import {
 import {
   executeMainframeTool,
   MAINFRAME_TOOL_NAMES,
+  toolLookupHrmAsync,
   type MainframeToolName,
   type ToolContext,
 } from "./mainframe-tools";
@@ -21,11 +22,32 @@ export type ChatTurnResult = {
   automationsDue?: string[];
 };
 
-const SYSTEM_PROMPT = `You are BHC MAINFRAME — the admin AI for BH Contracting Co.'s all-in-one CRM.
-You execute real CRM actions via tools: leads, jobs, invoices, workflows, outreach (always pending approval before send), criteria-based lead hunting, and daily automations.
-Be concise, command-center tone, ALL CAPS for emphasis sparingly. Confirm what you did.
-Outreach is NEVER sent automatically — only queued for admin approval.
-When user gives job/criteria info, save it with save_criteria_profile then hunt_leads when appropriate.`;
+const SYSTEM_PROMPT = `You are BHC MAINFRAME — admin AI for BH Contracting LTD. (Halifax Regional Municipality, Nova Scotia).
+You execute real CRM actions via tools: leads, jobs, invoices, employees, workflows, outreach (always pending approval), lead hunting, and daily automations.
+You LEARN: use remember_knowledge to store facts from chat, imports, and lookup_hrm. Use search_knowledge before answering repeat operational questions.
+You POPULATE: when the user pastes customer lists, job info, or company data, use import_data or create_lead/create_job/create_employee.
+Default geography is HRM (Halifax, Dartmouth, Bedford, Sackville, Cole Harbour). Use lookup_hrm for weather and geocoding.
+Be concise, command-center tone. Confirm what you did.
+Outreach is NEVER sent automatically — only queued for admin approval.`;
+
+async function buildContextPrompt(data: AppData): Promise<string> {
+  const profile = data.assistantProfiles.find((p) => p.enabled) ?? {};
+  const memory = data.assistantMemory
+    .slice(0, 8)
+    .map((m) => `[${m.topic}] ${m.content}`)
+    .join("\n");
+  let hrm = "";
+  try {
+    const { buildHrmContextSummary } = await import("./hrm-public");
+    hrm = await buildHrmContextSummary();
+  } catch {
+    hrm = "HRM weather unavailable.";
+  }
+  return `Active hunt profile: ${JSON.stringify(profile)}
+Assistant memory (${data.assistantMemory.length} entries):
+${memory || "(empty — teach me with remember_knowledge)"}
+${hrm}`;
+}
 
 export function buildMainframeTools(): AIToolDefinition[] {
   return MAINFRAME_TOOL_NAMES.map((name) => ({
@@ -39,9 +61,11 @@ function toolDescription(name: MainframeToolName): string {
   const map: Record<MainframeToolName, string> = {
     get_summary: "CRM ops summary — open leads, jobs, outreach pending, automations",
     list_leads: "List/filter leads by status or city",
-    create_lead: "Create a new lead",
+    create_lead: "Create a new lead (default city Halifax, NS)",
+    update_lead: "Update lead fields (name, phone, address, city, notes, status)",
     update_lead_status: "Change lead status by name or id",
     list_jobs: "List jobs by title, customer, or id query",
+    create_job: "Create a job (optionally linked to a lead)",
     create_invoice: "Generate draft invoice or full report for a job",
     run_workflow: "Run a workflow by id on an optional lead",
     process_sequences: "Process due sequence steps",
@@ -51,6 +75,11 @@ function toolDescription(name: MainframeToolName): string {
     save_criteria_profile: "Save lead hunt criteria (regions, keywords, job types)",
     create_task: "Create CRM task/activity",
     run_daily_automations: "Run due daily automations",
+    remember_knowledge: "Save a fact for future turns (self-learning memory)",
+    search_knowledge: "Search saved assistant memory",
+    import_data: "Bulk import leads, jobs, companies, or memory from records array",
+    create_employee: "Add staff account with login and PIN",
+    lookup_hrm: "HRM public data: weather (Open-Meteo), geocode address (Nominatim), or summary",
   };
   return map[name];
 }
@@ -75,13 +104,31 @@ function toolParameters(name: MainframeToolName): Record<string, unknown> {
           name: { type: "string" },
           phone: { type: "string" },
           email: { type: "string" },
-          city: { type: "string" },
+          city: { type: "string", description: "Default Halifax" },
           address: { type: "string" },
           jobType: { type: "string", enum: ["residential", "commercial"] },
           notes: { type: "string" },
           source: { type: "string" },
         },
         required: ["name"],
+      };
+    case "update_lead":
+      return {
+        type: "object",
+        properties: {
+          lead: { type: "string" },
+          leadId: { type: "string" },
+          name: { type: "string" },
+          phone: { type: "string" },
+          email: { type: "string" },
+          city: { type: "string" },
+          address: { type: "string" },
+          notes: { type: "string" },
+          status: {
+            type: "string",
+            enum: ["new", "contacted", "qualified", "estimate", "won", "lost"],
+          },
+        },
       };
     case "update_lead_status":
       return {
@@ -102,6 +149,21 @@ function toolParameters(name: MainframeToolName): Record<string, unknown> {
         properties: {
           query: { type: "string", description: "Job title, customer, or id" },
         },
+      };
+    case "create_job":
+      return {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          customerName: { type: "string" },
+          address: { type: "string" },
+          lead: { type: "string" },
+          leadId: { type: "string" },
+          jobType: { type: "string", enum: ["residential", "commercial"] },
+          estimatedValue: { type: "number" },
+          notes: { type: "string" },
+        },
+        required: ["title"],
       };
     case "create_invoice":
       return {
@@ -167,6 +229,60 @@ function toolParameters(name: MainframeToolName): Record<string, unknown> {
           force: { type: "boolean", description: "Run all enabled automations" },
         },
       };
+    case "remember_knowledge":
+      return {
+        type: "object",
+        properties: {
+          topic: { type: "string" },
+          content: { type: "string" },
+          tags: { type: "array", items: { type: "string" } },
+        },
+        required: ["content"],
+      };
+    case "search_knowledge":
+      return {
+        type: "object",
+        properties: {
+          query: { type: "string" },
+          topic: { type: "string" },
+        },
+      };
+    case "import_data":
+      return {
+        type: "object",
+        properties: {
+          records: {
+            type: "array",
+            items: { type: "object" },
+            description: "Array of { type: lead|job|company|memory, ...fields }",
+          },
+        },
+        required: ["records"],
+      };
+    case "create_employee":
+      return {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          login: { type: "string" },
+          role: {
+            type: "string",
+            enum: ["admin", "manager", "sales", "knocker", "field", "office", "driver"],
+          },
+          email: { type: "string" },
+          phone: { type: "string" },
+        },
+        required: ["name", "login", "role"],
+      };
+    case "lookup_hrm":
+      return {
+        type: "object",
+        properties: {
+          mode: { type: "string", enum: ["summary", "weather", "geocode"] },
+          query: { type: "string" },
+          address: { type: "string" },
+        },
+      };
     default:
       return { type: "object", properties: {} };
   }
@@ -223,7 +339,7 @@ function parseLocalIntent(text: string): Array<{ tool: MainframeToolName; args: 
       tool: "create_lead",
       args: {
         name: createMatch[1].trim(),
-        city: createMatch[2]?.trim() ?? "Denver",
+        city: createMatch[2]?.trim() ?? "Halifax",
         jobType: createMatch[3]?.toLowerCase() ?? "residential",
       },
     });
@@ -258,15 +374,16 @@ function parseLocalIntent(text: string): Array<{ tool: MainframeToolName; args: 
 }
 
 function helpText(): string {
-  return `MAINFRAME COMMANDS (natural language also works):
+  return `MAINFRAME COMMANDS (natural language also works with GEMINI_API_KEY):
 • "CRM summary" / "what's pending"
-• "Create lead: Jane Doe in Aurora commercial"
-• "Set criteria: storm roof Denver; keywords: hail, insurance — then hunt"
-• "Hunt leads" / "Find prospects for Morgan"
-• "Generate invoice for Harbor Lane"
+• "Create lead: Jane Doe in Dartmouth commercial"
+• Paste customer lists — AI uses import_data
+• "Remember: we only service HRM" — saves to assistant memory
+• "HRM weather" / lookup_hrm
+• "Hunt leads" / "Find prospects for [lead name]"
+• "Create job: Roof replacement for [customer]"
 • "Approve all outreach"
-• "Run daily automations"
-• "Process sequences"`;
+• "Run daily automations"`;
 }
 
 export async function runMainframeTurn(
@@ -284,14 +401,18 @@ export async function runMainframeTurn(
   }
 
   const due = automationsDue(data).map((a) => a.name);
-  const profile = data.assistantProfiles.find((p) => p.enabled) ?? {};
+  const contextPrompt = await buildContextPrompt(data);
 
   const ai = await runAIAgentLoop({
     systemPrompt: SYSTEM_PROMPT,
-    contextPrompt: `Active hunt profile: ${JSON.stringify(profile)}`,
+    contextPrompt,
     messages,
     tools: buildMainframeTools(),
-    executeTool: (name, args) => {
+    executeTool: async (name, args) => {
+      if (name === "lookup_hrm") {
+        const result = await toolLookupHrmAsync(args);
+        return { summary: result.summary, ok: result.ok };
+      }
       const result = executeMainframeTool(data, name as MainframeToolName, args, ctx);
       return { summary: result.summary, ok: result.ok };
     },

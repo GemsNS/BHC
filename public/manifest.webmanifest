@@ -1,7 +1,7 @@
 {
   "name": "BHC Apps",
   "short_name": "BHC",
-  "description": "BH Contracting Co. field apps — Knocker, clock, and ops tools.",
+  "description": "BH Contracting LTD. field apps — Knocker, clock, and ops tools.",
   "start_url": "/apps",
   "display": "standalone",
   "background_color": "#1a1d21",

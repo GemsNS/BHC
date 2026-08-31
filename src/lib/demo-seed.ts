@@ -1,0 +1,1125 @@
+import type { AppData, EmployeeRole, JobType, WorkflowDefinition } from "./types";
+import { buildKnockerSeed } from "./knocker/seed-data";
+import { normalizeAddressKey } from "./knocker/geo";
+
+export function buildDemoSeedData(): AppData {
+  const now = new Date();
+  const iso = (daysAgo: number, hour = 9) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - daysAgo);
+    d.setHours(hour, 0, 0, 0);
+    return d.toISOString();
+  };
+  const monthKey = (offset = 0) => {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  const employees = [
+    {
+      id: "emp-admin",
+      name: "Cameron Brown",
+      email: "cameron@bhcontracting.co",
+      login: "cameron",
+      pin: "1001",
+      role: "admin" as const,
+      phone: "(555) 100-0001",
+      hireDate: "2021-03-15",
+      hourlyRate: 42,
+      active: true,
+    },
+    {
+      id: "emp-manager",
+      name: "Taylor West",
+      email: "taylor@bhcontracting.co",
+      login: "taylor",
+      pin: "1006",
+      role: "manager" as const,
+      phone: "(555) 100-0006",
+      hireDate: "2021-08-01",
+      hourlyRate: 38,
+      active: true,
+    },
+    {
+      id: "emp-sales-1",
+      name: "Alex Rivera",
+      email: "alex@bhcontracting.co",
+      login: "alex",
+      pin: "1002",
+      role: "sales" as const,
+      phone: "(555) 100-0002",
+      hireDate: "2022-06-01",
+      hourlyRate: 28,
+      active: true,
+    },
+    {
+      id: "emp-knocker-1",
+      name: "Jamie Cole",
+      email: "jamie@bhcontracting.co",
+      login: "jamie",
+      pin: "1007",
+      role: "knocker" as const,
+      phone: "(555) 100-0007",
+      hireDate: "2024-02-12",
+      hourlyRate: 22,
+      active: true,
+    },
+    {
+      id: "emp-knocker-2",
+      name: "Morgan Lee",
+      email: "morgan.lee@bhcontracting.co",
+      login: "morgan",
+      pin: "1008",
+      role: "knocker" as const,
+      phone: "(555) 100-0008",
+      hireDate: "2024-05-03",
+      hourlyRate: 22,
+      active: true,
+    },
+    {
+      id: "emp-field-1",
+      name: "Sam Ortiz",
+      email: "sam@bhcontracting.co",
+      login: "sam",
+      pin: "1003",
+      role: "field" as const,
+      phone: "(555) 100-0003",
+      hireDate: "2020-09-12",
+      hourlyRate: 32,
+      active: true,
+    },
+    {
+      id: "emp-field-2",
+      name: "Casey Brooks",
+      email: "casey@bhcontracting.co",
+      login: "casey",
+      pin: "1004",
+      role: "field" as const,
+      phone: "(555) 100-0004",
+      hireDate: "2023-01-20",
+      hourlyRate: 26,
+      active: true,
+    },
+    {
+      id: "emp-driver-1",
+      name: "Riley Quinn",
+      email: "riley@bhcontracting.co",
+      login: "riley",
+      pin: "1005",
+      role: "driver" as const,
+      phone: "(555) 100-0005",
+      hireDate: "2022-11-08",
+      hourlyRate: 24,
+      active: true,
+    },
+  ];
+
+  const leads = [
+    {
+      id: "lead-1",
+      name: "Morgan Ellis",
+      phone: "(555) 220-4411",
+      email: "morgan.ellis@email.com",
+      address: "14 Harbor Lane",
+      city: "Seaside",
+      source: "Door-to-door",
+      status: "estimate" as const,
+      jobType: "residential" as const,
+      notes: "Wants deck rebuild + new exterior trim. Coastal exposure.",
+      assignedToId: "emp-sales-1",
+      companyId: null,
+      leadScore: 78,
+      createdAt: iso(12),
+      updatedAt: iso(2),
+    },
+    {
+      id: "lead-2",
+      name: "Bayfront Properties LLC",
+      phone: "(555) 330-8822",
+      email: "ops@bayfrontprops.com",
+      address: "880 Commerce Blvd",
+      city: "Harbor City",
+      source: "Referral",
+      status: "qualified" as const,
+      jobType: "commercial" as const,
+      notes: "Storefront envelope upgrade, phased over 3 weekends.",
+      assignedToId: "emp-sales-1",
+      companyId: "co-1",
+      leadScore: 85,
+      createdAt: iso(8),
+      updatedAt: iso(1),
+    },
+    {
+      id: "lead-3",
+      name: "Dana Chen",
+      phone: "(555) 440-1199",
+      email: "dana.chen@email.com",
+      address: "62 Driftwood Ct",
+      city: "Seaside",
+      source: "Website",
+      status: "new" as const,
+      jobType: "residential" as const,
+      notes: "Inquiry about renovation + custom exterior.",
+      assignedToId: null,
+      companyId: null,
+      leadScore: 42,
+      createdAt: iso(0, 10),
+      updatedAt: iso(0, 10),
+    },
+  ];
+
+  const shiftAt = (dayOffset: number, startHour: number, endHour: number) => {
+    const start = new Date(now);
+    start.setDate(start.getDate() + dayOffset);
+    start.setHours(startHour, 0, 0, 0);
+    const end = new Date(start);
+    end.setHours(endHour, 0, 0, 0);
+    return { start: start.toISOString(), end: end.toISOString() };
+  };
+
+  const companies = [
+    {
+      id: "co-1",
+      name: "Bayfront Properties LLC",
+      domain: "bayfrontprops.com",
+      industry: "Commercial real estate",
+      phone: "(555) 330-8822",
+      address: "880 Commerce Blvd",
+      city: "Harbor City",
+      notes: "Multi-site envelope client — prefers weekend phases.",
+      createdAt: iso(30),
+    },
+    {
+      id: "co-2",
+      name: "Seaside HOA",
+      domain: "seasidehoa.org",
+      industry: "Property management",
+      phone: "(555) 550-2200",
+      address: "100 Coastal Way",
+      city: "Seaside",
+      notes: "Annual maintenance RFP cycle Q2.",
+      createdAt: iso(45),
+    },
+  ];
+
+  const deals = [
+    {
+      id: "deal-1",
+      title: "Commerce Blvd storefront envelope",
+      leadId: "lead-2",
+      companyId: "co-1",
+      stage: "negotiation" as const,
+      amount: 61500,
+      closeDate: iso(-7).slice(0, 10),
+      ownerId: "emp-sales-1",
+      notes: "Phased billing agreed.",
+      createdAt: iso(10),
+      updatedAt: iso(1),
+    },
+    {
+      id: "deal-2",
+      title: "Harbor Lane deck rebuild",
+      leadId: "lead-1",
+      companyId: null,
+      stage: "proposal" as const,
+      amount: 27200,
+      closeDate: iso(14).slice(0, 10),
+      ownerId: "emp-sales-1",
+      notes: "Estimate sent — coastal hardware spec attached.",
+      createdAt: iso(8),
+      updatedAt: iso(2),
+    },
+  ];
+
+  const activities = [
+    {
+      id: "act-1",
+      type: "call" as const,
+      subject: "Discovery call — deck scope",
+      body: "Discussed coastal exposure, timeline, and permit needs.",
+      relatedType: "lead" as const,
+      relatedId: "lead-1",
+      authorId: "emp-sales-1",
+      dueAt: null,
+      completedAt: iso(3, 14),
+      createdAt: iso(3, 14),
+    },
+    {
+      id: "act-2",
+      type: "email" as const,
+      subject: "Estimate follow-up",
+      body: "Sent revised estimate with stainless fastener line item.",
+      relatedType: "lead" as const,
+      relatedId: "lead-1",
+      authorId: "emp-sales-1",
+      dueAt: null,
+      completedAt: iso(2, 10),
+      createdAt: iso(2, 10),
+    },
+    {
+      id: "act-3",
+      type: "task" as const,
+      subject: "Schedule site walk with facilities",
+      body: "Coordinate weekend access with Bayfront ops team.",
+      relatedType: "deal" as const,
+      relatedId: "deal-1",
+      authorId: "emp-sales-1",
+      dueAt: iso(-1, 9),
+      completedAt: null,
+      createdAt: iso(1, 11),
+    },
+  ];
+
+  const tickets = [
+    {
+      id: "tkt-1",
+      subject: "Warranty question — flashing detail",
+      description: "Customer asking about flashing warranty on west elevation.",
+      status: "open" as const,
+      priority: "medium" as const,
+      contactName: "Morgan Ellis",
+      contactEmail: "morgan.ellis@email.com",
+      assigneeId: "emp-admin",
+      leadId: "lead-1",
+      companyId: null,
+      createdAt: iso(1, 9),
+      updatedAt: iso(0, 15),
+    },
+  ];
+
+  const mon = shiftAt(0, 7, 15);
+  const tue = shiftAt(1, 7, 15);
+  const wed = shiftAt(2, 7, 15);
+  const thu = shiftAt(3, 7, 15);
+  const fri = shiftAt(4, 7, 15);
+  const satOt = shiftAt(5, 8, 14);
+  const poolShift = shiftAt(2, 7, 15);
+
+  const shifts = [
+    {
+      id: "shift-1",
+      title: "Field crew — Harbor Lane",
+      employeeId: "emp-field-1",
+      startAt: mon.start,
+      endAt: mon.end,
+      location: "14 Harbor Lane",
+      status: "scheduled" as const,
+      isOvertime: false,
+      postedById: null,
+      claimedById: null,
+      claimedAt: null,
+      jobId: "job-1",
+      notes: "Lead: Sam",
+      createdAt: iso(7),
+      updatedAt: iso(7),
+    },
+    {
+      id: "shift-2",
+      title: "Field crew — Commerce Blvd",
+      employeeId: "emp-field-2",
+      startAt: tue.start,
+      endAt: tue.end,
+      location: "880 Commerce Blvd",
+      status: "scheduled" as const,
+      isOvertime: false,
+      postedById: null,
+      claimedById: null,
+      claimedAt: null,
+      jobId: "job-2",
+      notes: "",
+      createdAt: iso(7),
+      updatedAt: iso(7),
+    },
+    {
+      id: "shift-3",
+      title: "Driver — yard runs",
+      employeeId: "emp-driver-1",
+      startAt: wed.start,
+      endAt: wed.end,
+      location: "Yard A",
+      status: "scheduled" as const,
+      isOvertime: false,
+      postedById: null,
+      claimedById: null,
+      claimedAt: null,
+      jobId: null,
+      notes: "Material pickup AM",
+      createdAt: iso(7),
+      updatedAt: iso(7),
+    },
+    {
+      id: "shift-4",
+      title: "Open shift — field backup",
+      employeeId: null,
+      startAt: poolShift.start,
+      endAt: poolShift.end,
+      location: "TBD job site",
+      status: "open_pool" as const,
+      isOvertime: false,
+      postedById: "emp-manager",
+      claimedById: null,
+      claimedAt: null,
+      jobId: null,
+      notes: "Coverage needed Wednesday — first claim gets it.",
+      createdAt: iso(2),
+      updatedAt: iso(2),
+    },
+    {
+      id: "shift-5",
+      title: "Saturday overtime — envelope wrap",
+      employeeId: null,
+      startAt: satOt.start,
+      endAt: satOt.end,
+      location: "880 Commerce Blvd",
+      status: "overtime" as const,
+      isOvertime: true,
+      postedById: "emp-manager",
+      claimedById: null,
+      claimedAt: null,
+      jobId: "job-2",
+      notes: "1.5× rate — needs harness cert.",
+      createdAt: iso(1),
+      updatedAt: iso(1),
+    },
+    {
+      id: "shift-6",
+      title: "Sales — canvass support",
+      employeeId: "emp-sales-1",
+      startAt: thu.start,
+      endAt: thu.end,
+      location: "Seaside zones",
+      status: "scheduled" as const,
+      isOvertime: false,
+      postedById: null,
+      claimedById: null,
+      claimedAt: null,
+      jobId: null,
+      notes: "",
+      createdAt: iso(7),
+      updatedAt: iso(7),
+    },
+    {
+      id: "shift-7",
+      title: "Knocker — Zone B",
+      employeeId: "emp-knocker-1",
+      startAt: fri.start,
+      endAt: fri.end,
+      location: "Zone B — Seaside",
+      status: "scheduled" as const,
+      isOvertime: false,
+      postedById: null,
+      claimedById: null,
+      claimedAt: null,
+      jobId: null,
+      notes: "",
+      createdAt: iso(7),
+      updatedAt: iso(7),
+    },
+  ];
+
+  const workflows: WorkflowDefinition[] = [
+    {
+      id: "wf-1",
+      name: "New lead — assign & welcome task",
+      description: "When a lead is created, assign to sales and create follow-up task.",
+      enabled: true,
+      trigger: "lead_created" as const,
+      triggerConfig: {},
+      actions: [
+        {
+          type: "assign_lead" as const,
+          config: { assigneeId: "emp-sales-1" },
+        },
+        {
+          type: "create_task" as const,
+          config: {
+            subject: "Welcome outreach within 24h",
+            dueDays: "1",
+          },
+        },
+        {
+          type: "enroll_sequence" as const,
+          config: { sequenceId: "seq-1" },
+        },
+      ],
+      createdAt: iso(60),
+      updatedAt: iso(10),
+    },
+    {
+      id: "wf-2",
+      name: "Qualified lead — find similar prospects",
+      description: "When lead hits qualified, queue autonomous prospect outreach.",
+      enabled: true,
+      trigger: "lead_status_changed" as const,
+      triggerConfig: { status: "qualified" },
+      actions: [
+        { type: "find_prospects" as const, config: { limit: "3" } },
+        { type: "queue_outreach" as const, config: { channel: "email" } },
+      ],
+      createdAt: iso(60),
+      updatedAt: iso(10),
+    },
+    {
+      id: "wf-3",
+      name: "Open shift posted — notify team",
+      description: "When a shift hits the pool, log activity and notify field crew.",
+      enabled: true,
+      trigger: "shift_posted_pool" as const,
+      triggerConfig: {},
+      actions: [
+        {
+          type: "notify" as const,
+          config: { message: "New shift available in the open pool." },
+        },
+      ],
+      createdAt: iso(30),
+      updatedAt: iso(5),
+    },
+  ];
+
+  const sequences = [
+    {
+      id: "seq-1",
+      name: "Residential intro sequence",
+      description: "3-touch drip for new residential inquiries.",
+      enabled: true,
+      steps: [
+        {
+          id: "step-1",
+          order: 0,
+          type: "email" as const,
+          delayDays: 0,
+          subject: "Thanks for reaching out to BH Contracting Co.",
+          body: "We received your inquiry and will follow up shortly with next steps.",
+        },
+        {
+          id: "step-2",
+          order: 1,
+          type: "call" as const,
+          delayDays: 2,
+          subject: "Discovery call",
+          body: "Schedule a 15-minute scope call.",
+        },
+        {
+          id: "step-3",
+          order: 2,
+          type: "email" as const,
+          delayDays: 5,
+          subject: "Project examples in your area",
+          body: "Sharing recent deck and envelope projects near you.",
+        },
+      ],
+      createdAt: iso(90),
+    },
+  ];
+
+  const sequenceEnrollments = [
+    {
+      id: "enr-1",
+      sequenceId: "seq-1",
+      leadId: "lead-3",
+      currentStepIndex: 0,
+      status: "active" as const,
+      enrolledAt: iso(0, 10),
+      nextRunAt: iso(0, 10),
+    },
+  ];
+
+  const outreachQueue = [
+    {
+      id: "out-1",
+      leadId: "lead-2",
+      prospectName: "Harbor City Retail Group",
+      prospectEmail: "facilities@harborcityretail.com",
+      prospectPhone: "(555) 660-1100",
+      channel: "email" as const,
+      subject: "Envelope upgrades for multi-tenant storefronts",
+      message:
+        "Hi — we help commercial properties in Harbor City with phased envelope work. Would a brief call make sense?",
+      status: "pending_approval" as const,
+      workflowRunId: null,
+      scheduledAt: iso(0, 14),
+      sentAt: null,
+      createdAt: iso(0, 11),
+    },
+  ];
+
+  const assistantProfiles = [
+    {
+      id: "profile-default",
+      name: "Front Range storm & envelope",
+      jobTypes: ["residential", "commercial"] as JobType[],
+      regions: ["Denver", "Aurora", "Seaside", "Harbor City"],
+      keywords: ["roof", "storm", "envelope", "deck", "insurance"],
+      minLeadScore: 55,
+      outreachTone: "Professional, local, no hard sell — offer free inspection.",
+      enabled: true,
+      updatedAt: iso(0),
+    },
+  ];
+
+  const assistantAutomations = [
+    {
+      id: "auto-pipeline",
+      name: "Morning pipeline scan",
+      description: "Flag stale new leads and create follow-up tasks.",
+      enabled: true,
+      runHour: 8,
+      action: "pipeline_scan" as const,
+      lastRunAt: null,
+    },
+    {
+      id: "auto-hunt",
+      name: "Qualified lead prospect hunt",
+      description: "Find prospects for qualified leads using your criteria profile.",
+      enabled: true,
+      runHour: 9,
+      action: "prospect_hunt" as const,
+      lastRunAt: null,
+    },
+    {
+      id: "auto-outreach",
+      name: "Outreach approval digest",
+      description: "Summarize pending outreach drafts for admin review.",
+      enabled: true,
+      runHour: 16,
+      action: "outreach_digest" as const,
+      lastRunAt: null,
+    },
+    {
+      id: "auto-sequences",
+      name: "Process due sequences",
+      description: "Run sequence steps that are due today.",
+      enabled: true,
+      runHour: 10,
+      action: "process_sequences" as const,
+      lastRunAt: null,
+    },
+  ];
+
+  const jobs = [
+    {
+      id: "job-1",
+      title: "Harbor Lane deck + envelope",
+      customerName: "Morgan Ellis",
+      address: "14 Harbor Lane, Seaside",
+      jobType: "residential" as const,
+      status: "scheduled" as const,
+      leadId: "lead-1",
+      crewLeadId: "emp-field-1",
+      startDate: iso(-3).slice(0, 10),
+      estimatedValue: 28500,
+      contractValue: 27200,
+      notes: "Material staging Thursday. Check coastal fasteners.",
+      createdAt: iso(5),
+    },
+    {
+      id: "job-2",
+      title: "Commerce Blvd storefront phase 1",
+      customerName: "Bayfront Properties LLC",
+      address: "880 Commerce Blvd, Harbor City",
+      jobType: "commercial" as const,
+      status: "in_progress" as const,
+      leadId: "lead-2",
+      crewLeadId: "emp-field-1",
+      startDate: iso(1).slice(0, 10),
+      estimatedValue: 64000,
+      contractValue: 61500,
+      notes: "Night work window 6pm–11pm. Sub: envelope specialty.",
+      createdAt: iso(4),
+    },
+  ];
+
+  const vehicles = [
+    {
+      id: "veh-1",
+      name: "Box Truck 01",
+      plate: "BHC-101",
+      type: "box truck",
+      driverId: "emp-driver-1",
+      lat: 36.9741,
+      lng: -122.0308,
+      status: "active" as const,
+      lastUpdate: iso(0, 8),
+      odometer: 48210,
+    },
+    {
+      id: "veh-2",
+      name: "Crew Van 02",
+      plate: "BHC-204",
+      type: "van",
+      driverId: "emp-field-2",
+      lat: 36.968,
+      lng: -122.01,
+      status: "idle" as const,
+      lastUpdate: iso(0, 7),
+      odometer: 31102,
+    },
+    {
+      id: "veh-3",
+      name: "Utility Trailer",
+      plate: "BHC-T3",
+      type: "trailer",
+      driverId: null,
+      lat: 36.9715,
+      lng: -122.025,
+      status: "maintenance" as const,
+      lastUpdate: iso(1, 16),
+      odometer: 0,
+    },
+  ];
+
+  const timeEntries = [
+    {
+      id: "time-1",
+      employeeId: "emp-field-1",
+      clockIn: iso(1, 7),
+      clockOut: iso(1, 16),
+      jobId: "job-2",
+      notes: "Commerce Blvd phase 1",
+    },
+    {
+      id: "time-2",
+      employeeId: "emp-field-2",
+      clockIn: iso(1, 7),
+      clockOut: iso(1, 15),
+      jobId: "job-2",
+      notes: "",
+    },
+  ];
+
+  const canvassStops = [
+    {
+      id: "can-1",
+      address: "18 Harbor Lane",
+      city: "Seaside",
+      outcome: "interested" as const,
+      notes: "Wants call back about decks.",
+      salesRepId: "emp-sales-1",
+      leadId: null,
+      createdAt: iso(0, 11),
+      zoneId: "zone-1",
+    },
+    {
+      id: "can-2",
+      address: "22 Harbor Lane",
+      city: "Seaside",
+      outcome: "not_home" as const,
+      notes: "",
+      salesRepId: "emp-sales-1",
+      leadId: null,
+      createdAt: iso(0, 11),
+      zoneId: "zone-1",
+    },
+    {
+      id: "can-3",
+      address: "14 Harbor Lane",
+      city: "Seaside",
+      outcome: "appointment" as const,
+      notes: "Converted to lead Morgan Ellis.",
+      salesRepId: "emp-sales-1",
+      leadId: "lead-1",
+      createdAt: iso(12, 14),
+      zoneId: "zone-1",
+    },
+  ];
+
+  const zones = [
+    {
+      id: "zone-1",
+      name: "Harbor Lane turf",
+      neighborhood: "Harbor Lane",
+      city: "Seaside",
+      description: "Coastal residential — decks, envelopes, renovations.",
+      status: "active" as const,
+      assignedKnockerIds: ["emp-knocker-1", "emp-sales-1"],
+      targetDoors: 80,
+      centerLat: 36.974,
+      centerLng: -122.029,
+      createdAt: iso(14),
+    },
+    {
+      id: "zone-2",
+      name: "Driftwood Courts",
+      neighborhood: "Driftwood",
+      city: "Seaside",
+      description: "Newer homes, good for exterior refresh leads.",
+      status: "open" as const,
+      assignedKnockerIds: ["emp-knocker-2"],
+      targetDoors: 60,
+      centerLat: 36.969,
+      centerLng: -122.02,
+      createdAt: iso(3),
+    },
+    {
+      id: "zone-3",
+      name: "Commerce corridor",
+      neighborhood: "Commerce Blvd",
+      city: "Harbor City",
+      description: "Light commercial / storefront owners.",
+      status: "paused" as const,
+      assignedKnockerIds: [],
+      targetDoors: 40,
+      centerLat: 36.972,
+      centerLng: -122.015,
+      createdAt: iso(20),
+    },
+  ];
+
+  const knocks = [
+    {
+      id: "knock-1",
+      zoneId: "zone-1",
+      knockerId: "emp-knocker-1",
+      address: "16 Harbor Lane",
+      outcome: "interested" as const,
+      notes: "Asked about deck refinish pricing.",
+      leadId: null,
+      lat: 36.9742,
+      lng: -122.0291,
+      createdAt: iso(0, 12),
+    },
+    {
+      id: "knock-2",
+      zoneId: "zone-1",
+      knockerId: "emp-knocker-1",
+      address: "20 Harbor Lane",
+      outcome: "not_home" as const,
+      notes: "",
+      leadId: null,
+      lat: 36.9743,
+      lng: -122.0293,
+      createdAt: iso(0, 12),
+    },
+    {
+      id: "knock-3",
+      zoneId: "zone-2",
+      knockerId: "emp-knocker-2",
+      address: "58 Driftwood Ct",
+      outcome: "appointment" as const,
+      notes: "Sat 10am walkthrough.",
+      leadId: null,
+      lat: 36.9691,
+      lng: -122.0202,
+      createdAt: iso(1, 15),
+    },
+  ];
+
+  const materials = [
+    {
+      id: "mat-1",
+      jobId: "job-1",
+      description: "Composite decking boards",
+      vendor: "Coastal Building Supply",
+      quantity: 42,
+      unitCost: 68,
+      purchasedAt: iso(2).slice(0, 10),
+      notes: "Gray coastal series",
+    },
+    {
+      id: "mat-2",
+      jobId: "job-1",
+      description: "Stainless fasteners kit",
+      vendor: "Coastal Building Supply",
+      quantity: 6,
+      unitCost: 45,
+      purchasedAt: iso(2).slice(0, 10),
+      notes: "",
+    },
+    {
+      id: "mat-3",
+      jobId: "job-2",
+      description: "Storefront sealant + flashing",
+      vendor: "Metro Envelope Co",
+      quantity: 18,
+      unitCost: 92,
+      purchasedAt: iso(1).slice(0, 10),
+      notes: "Phase 1 materials",
+    },
+  ];
+
+  const fuelLogs = [
+    {
+      id: "fuel-1",
+      vehicleId: "veh-1",
+      employeeId: "emp-driver-1",
+      gallons: 28.4,
+      cost: 112.6,
+      odometer: 48180,
+      station: "Harbor Fuel",
+      filledAt: iso(1, 6),
+      notes: "",
+    },
+    {
+      id: "fuel-2",
+      vehicleId: "veh-2",
+      employeeId: "emp-field-2",
+      gallons: 14.2,
+      cost: 55.8,
+      odometer: 31090,
+      station: "City Pump",
+      filledAt: iso(0, 7),
+      notes: "Crew van fill",
+    },
+  ];
+
+  const projections = [
+    {
+      id: "proj-1",
+      month: monthKey(0),
+      projectedRevenue: 185000,
+      projectedJobs: 6,
+      projectedKnocks: 450,
+      notes: "Harbor + Driftwood push",
+    },
+    {
+      id: "proj-2",
+      month: monthKey(1),
+      projectedRevenue: 210000,
+      projectedJobs: 7,
+      projectedKnocks: 500,
+      notes: "Commercial phase 2 pipeline",
+    },
+  ];
+
+  const announcements = [
+    {
+      id: "ann-1",
+      title: "Safety stand-down Friday 7am",
+      body: "All field and drivers meet at the yard for a 20-minute envelope safety brief before rolling out.",
+      authorId: "emp-admin",
+      pinned: true,
+      audienceRoles: [] as EmployeeRole[],
+      createdAt: iso(0, 7),
+    },
+    {
+      id: "ann-2",
+      title: "Harbor Lane turf is hot",
+      body: "Knockers: prioritize Harbor Lane this week. Interested leads go straight to Alex for estimates.",
+      authorId: "emp-manager",
+      pinned: false,
+      audienceRoles: ["knocker", "sales", "manager", "admin"] as EmployeeRole[],
+      createdAt: iso(1, 9),
+    },
+    {
+      id: "ann-3",
+      title: "Fuel receipts",
+      body: "Drivers: log every fill in the Fuel section the same day. Odometer required.",
+      authorId: "emp-admin",
+      pinned: false,
+      audienceRoles: ["driver", "field", "admin", "manager"] as EmployeeRole[],
+      createdAt: iso(2, 10),
+    },
+  ];
+
+  const tools = [
+    {
+      id: "tool-1",
+      name: "Makita circular saw",
+      category: "Power",
+      assetTag: "BHC-T-101",
+      status: "available" as const,
+      checkedOutToId: null,
+      checkedOutAt: null,
+      jobId: null,
+      notes: "",
+    },
+    {
+      id: "tool-2",
+      name: "Laser level",
+      category: "Layout",
+      assetTag: "BHC-T-214",
+      status: "checked_out" as const,
+      checkedOutToId: "emp-field-1",
+      checkedOutAt: iso(0, 7),
+      jobId: "job-1",
+      notes: "Harbor Lane deck",
+    },
+    {
+      id: "tool-3",
+      name: "Extension ladder 28ft",
+      category: "Access",
+      assetTag: "BHC-T-330",
+      status: "available" as const,
+      checkedOutToId: null,
+      checkedOutAt: null,
+      jobId: null,
+      notes: "",
+    },
+  ];
+
+  const toolCheckouts = [
+    {
+      id: "tco-1",
+      toolId: "tool-2",
+      employeeId: "emp-field-1",
+      jobId: "job-1",
+      checkedOutAt: iso(0, 7),
+      checkedInAt: null,
+      notes: "Morning checkout",
+    },
+  ];
+
+  const inventory = [
+    {
+      id: "inv-1",
+      sku: "SHING-ARCH-30",
+      name: "Architectural shingles (bundle)",
+      category: "Roofing",
+      unit: "bundle",
+      quantityOnHand: 48,
+      reorderLevel: 20,
+      unitCost: 42,
+      location: "Yard A",
+    },
+    {
+      id: "inv-2",
+      sku: "DECK-SCR-3",
+      name: "Deck screws 3in",
+      category: "Fasteners",
+      unit: "box",
+      quantityOnHand: 12,
+      reorderLevel: 8,
+      unitCost: 18,
+      location: "Shop",
+    },
+    {
+      id: "inv-3",
+      sku: "WRAP-TYVEK",
+      name: "House wrap roll",
+      category: "Envelope",
+      unit: "roll",
+      quantityOnHand: 6,
+      reorderLevel: 4,
+      unitCost: 95,
+      location: "Yard B",
+    },
+  ];
+
+  const inventoryTxns = [
+    {
+      id: "itx-1",
+      itemId: "inv-2",
+      type: "issue" as const,
+      quantity: 2,
+      jobId: "job-1",
+      employeeId: "emp-field-1",
+      notes: "Issued to Harbor Lane",
+      createdAt: iso(1, 8),
+    },
+  ];
+
+  const damageReports = [
+    {
+      id: "dmg-1",
+      targetType: "tool" as const,
+      targetId: "tool-3",
+      targetLabel: "Extension ladder 28ft",
+      jobId: "job-1",
+      reportedById: "emp-field-1",
+      severity: "medium" as const,
+      description: "Bent rung near mid-section — still usable with caution.",
+      imageDataUrls: [] as string[],
+      createdAt: iso(2, 15),
+      resolved: false,
+    },
+  ];
+
+  const jobProgress = [
+    {
+      id: "prog-1",
+      jobId: "job-1",
+      authorId: "emp-field-1",
+      notes:
+        "Framing complete on west elevation. Waiting on envelope wrap delivery tomorrow.",
+      imageDataUrls: [] as string[],
+      aiSummary: null,
+      createdAt: iso(1, 16),
+    },
+  ];
+
+  const invoices = [
+    {
+      id: "invc-1",
+      jobId: "job-1",
+      kind: "invoice" as const,
+      status: "draft" as const,
+      customerName: "Harbor Lane Homeowner",
+      lines: [
+        {
+          id: "line-1",
+          description: "Deck framing labor",
+          quantity: 1,
+          unitPrice: 4200,
+        },
+        {
+          id: "line-2",
+          description: "Materials deposit",
+          quantity: 1,
+          unitPrice: 1800,
+        },
+      ],
+      includeProgress: false,
+      progressEntryIds: [] as string[],
+      notes: "Progress billing #1",
+      aiSummary: null,
+      createdAt: iso(0, 11),
+      createdById: "emp-admin",
+    },
+  ];
+
+  const knockerExtra = buildKnockerSeed(iso);
+
+  return {
+    employees,
+    leads,
+    jobs,
+    vehicles,
+    timeEntries,
+    canvassStops,
+    zones,
+    knocks: knocks.map((k) => ({
+      ...k,
+      addressKey: normalizeAddressKey(k.address),
+      tagIds: k.id === "knock-1" ? ["tag-deck"] : [],
+      visitedByIds: [k.knockerId],
+      activityLog: [
+        {
+          id: `act-${k.id}`,
+          action: "knock_logged",
+          detail: `${k.outcome.replace(/_/g, " ")} at ${k.address}`,
+          authorId: k.knockerId,
+          createdAt: k.createdAt,
+        },
+      ],
+      updatedAt: k.createdAt,
+    })),
+    ...knockerExtra,
+    materials,
+    fuelLogs,
+    projections,
+    announcements,
+    tools,
+    toolCheckouts,
+    inventory,
+    inventoryTxns,
+    damageReports,
+    jobProgress,
+    invoices,
+    companies,
+    deals,
+    activities,
+    tickets,
+    shifts,
+    workflows,
+    workflowRuns: [] as AppData["workflowRuns"],
+    sequences,
+    sequenceEnrollments,
+    outreachQueue,
+    assistantProfiles,
+    assistantAutomations,
+    assistantAudit: [] as AppData["assistantAudit"],
+    assistantMemory: [] as AppData["assistantMemory"],
+  };
+}

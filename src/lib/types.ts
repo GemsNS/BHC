@@ -221,10 +221,14 @@ export interface Employee {
   id: string;
   name: string;
   email: string;
-  /** Login username (usually email local-part) */
+  /** Login username */
   login: string;
-  /** Simple PIN for demo / field login */
+  /** Bootstrap PIN — default 0000 until password is set */
   pin: string;
+  /** SHA-256 hash; set after first-login password setup */
+  passwordHash?: string | null;
+  /** When true, user must set a password after signing in with default PIN */
+  mustChangePassword?: boolean;
   role: EmployeeRole;
   phone: string;
   hireDate: string;
@@ -431,6 +435,17 @@ export interface AssistantAuditEntry {
   action: string;
   detail: string;
   createdAt: string;
+}
+
+/** Persistent facts Mainframe learns from chat, imports, and APIs */
+export interface AssistantMemoryEntry {
+  id: string;
+  topic: string;
+  content: string;
+  tags: string[];
+  source: string;
+  createdAt: string;
+  authorId: string | null;
 }
 
 export interface Job {
@@ -789,6 +804,7 @@ export interface AppData {
   assistantProfiles: AssistantCriteriaProfile[];
   assistantAutomations: AssistantDailyAutomation[];
   assistantAudit: AssistantAuditEntry[];
+  assistantMemory: AssistantMemoryEntry[];
 }
 
 export const ROLE_LABELS: Record<EmployeeRole, string> = {

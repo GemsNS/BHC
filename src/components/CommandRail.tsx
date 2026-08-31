@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { BhLogo } from "@/components/brand/BhLogo";
 import { useSession } from "@/lib/session";
 import {
   ADMIN_NAV_SECTIONS,
@@ -231,7 +232,11 @@ export function CommandRail({
     <aside className={cn("cc-rail", collapsed && "cc-rail-collapsed")}>
       <div className="cc-rail-brand">
         <div className="cc-rail-brand-row">
-          <p className="cc-rail-logo">BHC</p>
+          <BhLogo
+            className="cc-rail-logo h-8 w-auto max-w-[120px] object-contain object-left"
+            width={120}
+            height={32}
+          />
           <button
             type="button"
             className="cc-rail-collapse-btn"

@@ -124,7 +124,7 @@ export async function runAIAgentLoop(input: {
   executeTool: (
     name: string,
     args: Record<string, unknown>,
-  ) => { summary: string; ok: boolean };
+  ) => { summary: string; ok: boolean } | Promise<{ summary: string; ok: boolean }>;
   maxSteps?: number;
 }): Promise<AIAgentLoopResult | null> {
   const provider = resolveAIProvider();
@@ -237,7 +237,7 @@ async function geminiAgentLoop(input: {
   executeTool: (
     name: string,
     args: Record<string, unknown>,
-  ) => { summary: string; ok: boolean };
+  ) => { summary: string; ok: boolean } | Promise<{ summary: string; ok: boolean }>;
   maxSteps?: number;
 }): Promise<AIAgentLoopResult | null> {
   const key = getGeminiApiKey();
@@ -289,7 +289,7 @@ async function geminiAgentLoop(input: {
 
         const responseParts: Array<Record<string, unknown>> = [];
         for (const call of calls) {
-          const result = input.executeTool(call.name, call.args);
+          const result = await input.executeTool(call.name, call.args);
           toolRuns.push({ tool: call.name, summary: result.summary, ok: result.ok });
           responseParts.push({
             functionResponse: {
@@ -321,7 +321,7 @@ async function openaiAgentLoop(input: {
   executeTool: (
     name: string,
     args: Record<string, unknown>,
-  ) => { summary: string; ok: boolean };
+  ) => { summary: string; ok: boolean } | Promise<{ summary: string; ok: boolean }>;
   maxSteps?: number;
 }): Promise<AIAgentLoopResult | null> {
   const key = trimKey(process.env.OPENAI_API_KEY);
@@ -386,7 +386,7 @@ async function openaiAgentLoop(input: {
           } catch {
             args = {};
           }
-          const result = input.executeTool(tc.function.name, args);
+          const result = await input.executeTool(tc.function.name, args);
           toolRuns.push({
             tool: tc.function.name,
             summary: result.summary,

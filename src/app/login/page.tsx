@@ -4,14 +4,8 @@ import Link from "next/link";
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/session";
-import { homeForRole, ROLE_LABELS } from "@/lib/types";
-
-const DEMO_ACCOUNTS = [
-  { login: "cameron", pin: "1001", role: "Admin" },
-  { login: "jamie", pin: "1007", role: "Knocker" },
-  { login: "sam", pin: "1003", role: "Field" },
-  { login: "riley", pin: "1005", role: "Driver" },
-];
+import { homeForRole } from "@/lib/types";
+import { DEFAULT_STAFF_PIN } from "@/lib/auth-credentials";
 
 function safeNextPath(raw: string | null): string | null {
   if (!raw) return null;
@@ -37,43 +31,36 @@ function LoginForm() {
     setError(null);
     const form = new FormData(e.currentTarget);
     const loginName = String(form.get("login") || "");
-    const pin = String(form.get("pin") || "");
-    const result = await login(loginName, pin);
+    const password = String(form.get("password") || "");
+    const result = await login(loginName, password);
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
       return;
     }
+    if (result.mustChangePassword) {
+      router.replace(
+        `/login/set-password${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`,
+      );
+      return;
+    }
     const { loadAppData } = await import("@/lib/client-data");
     const data = await loadAppData();
-    const normalized =
-      loginName.trim().toLowerCase() === "jordan"
-        ? "cameron"
-        : loginName.trim().toLowerCase();
+    const normalized = loginName.trim().toLowerCase();
     const emp = data.employees.find(
-      (x) =>
-        x.login.toLowerCase() === normalized ||
-        x.email.toLowerCase() === normalized ||
-        (normalized === "cameron" && x.id === "emp-admin"),
+      (x) => x.login.toLowerCase() === normalized || x.email.toLowerCase() === normalized,
     );
     router.replace(nextPath || (emp ? homeForRole(emp.role) : "/apps"));
-  }
-
-  function fillDemo(loginName: string, pin: string) {
-    const loginEl = document.getElementById("login") as HTMLInputElement | null;
-    const pinEl = document.getElementById("pin") as HTMLInputElement | null;
-    if (loginEl) loginEl.value = loginName;
-    if (pinEl) pinEl.value = pin;
   }
 
   return (
     <div className="login-shell">
       <div className="login-panel">
         <div className="login-brand">
-          <p className="login-eyebrow">BH Contracting Co.</p>
+          <p className="login-eyebrow">BH Contracting LTD.</p>
           <h1 className="login-title">Sign in</h1>
           <p className="login-sub">
-            Your role unlocks only the tools you need — admin desk or field apps.{" "}
+            First time? Use default PIN <strong>{DEFAULT_STAFF_PIN}</strong>, then set your password.{" "}
             <Link href="/" className="login-home-link">
               ← Public site
             </Link>
@@ -88,20 +75,19 @@ function LoginForm() {
               name="login"
               required
               autoComplete="username"
-              placeholder="cameron"
+              placeholder="admin"
               className="field-input"
             />
           </label>
           <label className="field">
-            <span>PIN</span>
+            <span>Password or PIN</span>
             <input
-              id="pin"
-              name="pin"
+              id="password"
+              name="password"
               required
               type="password"
-              inputMode="numeric"
               autoComplete="current-password"
-              placeholder="••••"
+              placeholder="••••••"
               className="field-input"
             />
           </label>
@@ -110,34 +96,10 @@ function LoginForm() {
             {busy ? "Signing in…" : "Enter workspace"}
           </button>
         </form>
-
-        <div className="demo-accounts">
-          <p className="demo-label">Demo accounts — tap to fill</p>
-          <div className="demo-grid">
-            {DEMO_ACCOUNTS.map((a) => (
-              <button
-                key={a.login}
-                type="button"
-                className="demo-chip"
-                onClick={() => fillDemo(a.login, a.pin)}
-              >
-                <strong>{a.role}</strong>
-                <span>
-                  {a.login} / {a.pin}
-                </span>
-              </button>
-            ))}
-          </div>
-          <p className="demo-hint">
-            Roles: {Object.values(ROLE_LABELS).join(" · ")}
-          </p>
-        </div>
       </div>
       <div className="login-visual" aria-hidden>
         <p className="login-visual-brand">BH</p>
-        <p className="login-visual-tag">
-          Contracting ops — knocks to closeout.
-        </p>
+        <p className="login-visual-tag">Halifax Regional Municipality ops.</p>
       </div>
     </div>
   );
