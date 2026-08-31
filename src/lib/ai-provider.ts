@@ -55,7 +55,7 @@ export function resolveAIProvider(): AIProviderId {
 }
 
 export function getGeminiModel(): string {
-  return process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+  return process.env.GEMINI_MODEL?.trim() || "gemini-3.6-flash";
 }
 
 export function getOpenAIModel(): string {
@@ -207,7 +207,13 @@ type GeminiResponse = {
     content?: {
       parts?: Array<{
         text?: string;
-        functionCall?: { name: string; args?: Record<string, unknown> };
+        thoughtSignature?: string;
+        thought_signature?: string;
+        functionCall?: {
+          name: string;
+          args?: Record<string, unknown>;
+          thoughtSignature?: string;
+        };
       }>;
     };
   }>;
@@ -227,6 +233,12 @@ function extractGeminiFunctionCalls(json: GeminiResponse): Array<{ name: string;
       name: p.functionCall!.name,
       args: (p.functionCall!.args ?? {}) as Record<string, unknown>,
     }));
+}
+
+/** Echo model parts verbatim so Gemini 3 thoughtSignature survives tool turns. */
+function geminiModelPartsFromResponse(json: GeminiResponse): Array<Record<string, unknown>> {
+  const parts = json.candidates?.[0]?.content?.parts ?? [];
+  return JSON.parse(JSON.stringify(parts)) as Array<Record<string, unknown>>;
 }
 
 async function geminiAgentLoop(input: {
@@ -284,7 +296,7 @@ async function geminiAgentLoop(input: {
       if (calls.length) {
         contents.push({
           role: "model",
-          parts: calls.map((c) => ({ functionCall: { name: c.name, args: c.args } })),
+          parts: geminiModelPartsFromResponse(json),
         });
 
         const responseParts: Array<Record<string, unknown>> = [];

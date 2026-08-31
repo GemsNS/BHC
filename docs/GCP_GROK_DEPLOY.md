@@ -6,6 +6,8 @@
 
 **Read first:** `CLAUDE.md` → `docs/HANDOFF.md` → `docs/ARCHITECTURE.md` → `docs/API.md`
 
+**Starting from scratch with Grok?** Copy the prompt in [`docs/GROK_MASTER_PROMPT.md`](./GROK_MASTER_PROMPT.md).
+
 ---
 
 ## 1. Mission
