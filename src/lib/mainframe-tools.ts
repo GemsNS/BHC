@@ -1,3 +1,8 @@
+import {
+  executeExtendedMainframeTool,
+  isExtendedMainframeTool,
+} from "./mainframe-crm-tools";
+import { DEFAULT_STAFF_PIN } from "./auth-credentials";
 import { huntLeadsFromCriteria } from "./mainframe-prospects";
 import { runDailyAutomations } from "./mainframe-automations";
 import { findProspectsForLead, scoreLead } from "./lead-automation";
@@ -38,21 +43,51 @@ export const MAINFRAME_TOOL_NAMES = [
   "create_lead",
   "update_lead",
   "update_lead_status",
+  "delete_lead",
   "list_jobs",
   "create_job",
+  "update_job",
+  "delete_job",
+  "list_invoices",
   "create_invoice",
+  "update_invoice",
+  "delete_invoice",
+  "list_deals",
+  "create_deal",
+  "update_deal",
+  "delete_deal",
+  "list_tickets",
+  "create_ticket",
+  "update_ticket",
+  "delete_ticket",
+  "list_companies",
+  "update_company",
+  "delete_company",
+  "list_employees",
+  "create_employee",
+  "update_employee",
+  "list_activities",
+  "create_task",
+  "complete_activity",
+  "delete_activity",
+  "list_outreach",
+  "approve_outreach",
+  "update_outreach",
+  "delete_outreach",
+  "list_workflows",
+  "list_contracts",
+  "register_contract",
+  "sync_contract",
   "run_workflow",
   "process_sequences",
-  "approve_outreach",
   "find_prospects",
   "hunt_leads",
   "save_criteria_profile",
-  "create_task",
   "run_daily_automations",
   "remember_knowledge",
   "search_knowledge",
+  "delete_memory",
   "import_data",
-  "create_employee",
   "lookup_hrm",
 ] as const;
 
@@ -64,6 +99,9 @@ export function executeMainframeTool(
   args: Record<string, unknown>,
   ctx: ToolContext,
 ): ToolExecution {
+  if (isExtendedMainframeTool(tool)) {
+    return executeExtendedMainframeTool(data, tool, args, ctx);
+  }
   switch (tool) {
     case "get_summary":
       return toolGetSummary(data);
@@ -619,7 +657,7 @@ function toolImportData(
     return {
       ok: false,
       summary:
-        'import_data expects { records: [...] } with items type "lead" | "job" | "company" | "memory".',
+        'import_data expects { records: [...] } with items type "lead" | "job" | "company" | "memory" | "contract".',
     };
   }
   let leads = 0;
@@ -653,6 +691,9 @@ function toolImportData(
     } else if (type === "memory") {
       const r = toolRememberKnowledge(data, rec, ctx);
       if (r.ok) memories++;
+    } else if (type === "contract") {
+      const r = executeExtendedMainframeTool(data, "sync_contract", rec, ctx);
+      if (r.ok) jobs++;
     }
   }
   return {
@@ -674,13 +715,15 @@ function toolCreateEmployee(
   if (data.employees.some((e) => e.login.toLowerCase() === login)) {
     return { ok: false, summary: `Login "${login}" already exists.` };
   }
-  const generatedPin = String(args.pin ?? Math.floor(100000 + Math.random() * 900000));
+  const generatedPin = String(args.pin ?? DEFAULT_STAFF_PIN);
   const emp: Employee = {
     id: ctx.newId(),
     name,
-    email: String(args.email ?? `${login}@bhcontracting.co`),
+    email: String(args.email ?? `${login}@bhcontracting.ca`),
     login,
     pin: generatedPin,
+    passwordHash: null,
+    mustChangePassword: true,
     role,
     phone: String(args.phone ?? "(902) 000-0000"),
     hireDate: ctx.nowIso().slice(0, 10),
@@ -690,8 +733,8 @@ function toolCreateEmployee(
   data.employees.push(emp);
   return {
     ok: true,
-    summary: `Created employee ${emp.name} (login: ${emp.login}, PIN: ${emp.pin}, role: ${emp.role}). Share PIN securely.`,
-    data: { employeeId: emp.id, login: emp.login, pin: emp.pin },
+    summary: `Created employee ${emp.name} (login: ${emp.login}, role: ${emp.role}). Default PIN ${DEFAULT_STAFF_PIN} until password is set.`,
+    data: { employeeId: emp.id, login: emp.login },
   };
 }
 

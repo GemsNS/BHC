@@ -144,5 +144,6 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     assistantAutomations: raw.assistantAutomations ?? seed.assistantAutomations,
     assistantAudit: raw.assistantAudit ?? seed.assistantAudit,
     assistantMemory: raw.assistantMemory ?? seed.assistantMemory,
+    contracts: raw.contracts ?? seed.contracts,
   };
 }

@@ -1,0 +1,13 @@
+{
+  "title": "Snow Removal Service Agreement",
+  "slug": "snow",
+  "customerName": "Snow Contract Client",
+  "customerEmail": "",
+  "customerPhone": "(902) 809-9412",
+  "address": "Halifax, NS",
+  "city": "Halifax",
+  "contractValue": 0,
+  "jobType": "commercial",
+  "jobTitle": "Snow removal — seasonal contract",
+  "notes": "Drop the signed contract HTML/PDF in contracts/snow/ (e.g. index.html). Mainframe sync_contract slug snow imports this metadata into the CRM."
+}

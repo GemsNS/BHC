@@ -12,32 +12,32 @@ import {
   loadAppData,
   saveAppData,
 } from "@/lib/client-data";
-import { getClientGeminiKey, runMainframeWithClientAi } from "@/lib/ai-client";
 import { isStaticDemo } from "@/lib/paths";
 
 export async function sendMainframeMessage(
   messages: ChatMessage[],
   authorId: string,
 ): Promise<ChatTurnResult> {
-  const clientKey = getClientGeminiKey();
-  if (clientKey) {
-    const data = await loadAppData();
-    const ai = await runMainframeWithClientAi(data, messages, {
-      authorId,
-      newId: clientNewId,
-      nowIso: clientNowIso,
-    });
-    if (ai?.ok) {
-      await saveAppData(data);
-      return ai.result;
-    }
-    if (ai && !ai.ok) {
-      // Key is present but Gemini failed — surface the real error, don't pretend there's no key
-      return {
-        reply: `BROWSER GEMINI ERROR\n${ai.error}\n\nFix the key in the sidebar (Save), or clear it to use the local command parser / server .env key.`,
-        source: "mainframe",
-        toolRuns: [],
-      };
+  if (isStaticDemo()) {
+    const clientKey = (await import("@/lib/ai-client")).getClientGeminiKey();
+    if (clientKey) {
+      const data = await loadAppData();
+      const ai = await (await import("@/lib/ai-client")).runMainframeWithClientAi(data, messages, {
+        authorId,
+        newId: clientNewId,
+        nowIso: clientNowIso,
+      });
+      if (ai?.ok) {
+        await saveAppData(data);
+        return ai.result;
+      }
+      if (ai && !ai.ok) {
+        return {
+          reply: `BROWSER GEMINI ERROR\n${ai.error}\n\nFix the key in the sidebar (Save), or clear it to use the local command parser.`,
+          source: "mainframe",
+          toolRuns: [],
+        };
+      }
     }
   }
 

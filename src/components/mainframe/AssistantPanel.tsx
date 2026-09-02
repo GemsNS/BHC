@@ -115,8 +115,10 @@ export function AssistantPanel({ onMessage }: { onMessage?: (text: string) => vo
 
   const providerLabel =
     aiStatus?.configured && aiStatus.provider !== "none"
-      ? `${hasClientAiKey() ? "BROWSER GEMINI" : aiStatus.provider.toUpperCase()} · ${aiStatus.model ?? "model"}`
-      : "LOCAL PARSER";
+      ? `${isStaticDemo() && hasClientAiKey() ? "BROWSER GEMINI" : aiStatus.provider.toUpperCase()} · ${aiStatus.model ?? "model"}`
+      : isStaticDemo()
+        ? "LOCAL PARSER"
+        : "SERVER AI NOT CONFIGURED";
 
   return (
     <aside className="mainframe-assistant-panel">
@@ -130,9 +132,13 @@ export function AssistantPanel({ onMessage }: { onMessage?: (text: string) => vo
         >
           {providerLabel}
         </p>
-        {!aiStatus?.configured ? (
+        {!aiStatus?.configured && isStaticDemo() ? (
           <p className="mainframe-profile-meta">
-            Paste a Gemini key above (Save), or set GEMINI_API_KEY in .env on a Node host.
+            Paste a Gemini key in the sidebar (static demo only), or set GEMINI_API_KEY in .env on a Node host.
+          </p>
+        ) : !aiStatus?.configured ? (
+          <p className="mainframe-profile-meta">
+            Set GEMINI_API_KEY in the server environment. Keys are never entered in the admin UI on production.
           </p>
         ) : null}
       </div>

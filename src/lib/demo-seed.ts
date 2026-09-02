@@ -1121,5 +1121,6 @@ export function buildDemoSeedData(): AppData {
     assistantAutomations,
     assistantAudit: [] as AppData["assistantAudit"],
     assistantMemory: [] as AppData["assistantMemory"],
+    contracts: [] as AppData["contracts"],
   };
 }

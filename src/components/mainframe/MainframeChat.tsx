@@ -133,8 +133,10 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
               )}
             >
               {aiStatus.configured
-                ? `${hasClientAiKey() ? "BROWSER GEMINI" : aiStatus.provider.toUpperCase()} · ${aiStatus.model ?? "AI"}`
-                : "LOCAL PARSER — paste key in sidebar or set GEMINI_API_KEY"}
+                ? `${isStaticDemo() && hasClientAiKey() ? "BROWSER GEMINI" : aiStatus.provider.toUpperCase()} · ${aiStatus.model ?? "AI"}`
+                : isStaticDemo()
+                  ? "LOCAL PARSER — set GEMINI_API_KEY on server or paste key in static demo"
+                  : "Configure GEMINI_API_KEY on server for full AI"}
             </p>
           ) : null}
         </div>
