@@ -229,6 +229,8 @@ export interface Employee {
   passwordHash?: string | null;
   /** When true, user must set a password after signing in with default PIN */
   mustChangePassword?: boolean;
+  /** Client-only: true when API stripped passwordHash from the response */
+  hasPassword?: boolean;
   role: EmployeeRole;
   phone: string;
   hireDate: string;

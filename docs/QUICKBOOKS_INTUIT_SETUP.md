@@ -137,6 +137,25 @@ git pull origin cursor/production-ready-contracts-22fe
 npm ci && npm run build && sudo systemctl restart bhc
 ```
 
+Append production QuickBooks vars to server `.env` (edit with `nano .env`):
+
+```bash
+APP_BASE_URL=https://bhcontracting.ca
+QUICKBOOKS_CLIENT_ID=ABjjo711bpbnbvXjltyVOzX6MTarqryRWdlit5rHvF6a6Q97Kt
+QUICKBOOKS_CLIENT_SECRET=<paste production secret>
+QUICKBOOKS_ENV=production
+QUICKBOOKS_REDIRECT_URI=https://bhcontracting.ca/api/quickbooks/callback
+```
+
+Then restart: `sudo systemctl restart bhc`
+
+Verify OAuth routes are live:
+
+```bash
+curl -sI https://bhcontracting.ca/api/quickbooks/status | head -3
+# Expect 401 (auth required) or 200 — not 404
+```
+
 ---
 
 ## Snow contract (direct link)

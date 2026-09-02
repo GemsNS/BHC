@@ -76,11 +76,22 @@ export async function fetchJson<T>(
 /** Load full store — API when available, else localStorage demo */
 export async function loadAppData(): Promise<AppData> {
   if (isStaticDemo()) return readLocal();
+  const headers = sessionHeaders();
+  const hasSession = Boolean(headers["x-bhc-user-id"]);
   try {
-    const res = await fetch(withBasePath("/api/store"));
+    const res = await fetch(withBasePath("/api/store"), { headers });
     if (!res.ok) throw new Error("api");
     return (await res.json()) as AppData;
   } catch {
+    if (hasSession) {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return normalizeStore(JSON.parse(raw) as Partial<AppData>);
+      } catch {
+        /* fall through */
+      }
+      throw new Error("Could not load store");
+    }
     return readLocal();
   }
 }
