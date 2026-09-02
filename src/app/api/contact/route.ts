@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
+import { mailConfigStatus, sendContactEmail } from "@/lib/mail";
 
 const LIMITS = { name: 120, email: 254, phone: 40, details: 4000 } as const;
 
-/** Lets static sites (e.g. GitHub Pages) POST to this route hosted elsewhere (Vercel). */
+/** Lets static sites (e.g. GitHub Pages) POST to this route hosted elsewhere. */
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -22,12 +22,16 @@ function isValidEmail(s: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 }
 
-function escapeHtml(s: string) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+export async function GET() {
+  const status = mailConfigStatus();
+  return json(
+    {
+      ok: true,
+      configured: status.configured,
+      provider: status.provider,
+    },
+    200,
+  );
 }
 
 export async function POST(req: Request) {
@@ -66,40 +70,23 @@ export async function POST(req: Request) {
     return json({ error: "Please describe your project." }, 400);
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.CONTACT_TO_EMAIL ?? "info@bhcontracting.co";
-  const from =
-    process.env.RESEND_FROM_EMAIL ?? "BH Contracting LTD. <onboarding@resend.dev>";
-
-  if (!apiKey) {
-    return json(
-      {
-        error:
-          "Email delivery is not configured. Add RESEND_API_KEY to .env.local (see .env.example).",
-      },
-      503,
-    );
-  }
-
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from,
-    to: [to],
-    replyTo: emailStr,
-    subject: `New inquiry (${quoteTypeStr === "other" ? "other services" : "exterior"}) — ${nameStr}`,
-    html: `
-      <p><strong>Quote type:</strong> ${escapeHtml(quoteLabel)}</p>
-      <p><strong>Name:</strong> ${escapeHtml(nameStr)}</p>
-      <p><strong>Email:</strong> ${escapeHtml(emailStr)}</p>
-      <p><strong>Phone:</strong> ${escapeHtml(phoneStr)}</p>
-      <p><strong>Project details:</strong></p>
-      <p>${escapeHtml(detailsStr).replace(/\n/g, "<br/>")}</p>
-    `,
+  const result = await sendContactEmail({
+    name: nameStr,
+    email: emailStr,
+    phone: phoneStr,
+    details: detailsStr,
+    quoteLabel,
+    quoteType: quoteTypeStr,
   });
 
-  if (error) {
-    console.error("[contact]", error);
-    return json({ error: "Could not send your message. Please try again later." }, 500);
+  if (!result.ok) {
+    if (result.code === "not_configured") {
+      return json({ error: result.error }, 503);
+    }
+    return json(
+      { error: "Could not send your message. Please call us or try again later." },
+      500,
+    );
   }
 
   return json({ ok: true }, 200);

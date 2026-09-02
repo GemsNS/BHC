@@ -55,7 +55,10 @@ Enable Pages on `gh-pages` branch. URL: https://gemsns.github.io/BHC/
 | `AI_PROVIDER` | Force `gemini` or `openai` | |
 | `NEXT_PUBLIC_STATIC_DEMO` | Static export | `1` |
 | `NEXT_PUBLIC_BASE_PATH` | Nested hosting | `/BHC` |
-| `RESEND_API_KEY` | Contact form | optional |
+| `RESEND_API_KEY` | Contact form (Resend) | Alternative to SMTP |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` | Contact form (GoDaddy etc.) | See `docs/GODADDY_EMAIL_SETUP.md` |
+| `SMTP_USER` / `SMTP_PASS` | SMTP auth | GoDaddy mailbox email + password |
+| `SMTP_FROM` / `CONTACT_TO_EMAIL` | Contact form routing | From / to addresses |
 | `GOOGLE_CALENDAR_CLIENT_ID` | Future OAuth | unused until OAuth implemented |
 | `APP_BASE_URL` | QuickBooks OAuth | e.g. `https://bhcontracting.ca` |
 | `QUICKBOOKS_CLIENT_ID` | QuickBooks OAuth | Intuit production app |
