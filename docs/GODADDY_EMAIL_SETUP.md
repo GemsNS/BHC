@@ -105,7 +105,8 @@ CONTACT_TO_EMAIL=info@bhcontracting.ca
 |---------|-----|
 | Frontend: "Email is not configured…" | Add SMTP or RESEND vars to server `.env` and restart `bhc` |
 | 500 after submit | Wrong SMTP password, or GoDaddy blocking relay — confirm login at webmail |
-| Microsoft 365 auth fails | Enable SMTP AUTH for the mailbox in Microsoft 365 admin |
+| **535 authentication rejected** | Wrong password, SMTP not enabled, or (M365) **Authenticated SMTP** disabled for the mailbox |
+| Microsoft 365 auth fails | GoDaddy → Email → Manage → enable SMTP; in Microsoft 365 admin enable **Authenticated SMTP** for `info@bhcontracting.ca` |
 | Emails go to spam | Set `SMTP_FROM` to the same address as `SMTP_USER` |
 
 **Never commit** `SMTP_PASS` or API keys to git.
