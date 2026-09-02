@@ -54,7 +54,12 @@ export async function readContractMeta(slug: string): Promise<ContractMeta | nul
 export async function resolvePrimaryContractFile(slug: string): Promise<string | null> {
   const files = await listContractFiles(slug);
   if (!files.length) return null;
-  const preferred = ["index.html", "contract.html", "contract.pdf"];
+  const preferred = [
+    "Snow-Removal-Service-Agreement.pdf",
+    "contract.pdf",
+    "index.html",
+    "contract.html",
+  ];
   for (const name of preferred) {
     if (files.includes(name)) return name;
   }
