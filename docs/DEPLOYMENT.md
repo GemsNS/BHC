@@ -57,6 +57,11 @@ Enable Pages on `gh-pages` branch. URL: https://gemsns.github.io/BHC/
 | `NEXT_PUBLIC_BASE_PATH` | Nested hosting | `/BHC` |
 | `RESEND_API_KEY` | Contact form | optional |
 | `GOOGLE_CALENDAR_CLIENT_ID` | Future OAuth | unused until OAuth implemented |
+| `APP_BASE_URL` | QuickBooks OAuth | e.g. `https://bhcontracting.ca` |
+| `QUICKBOOKS_CLIENT_ID` | QuickBooks OAuth | Intuit production app |
+| `QUICKBOOKS_CLIENT_SECRET` | QuickBooks OAuth | **server only, never commit** |
+| `QUICKBOOKS_ENV` | QuickBooks API host | `production` or `sandbox` |
+| `QUICKBOOKS_REDIRECT_URI` | OAuth callback | `https://bhcontracting.ca/api/quickbooks/callback` |
 | `WEBHOOK_RETRY` | Future | not wired |
 
 ## PWA / mobile

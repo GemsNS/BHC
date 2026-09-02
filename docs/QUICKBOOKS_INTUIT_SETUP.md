@@ -57,25 +57,27 @@ Privacy:         https://bhcontracting.ca/legal/privacy
 
 ---
 
-## Keys & credentials (after legal URLs are saved)
+## Keys & credentials (production)
 
 | Setting | Value |
 |---------|--------|
-| **Client ID** | `ABEgigfqrSofBmosED1aGbcsIEJLqBcNWyffWvL1lehMjzcsdV` |
-| **Client secret** | Copy from Keys page → store in server `.env` as `QUICKBOOKS_CLIENT_SECRET` — **never commit** |
+| **Client ID** | `ABjjo711bpbnbvXjltyVOzX6MTarqryRWdlit5rHvF6a6Q97Kt` |
+| **Client secret** | Server `.env` only as `QUICKBOOKS_CLIENT_SECRET` — **never commit** |
 | **Scopes** | `com.intuit.quickbooks.accounting` `com.intuit.quickbooks.payment` `openid` `profile` `email` `phone` `address` |
-| **Environment** | Sandbox (for development) |
+| **Environment** | **Production** (`QUICKBOOKS_ENV=production`) |
+
+> Previous sandbox client ID (`ABEgigfqrSofBmosED1aGbcsIEJLqBcNWyffWvL1lehMjzcsdV`) is retired — use production keys above.
 
 ---
 
-## Server `.env` (after you have the secret)
+## Server `.env` (production)
 
 ```bash
 APP_BASE_URL=https://bhcontracting.ca
 
-QUICKBOOKS_CLIENT_ID=ABEgigfqrSofBmosED1aGbcsIEJLqBcNWyffWvL1lehMjzcsdV
-QUICKBOOKS_CLIENT_SECRET=<paste from Intuit Keys page>
-QUICKBOOKS_ENV=sandbox
+QUICKBOOKS_CLIENT_ID=ABjjo711bpbnbvXjltyVOzX6MTarqryRWdlit5rHvF6a6Q97Kt
+QUICKBOOKS_CLIENT_SECRET=<server-only — never commit>
+QUICKBOOKS_ENV=production
 QUICKBOOKS_REDIRECT_URI=https://bhcontracting.ca/api/quickbooks/callback
 ```
 
@@ -90,7 +92,7 @@ Send the **client secret** to your agent in chat only — do not commit it to gi
 1. Set `QUICKBOOKS_CLIENT_ID` and `QUICKBOOKS_CLIENT_SECRET` in server `.env`
 2. Deploy and restart the app
 3. Log in as admin → **Admin → Books**
-4. Click **Connect QuickBooks** → authorize in Intuit sandbox
+4. Click **Connect QuickBooks** → authorize your **production** QuickBooks company
 5. Callback saves tokens server-side; click **Fetch 2-year P&L**
 
 API routes:
