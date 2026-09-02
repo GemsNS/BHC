@@ -1,41 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-
-type TokenResponse = {
-  access_token: string;
-  refresh_token?: string;
-  expires_in: number;
-};
-
-function qbBase(env: "sandbox" | "production") {
-  return env === "production"
-    ? "https://quickbooks.api.intuit.com"
-    : "https://sandbox-quickbooks.api.intuit.com";
-}
-
-async function refreshAccessToken(input: {
-  clientId: string;
-  clientSecret: string;
-  refreshToken: string;
-}): Promise<TokenResponse> {
-  const basic = Buffer.from(`${input.clientId}:${input.clientSecret}`).toString("base64");
-  const res = await fetch("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${basic}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
-    },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: input.refreshToken,
-    }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`QuickBooks token refresh failed (${res.status}): ${text.slice(0, 240)}`);
-  }
-  return res.json() as Promise<TokenResponse>;
-}
+import { requireApiEmployee } from "@/lib/api-auth";
+import {
+  getValidAccessToken,
+  qbApiBase,
+  readQbConnection,
+} from "@/lib/quickbooks-oauth";
 
 type QbReportRow = {
   Header?: { ColData?: Array<{ value?: string }> };
@@ -75,21 +44,28 @@ function flattenRows(
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const employee = await requireApiEmployee(request);
+  if (employee instanceof NextResponse) return employee;
+  const conn = await readQbConnection();
   const configured = Boolean(
     process.env.QUICKBOOKS_CLIENT_ID?.trim() &&
       process.env.QUICKBOOKS_CLIENT_SECRET?.trim() &&
-      process.env.QUICKBOOKS_REALM_ID?.trim() &&
-      process.env.QUICKBOOKS_REFRESH_TOKEN?.trim(),
+      conn?.refreshToken &&
+      conn.realmId,
   );
   return NextResponse.json({
     ok: true,
     envConfigured: configured,
-    hint: "POST { clientId, clientSecret, realmId, refreshToken, environment } to fetch a 2-year ProfitAndLoss report.",
+    connected: Boolean(conn?.refreshToken),
+    hint: "POST with no body to fetch P&L using server OAuth connection, or connect via Admin → Books.",
   });
 }
 
 export async function POST(req: NextRequest) {
+  const employee = await requireApiEmployee(req);
+  if (employee instanceof NextResponse) return employee;
+
   try {
     const json = (await req.json().catch(() => ({}))) as Partial<{
       clientId: string;
@@ -99,28 +75,51 @@ export async function POST(req: NextRequest) {
       environment: "sandbox" | "production";
     }>;
 
-    const clientId = json.clientId?.trim() || process.env.QUICKBOOKS_CLIENT_ID?.trim();
-    const clientSecret =
-      json.clientSecret?.trim() || process.env.QUICKBOOKS_CLIENT_SECRET?.trim();
-    const realmId = json.realmId?.trim() || process.env.QUICKBOOKS_REALM_ID?.trim();
-    const refreshToken =
-      json.refreshToken?.trim() || process.env.QUICKBOOKS_REFRESH_TOKEN?.trim();
-    const environment =
+    let realmId = json.realmId?.trim();
+    let environment =
       json.environment ||
       (process.env.QUICKBOOKS_ENV?.trim() as "sandbox" | "production" | undefined) ||
       "sandbox";
+    let accessToken: string;
+    let refreshTokenOut: string | undefined;
 
-    if (!clientId || !clientSecret || !realmId || !refreshToken) {
-      return NextResponse.json(
-        {
-          error:
-            "Missing QuickBooks credentials. Provide clientId, clientSecret, realmId, refreshToken (or set QUICKBOOKS_* env vars).",
-        },
-        { status: 400 },
-      );
+    const useServerOAuth =
+      !json.clientId && !json.clientSecret && !json.refreshToken && !json.realmId;
+
+    if (useServerOAuth) {
+      const { accessToken: token, connection } = await getValidAccessToken();
+      accessToken = token;
+      realmId = connection.realmId;
+      environment = connection.environment;
+      refreshTokenOut = connection.refreshToken;
+    } else {
+      const clientId = json.clientId?.trim() || process.env.QUICKBOOKS_CLIENT_ID?.trim();
+      const clientSecret =
+        json.clientSecret?.trim() || process.env.QUICKBOOKS_CLIENT_SECRET?.trim();
+      realmId = realmId || process.env.QUICKBOOKS_REALM_ID?.trim();
+      const refreshToken =
+        json.refreshToken?.trim() || process.env.QUICKBOOKS_REFRESH_TOKEN?.trim();
+
+      if (!clientId || !clientSecret || !realmId || !refreshToken) {
+        return NextResponse.json(
+          {
+            error:
+              "Connect QuickBooks in Admin → Books, or provide credentials in request body.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const { refreshAccessToken } = await import("@/lib/quickbooks-oauth");
+      const tokens = await refreshAccessToken(refreshToken);
+      accessToken = tokens.access_token;
+      refreshTokenOut = tokens.refresh_token ?? refreshToken;
     }
 
-    const tokens = await refreshAccessToken({ clientId, clientSecret, refreshToken });
+    if (!realmId) {
+      return NextResponse.json({ error: "Missing realm ID" }, { status: 400 });
+    }
+
     const end = new Date();
     const start = new Date();
     start.setFullYear(end.getFullYear() - 2);
@@ -128,7 +127,7 @@ export async function POST(req: NextRequest) {
     const startDate = start.toISOString().slice(0, 10);
     const endDate = end.toISOString().slice(0, 10);
     const url = new URL(
-      `${qbBase(environment)}/v3/company/${realmId}/reports/ProfitAndLoss`,
+      `${qbApiBase(environment)}/v3/company/${realmId}/reports/ProfitAndLoss`,
     );
     url.searchParams.set("start_date", startDate);
     url.searchParams.set("end_date", endDate);
@@ -136,7 +135,7 @@ export async function POST(req: NextRequest) {
 
     const reportRes = await fetch(url.toString(), {
       headers: {
-        Authorization: `Bearer ${tokens.access_token}`,
+        Authorization: `Bearer ${accessToken}`,
         Accept: "application/json",
       },
     });
@@ -173,8 +172,8 @@ export async function POST(req: NextRequest) {
       generatedAt: new Date().toISOString(),
       currency: "USD",
       range: { startDate, endDate },
-      refreshToken: tokens.refresh_token ?? refreshToken,
-      accessTokenExpiresIn: tokens.expires_in,
+      refreshToken: refreshTokenOut,
+      accessTokenExpiresIn: null,
       totals: {
         revenue: income,
         cogs,
