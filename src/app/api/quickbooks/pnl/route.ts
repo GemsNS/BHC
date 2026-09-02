@@ -3,6 +3,7 @@ import { requireApiEmployee } from "@/lib/api-auth";
 import {
   getValidAccessToken,
   qbApiBase,
+  qbEnvironment,
   readQbConnection,
 } from "@/lib/quickbooks-oauth";
 
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
     let environment =
       json.environment ||
       (process.env.QUICKBOOKS_ENV?.trim() as "sandbox" | "production" | undefined) ||
-      "sandbox";
+      qbEnvironment();
     let accessToken: string;
     let refreshTokenOut: string | undefined;
 

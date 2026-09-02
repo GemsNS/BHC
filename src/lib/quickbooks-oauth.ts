@@ -49,7 +49,13 @@ export function qbClientSecret(): string | undefined {
 }
 
 export function qbEnvironment(): "sandbox" | "production" {
-  return process.env.QUICKBOOKS_ENV?.trim() === "production" ? "production" : "sandbox";
+  const env = process.env.QUICKBOOKS_ENV?.trim().toLowerCase();
+  if (env === "sandbox") return "sandbox";
+  return "production";
+}
+
+export function qbEnvironmentLabel(env: "sandbox" | "production" = qbEnvironment()): string {
+  return env === "production" ? "Production (live books)" : "Sandbox";
 }
 
 export function qbApiBase(env: "sandbox" | "production"): string {

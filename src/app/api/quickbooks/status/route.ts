@@ -3,6 +3,7 @@ import { requireApiEmployee } from "@/lib/api-auth";
 import {
   oauthConfigured,
   qbEnvironment,
+  qbEnvironmentLabel,
   qbRedirectUri,
   readQbConnection,
 } from "@/lib/quickbooks-oauth";
@@ -17,6 +18,7 @@ export async function GET(request: Request) {
     connected: Boolean(conn?.refreshToken && conn.realmId),
     realmId: conn?.realmId ?? null,
     environment: conn?.environment ?? qbEnvironment(),
+    environmentLabel: qbEnvironmentLabel(conn?.environment ?? qbEnvironment()),
     connectedAt: conn?.connectedAt ?? null,
     redirectUri: qbRedirectUri(),
   });

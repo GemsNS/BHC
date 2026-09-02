@@ -31,6 +31,7 @@ type QbStatus = {
   connected: boolean;
   realmId: string | null;
   environment: "sandbox" | "production";
+  environmentLabel?: string;
   connectedAt: string | null;
   redirectUri: string;
 };
@@ -190,12 +191,15 @@ function BooksInner() {
 
   const oauthReady = status?.oauthConfigured ?? false;
   const qbConnected = status?.connected ?? false;
+  const envLabel =
+    status?.environmentLabel ??
+    (status?.environment === "production" ? "Production (live books)" : "Sandbox");
 
   return (
     <PageFrame
       context="Finance"
       title="Books & P&L"
-      subtitle="Two-year profit & loss from BHC CRM data, plus QuickBooks Online via server OAuth."
+      subtitle="Two-year profit & loss from BHC CRM data, plus live QuickBooks Online books."
     >
       <MetricStrip items={metrics} />
 
@@ -285,20 +289,24 @@ function BooksInner() {
         ) : (
           <>
             <p className="tutorial-lead">
-              Connect your Intuit sandbox company via OAuth. Tokens are stored on the server
-              at <code>data/qb-connection.json</code> — never in the browser.
+              Connect your live QuickBooks company via secure OAuth. Credentials and tokens
+              stay on the server — never in the browser.
             </p>
             <dl className="books-qb-status">
               <div>
-                <dt>Server OAuth</dt>
-                <dd>{oauthReady ? "Configured" : "Waiting for QUICKBOOKS_CLIENT_SECRET in .env"}</dd>
+                <dt>Intuit environment</dt>
+                <dd>{envLabel}</dd>
+              </div>
+              <div>
+                <dt>OAuth</dt>
+                <dd>{oauthReady ? "Ready" : "Server credentials not configured"}</dd>
               </div>
               <div>
                 <dt>Connection</dt>
                 <dd>
                   {qbConnected
-                    ? `Connected · company ${status?.realmId} · ${status?.environment}`
-                    : "Not connected"}
+                    ? `Connected · company ${status?.realmId}`
+                    : "Not connected — click Connect QuickBooks below"}
                 </dd>
               </div>
               {status?.connectedAt ? (
