@@ -30,6 +30,41 @@ Optional: use a dedicated sending address like `quotes@bhcontracting.ca` and del
 
 ---
 
+## Microsoft 365 — enable SMTP at **tenant** level (required)
+
+`info@bhcontracting.ca` uses **GoDaddy Microsoft 365**. Enabling Authenticated SMTP on the mailbox alone is not enough if the **tenant** still blocks it.
+
+If you see:
+
+> `535 5.7.139 … SmtpClientAuthentication is disabled for the Tenant`
+
+do **both**:
+
+### A. Mailbox (you may have done this already)
+
+1. GoDaddy → **Email & Office** → **Manage** → select `info@bhcontracting.ca`
+2. Turn on **Authenticated SMTP** for that mailbox
+
+### B. Organization / tenant (still required)
+
+1. Open **Microsoft 365 admin center** (from GoDaddy email dashboard → **Advanced Settings** / **Admin**)
+2. If you have Exchange admin access, connect **Exchange Online PowerShell** and run:
+
+```powershell
+Set-TransportConfig -SmtpClientAuthenticationDisabled $false
+Set-CASMailbox -Identity info@bhcontracting.ca -SmtpClientAuthenticationDisabled $false
+```
+
+3. If you **cannot** run PowerShell, contact **GoDaddy Support** and ask them to enable **SMTP AUTH (Authenticated SMTP) at the tenant level** for your Microsoft 365 organization.
+
+### C. Security Defaults (if still failing)
+
+Microsoft **Security Defaults** in Entra ID can block SMTP even when SMTP AUTH is on. In [Microsoft Entra admin center](https://entra.microsoft.com) → **Properties** → **Security defaults** — if enabled, either disable it or ask GoDaddy how to allow SMTP for `info@bhcontracting.ca`.
+
+Changes can take **15–60 minutes** to propagate.
+
+---
+
 ## Step 2 — Server `.env` (production VM)
 
 SSH to the server and edit `/opt/bhc/.env` or `/etc/bhc/bhc.env` (wherever your app loads env):
