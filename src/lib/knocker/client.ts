@@ -435,7 +435,7 @@ export async function createCalendarEvent(input: {
     pinId: input.pinId ?? null,
     todoId: input.todoId ?? null,
     employeeId: input.employeeId,
-    icsUid: `${clientNewId()}@bhcontracting.co`,
+    icsUid: `${clientNewId()}@bhcontracting.ca`,
     googleEventId: null,
     createdAt: clientNowIso(),
   };

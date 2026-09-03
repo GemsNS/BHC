@@ -49,15 +49,20 @@ function migrateEmployee(emp: Employee): Employee {
         : emp.name,
       login: "cameron",
       email: emp.email?.toLowerCase().includes("jordan@")
-        ? "cameron@bhcontracting.co"
-        : emp.email?.replace(/@bighoss\.com$/i, "@bhcontracting.co") ||
+        ? "cameron@bhcontracting.ca"
+        : emp.email?.replace(/@bighoss\.com$/i, "@bhcontracting.ca") ||
           emp.email,
       pin: emp.pin || "1001",
     };
   } else if (emp.email && /@bighoss\.com$/i.test(emp.email)) {
     next = {
       ...emp,
-      email: emp.email.replace(/@bighoss\.com$/i, "@bhcontracting.co"),
+      email: emp.email.replace(/@bighoss\.com$/i, "@bhcontracting.ca"),
+    };
+  } else if (emp.email && /@bhcontracting\.co$/i.test(emp.email)) {
+    next = {
+      ...emp,
+      email: emp.email.replace(/@bhcontracting\.co$/i, "@bhcontracting.ca"),
     };
   }
   return withLoginFields(next);

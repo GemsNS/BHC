@@ -42,8 +42,8 @@ export default function TermsPage() {
         <h2 className="text-lg font-semibold text-white">Contact</h2>
         <p>
           BH Contracting LTD. · Halifax, Nova Scotia ·{" "}
-          <a href="mailto:info@bhcontracting.co" className="text-primary-aqua hover:underline">
-            info@bhcontracting.co
+          <a href="mailto:info@bhcontracting.ca" className="text-primary-aqua hover:underline">
+            info@bhcontracting.ca
           </a>
         </p>
       </div>

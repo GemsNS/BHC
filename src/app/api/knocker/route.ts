@@ -432,7 +432,7 @@ export async function POST(request: Request) {
       pinId: parsed.pinId ?? null,
       todoId: parsed.todoId ?? null,
       employeeId: parsed.employeeId,
-      icsUid: `${newId()}@bhcontracting.co`,
+      icsUid: `${newId()}@bhcontracting.ca`,
       googleEventId: null,
       createdAt: nowIso(),
     };

@@ -94,7 +94,7 @@ export function buildKnockerSeed(iso: (daysAgo: number, hour?: number) => string
         pinId: "knock-1",
         todoId: "todo-1",
         employeeId: "emp-knocker-1",
-        icsUid: "cal-1@bhcontracting.co",
+        icsUid: "cal-1@bhcontracting.ca",
         googleEventId: null,
         createdAt: iso(0, 13),
       },

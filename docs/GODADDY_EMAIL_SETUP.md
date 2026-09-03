@@ -63,32 +63,35 @@ Microsoft **Security Defaults** in Entra ID can block SMTP even when SMTP AUTH i
 
 Changes can take **15–60 minutes** to propagate.
 
+**Verified working:** Office 365 SMTP (`smtp.office365.com:587`) for `info@bhcontracting.ca` after tenant SMTP AUTH was enabled.
+
 ---
 
 ## Step 2 — Server `.env` (production VM)
 
 SSH to the server and edit `/opt/bhc/.env` or `/etc/bhc/bhc.env` (wherever your app loads env):
 
-```bash
-# GoDaddy Workspace Email (most common)
-SMTP_HOST=smtpout.secureserver.net
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=quotes@bhcontracting.ca
-SMTP_PASS=your-mailbox-password-here
-SMTP_FROM=BH Contracting LTD. <quotes@bhcontracting.ca>
-CONTACT_TO_EMAIL=info@bhcontracting.ca
-```
-
-**Microsoft 365 via GoDaddy** — use instead:
+**Microsoft 365 via GoDaddy** (`info@bhcontracting.ca`) — use this:
 
 ```bash
 SMTP_HOST=smtp.office365.com
 SMTP_PORT=587
 SMTP_SECURE=false
-SMTP_USER=quotes@bhcontracting.ca
-SMTP_PASS=your-mailbox-password-here
-SMTP_FROM=BH Contracting LTD. <quotes@bhcontracting.ca>
+SMTP_USER=info@bhcontracting.ca
+SMTP_PASS="your-mailbox-password"
+SMTP_FROM=BH Contracting LTD. <info@bhcontracting.ca>
+CONTACT_TO_EMAIL=info@bhcontracting.ca
+```
+
+**GoDaddy Workspace Email** (non-M365) — use instead:
+
+```bash
+SMTP_HOST=smtpout.secureserver.net
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=info@bhcontracting.ca
+SMTP_PASS="your-mailbox-password"
+SMTP_FROM=BH Contracting LTD. <info@bhcontracting.ca>
 CONTACT_TO_EMAIL=info@bhcontracting.ca
 ```
 
@@ -140,8 +143,8 @@ CONTACT_TO_EMAIL=info@bhcontracting.ca
 |---------|-----|
 | Frontend: "Email is not configured…" | Add SMTP or RESEND vars to server `.env` and restart `bhc` |
 | 500 after submit | Wrong SMTP password, or GoDaddy blocking relay — confirm login at webmail |
-| **535 authentication rejected** | Wrong password, SMTP not enabled, or (M365) **Authenticated SMTP** disabled for the mailbox |
-| Microsoft 365 auth fails | GoDaddy → Email → Manage → enable SMTP; in Microsoft 365 admin enable **Authenticated SMTP** for `info@bhcontracting.ca` |
+| **535 … disabled for the Tenant** | Enable SMTP AUTH at **tenant** level — see section above; mailbox-only is not enough |
+| **535 authentication rejected** | Wrong password, or tenant/mailbox SMTP still disabled |
 | Emails go to spam | Set `SMTP_FROM` to the same address as `SMTP_USER` |
 
 **Never commit** `SMTP_PASS` or API keys to git.

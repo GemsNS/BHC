@@ -20,7 +20,7 @@ export function buildDemoSeedData(): AppData {
     {
       id: "emp-admin",
       name: "Cameron Brown",
-      email: "cameron@bhcontracting.co",
+      email: "cameron@bhcontracting.ca",
       login: "cameron",
       pin: "1001",
       role: "admin" as const,
@@ -32,7 +32,7 @@ export function buildDemoSeedData(): AppData {
     {
       id: "emp-manager",
       name: "Taylor West",
-      email: "taylor@bhcontracting.co",
+      email: "taylor@bhcontracting.ca",
       login: "taylor",
       pin: "1006",
       role: "manager" as const,
@@ -44,7 +44,7 @@ export function buildDemoSeedData(): AppData {
     {
       id: "emp-sales-1",
       name: "Alex Rivera",
-      email: "alex@bhcontracting.co",
+      email: "alex@bhcontracting.ca",
       login: "alex",
       pin: "1002",
       role: "sales" as const,
@@ -56,7 +56,7 @@ export function buildDemoSeedData(): AppData {
     {
       id: "emp-knocker-1",
       name: "Jamie Cole",
-      email: "jamie@bhcontracting.co",
+      email: "jamie@bhcontracting.ca",
       login: "jamie",
       pin: "1007",
       role: "knocker" as const,
@@ -68,7 +68,7 @@ export function buildDemoSeedData(): AppData {
     {
       id: "emp-knocker-2",
       name: "Morgan Lee",
-      email: "morgan.lee@bhcontracting.co",
+      email: "morgan.lee@bhcontracting.ca",
       login: "morgan",
       pin: "1008",
       role: "knocker" as const,
@@ -80,7 +80,7 @@ export function buildDemoSeedData(): AppData {
     {
       id: "emp-field-1",
       name: "Sam Ortiz",
-      email: "sam@bhcontracting.co",
+      email: "sam@bhcontracting.ca",
       login: "sam",
       pin: "1003",
       role: "field" as const,
@@ -92,7 +92,7 @@ export function buildDemoSeedData(): AppData {
     {
       id: "emp-field-2",
       name: "Casey Brooks",
-      email: "casey@bhcontracting.co",
+      email: "casey@bhcontracting.ca",
       login: "casey",
       pin: "1004",
       role: "field" as const,
@@ -104,7 +104,7 @@ export function buildDemoSeedData(): AppData {
     {
       id: "emp-driver-1",
       name: "Riley Quinn",
-      email: "riley@bhcontracting.co",
+      email: "riley@bhcontracting.ca",
       login: "riley",
       pin: "1005",
       role: "driver" as const,

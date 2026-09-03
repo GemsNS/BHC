@@ -61,10 +61,10 @@ export function Contact() {
                   <li className="flex gap-4">
                     <Mail className="mt-0.5 h-5 w-5 shrink-0 text-primary-aqua" strokeWidth={2} aria-hidden />
                     <a
-                      href="mailto:info@bhcontracting.co"
+                      href="mailto:info@bhcontracting.ca"
                       className="transition-colors hover:text-primary-aqua"
                     >
-                      info@bhcontracting.co
+                      info@bhcontracting.ca
                     </a>
                   </li>
                   <li className="flex gap-4">

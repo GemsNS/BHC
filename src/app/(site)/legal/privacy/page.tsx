@@ -53,8 +53,8 @@ export default function PrivacyPage() {
         <h2 className="text-lg font-semibold text-white">Contact</h2>
         <p>
           Questions:{" "}
-          <a href="mailto:info@bhcontracting.co" className="text-primary-aqua hover:underline">
-            info@bhcontracting.co
+          <a href="mailto:info@bhcontracting.ca" className="text-primary-aqua hover:underline">
+            info@bhcontracting.ca
           </a>{" "}
           · (902) 809-9412
         </p>
