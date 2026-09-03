@@ -1,0 +1,44 @@
+# Walid Warehouse Extension material library
+# Prepared for BH Contracting Ltd.
+
+newmtl gray
+Ka 0.20 0.20 0.20
+Kd 0.545 0.557 0.549
+Ks 0.06 0.06 0.06
+Ns 12.0
+illum 2
+
+newmtl darkslategray
+Ka 0.06 0.07 0.08
+Kd 0.188 0.204 0.231
+Ks 0.10 0.10 0.10
+Ns 22.0
+illum 2
+
+newmtl sienna
+Ka 0.16 0.09 0.04
+Kd 0.659 0.435 0.239
+Ks 0.08 0.06 0.04
+Ns 14.0
+illum 2
+
+newmtl sandybrown
+Ka 0.22 0.12 0.05
+Kd 0.659 0.435 0.239
+Ks 0.08 0.06 0.04
+Ns 14.0
+illum 2
+
+newmtl black
+Ka 0.01 0.01 0.01
+Kd 0.063 0.071 0.078
+Ks 0.20 0.20 0.20
+Ns 35.0
+illum 2
+
+newmtl dimgray
+Ka 0.15 0.14 0.13
+Kd 0.400 0.388 0.365
+Ks 0.02 0.02 0.02
+Ns 5.0
+illum 2

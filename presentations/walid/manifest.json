@@ -1,0 +1,216 @@
+{
+  "title": "BH Contracting Ltd. — Walid Warehouse Project Package",
+  "project": "Warehouse Extension, 9 Alicia Scott Ave., Mount Uniacke, Nova Scotia B0N 1Z0",
+  "preparedFor": "BH Contracting Ltd.",
+  "email": "info@bhcontracting.ca",
+  "packageStatus": "Concept/modeling, preliminary quantity, and draft contract documents for review",
+  "files": [
+    {
+      "path": "00_README.md",
+      "size": 7900,
+      "ext": ".md"
+    },
+    {
+      "path": "01_Model/Walid_3D_Viewer.html",
+      "size": 162675,
+      "ext": ".html"
+    },
+    {
+      "path": "01_Model/model_validation.md",
+      "size": 2807,
+      "ext": ".md"
+    },
+    {
+      "path": "01_Model/walid_warehouse.3mf",
+      "size": 80115,
+      "ext": ".3mf"
+    },
+    {
+      "path": "01_Model/walid_warehouse.glb",
+      "size": 116840,
+      "ext": ".glb"
+    },
+    {
+      "path": "01_Model/walid_warehouse.jscad.js",
+      "size": 13871,
+      "ext": ".js"
+    },
+    {
+      "path": "01_Model/walid_warehouse.mtl",
+      "size": 616,
+      "ext": ".mtl"
+    },
+    {
+      "path": "01_Model/walid_warehouse.obj",
+      "size": 285187,
+      "ext": ".obj"
+    },
+    {
+      "path": "01_Model/walid_warehouse.stl",
+      "size": 288084,
+      "ext": ".stl"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/facade_design_brief.md",
+      "size": 5836,
+      "ext": ".md"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_dimension_register.md",
+      "size": 8476,
+      "ext": ".md"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_facade_elevations.dxf",
+      "size": 20238,
+      "ext": ".dxf"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_facade_elevations.png",
+      "size": 155866,
+      "ext": ".png"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_facade_elevations.svg",
+      "size": 17918,
+      "ext": ".svg"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_facade_quantity_basis.md",
+      "size": 2024,
+      "ext": ".md"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_facade_takeoff.csv",
+      "size": 458,
+      "ext": ".csv"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_facade_takeoff.xlsx",
+      "size": 6260,
+      "ext": ".xlsx"
+    },
+    {
+      "path": "03_Contract/Walid_Change_Order_Form.docx",
+      "size": 11282,
+      "ext": ".docx"
+    },
+    {
+      "path": "03_Contract/Walid_Change_Order_Form.md",
+      "size": 2771,
+      "ext": ".md"
+    },
+    {
+      "path": "03_Contract/Walid_Field_Measurement_and_Layout_Approval.docx",
+      "size": 12467,
+      "ext": ".docx"
+    },
+    {
+      "path": "03_Contract/Walid_Field_Measurement_and_Layout_Approval.md",
+      "size": 5754,
+      "ext": ".md"
+    },
+    {
+      "path": "03_Contract/Walid_Siding_Contract_Draft.docx",
+      "size": 20888,
+      "ext": ".docx"
+    },
+    {
+      "path": "03_Contract/Walid_Siding_Contract_Draft.md",
+      "size": 23590,
+      "ext": ".md"
+    },
+    {
+      "path": "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.docx",
+      "size": 11924,
+      "ext": ".docx"
+    },
+    {
+      "path": "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.md",
+      "size": 3615,
+      "ext": ".md"
+    },
+    {
+      "path": "04_Renderings/birdseye_view.webp",
+      "size": 332518,
+      "ext": ".webp"
+    },
+    {
+      "path": "04_Renderings/front_entrance_view.webp",
+      "size": 302618,
+      "ext": ".webp"
+    },
+    {
+      "path": "04_Renderings/garage_facade_view.webp",
+      "size": 328574,
+      "ext": ".webp"
+    },
+    {
+      "path": "04_Renderings/left_side_view.webp",
+      "size": 324448,
+      "ext": ".webp"
+    }
+  ],
+  "zip": {
+    "path": "BH_Contracting_Walid_Complete_Package.zip",
+    "size": 1758223,
+    "ext": ".zip"
+  },
+  "sections": [
+    {
+      "id": "overview",
+      "title": "Package Overview",
+      "md": "00_README.md"
+    },
+    {
+      "id": "model",
+      "title": "3D Model",
+      "dir": "01_Model",
+      "md": [
+        "01_Model/model_validation.md"
+      ],
+      "viewer": "01_Model/Walid_3D_Viewer.html"
+    },
+    {
+      "id": "plans",
+      "title": "Plans & Takeoff",
+      "dir": "02_Plans_and_Takeoff",
+      "md": [
+        "02_Plans_and_Takeoff/facade_design_brief.md",
+        "02_Plans_and_Takeoff/walid_dimension_register.md",
+        "02_Plans_and_Takeoff/walid_facade_quantity_basis.md"
+      ],
+      "images": [
+        "02_Plans_and_Takeoff/walid_facade_elevations.png",
+        "02_Plans_and_Takeoff/walid_facade_elevations.svg"
+      ]
+    },
+    {
+      "id": "contract",
+      "title": "Contract Documents",
+      "dir": "03_Contract",
+      "md": [
+        "03_Contract/Walid_Siding_Contract_Draft.md",
+        "03_Contract/Walid_Field_Measurement_and_Layout_Approval.md",
+        "03_Contract/Walid_Change_Order_Form.md",
+        "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.md"
+      ]
+    },
+    {
+      "id": "renderings",
+      "title": "Renderings",
+      "dir": "04_Renderings",
+      "images": [
+        "04_Renderings/birdseye_view.webp",
+        "04_Renderings/front_entrance_view.webp",
+        "04_Renderings/garage_facade_view.webp",
+        "04_Renderings/left_side_view.webp"
+      ]
+    },
+    {
+      "id": "downloads",
+      "title": "Complete File Downloads",
+      "dir": null
+    }
+  ]
+}
