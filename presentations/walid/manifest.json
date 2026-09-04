@@ -12,52 +12,52 @@
     },
     {
       "path": "01_Model/Walid_3D_Viewer.html",
-      "size": 162677,
+      "size": 292733,
       "ext": ".html"
     },
     {
       "path": "01_Model/model_validation.md",
-      "size": 2795,
+      "size": 1997,
       "ext": ".md"
     },
     {
       "path": "01_Model/walid_warehouse.3mf",
-      "size": 80115,
+      "size": 90776,
       "ext": ".3mf"
     },
     {
       "path": "01_Model/walid_warehouse.glb",
-      "size": 116840,
+      "size": 214316,
       "ext": ".glb"
     },
     {
       "path": "01_Model/walid_warehouse.jscad.js",
-      "size": 13871,
+      "size": 15303,
       "ext": ".js"
     },
     {
       "path": "01_Model/walid_warehouse.mtl",
-      "size": 616,
+      "size": 1347,
       "ext": ".mtl"
     },
     {
       "path": "01_Model/walid_warehouse.obj",
-      "size": 285187,
+      "size": 570091,
       "ext": ".obj"
     },
     {
       "path": "01_Model/walid_warehouse.stl",
-      "size": 288084,
+      "size": 280884,
       "ext": ".stl"
     },
     {
       "path": "02_Plans_and_Takeoff/facade_design_brief.md",
-      "size": 5787,
+      "size": 5828,
       "ext": ".md"
     },
     {
       "path": "02_Plans_and_Takeoff/walid_dimension_register.md",
-      "size": 8476,
+      "size": 8689,
       "ext": ".md"
     },
     {
@@ -132,7 +132,7 @@
     },
     {
       "path": "04_Renderings/birdseye_view.webp",
-      "size": 332518,
+      "size": 29238,
       "ext": ".webp"
     },
     {
@@ -142,12 +142,12 @@
     },
     {
       "path": "04_Renderings/garage_facade_view.webp",
-      "size": 328574,
+      "size": 23852,
       "ext": ".webp"
     },
     {
       "path": "04_Renderings/left_side_view.webp",
-      "size": 324448,
+      "size": 22898,
       "ext": ".webp"
     },
     {
@@ -206,6 +206,11 @@
       "ext": ".jpg"
     },
     {
+      "path": "06_Site_Photos/site_corner_man_door_sidewall.png",
+      "size": 79154,
+      "ext": ".png"
+    },
+    {
       "path": "06_Site_Photos/site_existing_01.webp",
       "size": 67546,
       "ext": ".webp"
@@ -253,7 +258,7 @@
   ],
   "zip": {
     "path": "BH_Contracting_Walid_Complete_Package.zip",
-    "size": 37841943,
+    "size": 37064503,
     "ext": ".zip"
   },
   "sections": [
@@ -328,7 +333,8 @@
         "06_Site_Photos/site_existing_01.webp",
         "06_Site_Photos/site_existing_02.webp",
         "06_Site_Photos/site_existing_03.webp",
-        "06_Site_Photos/site_existing_04.webp"
+        "06_Site_Photos/site_existing_04.webp",
+        "06_Site_Photos/site_corner_man_door_sidewall.png"
       ]
     },
     {

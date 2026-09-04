@@ -25,8 +25,8 @@ The exterior concept uses a **dark charcoal vertical profile as the primary fiel
 | Elevation | Primary charcoal zone | Wood-look accent zone | Key retained features |
 | --- | --- | --- | --- |
 | Principal entrance/front gable | Entire gable and remaining wall field | A broad rectangular portal around the paired entrance and adjacent sectional opening, plus a low horizontal base band aligned with the reference concept | Central entrance feature/canopy, one right-side sectional opening, two outer square windows |
-| Lower shop/garage gable | Upper wall and gable field | A continuous header band across the three shop doors, with narrow vertical drops between openings and at end returns | Three sectional garage doors, one outer man door, two upper horizontal windows |
-| Left side | Upper field and non-accent wall areas | A continuous horizontal belt at the inter-floor transition; lower wood-look cladding steps with the photographed grade where visually appropriate | Lower man door, two high basement windows, one mid upper window, two upper corner windows |
+| Lower shop/garage gable | Upper wall and gable field | A continuous header band across the three shop doors, with narrow vertical drops between openings and at end returns | Three sectional garage doors; man door is on the left sidewall (as-built), two upper horizontal windows |
+| Left side | Upper field and non-accent wall areas | A continuous horizontal belt at the inter-floor transition; lower wood-look cladding follows the sloping driveway grade | Lower man door near garage-end corner, two high basement windows, one mid upper window, two upper corner windows |
 | Right side | Upper field and non-accent wall areas | Matching inter-floor belt and selective lower stepped accent areas without inventing unshown openings | Two high basement windows and two upper corner windows |
 
 ## Exterior Lighting Concept
@@ -35,7 +35,7 @@ Warm wall sconces are centered above or between the principal openings on the en
 
 ## Site and Grade Treatment
 
-The building shell follows the permit drawings. The surrounding ground plane follows the **visible sloping-site condition** in the user’s photographs and is therefore an approximation. The model will represent the lower level as fully exposed at the garage façade and increasingly buried toward the upper-grade entrance side, with a stepped concrete/foundation edge.
+The building shell follows the permit drawings, with the lower man door placed on the **left sidewall** near the garage corner to match the as-built site photo. The surrounding ground plane is a **continuous sloping driveway / grade** approximation (not outdoor stairs), fully exposing the lower level at the garage façade and rising toward the upper-grade entrance side.
 
 ## Modeling Assumptions Requiring Field or Designer Confirmation
 
@@ -46,7 +46,7 @@ The building shell follows the permit drawings. The surrounding ground plane fol
 | Vertical levels | 3.91 m lower level + 0.35 m floor zone + 2.75 m upper wall + 2.11 m gable rise | Confirm finished-floor elevations, wall plate height, and roof-truss geometry. |
 | Roof | Symmetrical gable with permit-style projection and 3:12 detail intent | Confirm truss/shop drawings and measured overhang. |
 | Cladding build-out | Thin visual finish layer outside the structural shell | Confirm furring, insulation, membrane, flashings, and manufacturer-specific thicknesses. |
-| Grade | Piecewise sloped/stepped visual approximation | Obtain survey/as-built grades for construction layout. |
+| Grade | Continuous sloping driveway / grade approximation (no stairs) | Obtain survey/as-built grades for construction layout. |
 | Opening locations | Reconstructed from plans/elevations and schedule sizes | Field-measure every rough opening before ordering or cutting cladding. |
 | Wood-look product | Generic cedar-tone metal/vinyl visual | Confirm manufacturer, profile, orientation, coverage, and corner/detail system. |
 

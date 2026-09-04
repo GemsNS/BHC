@@ -21,7 +21,7 @@ const PALETTE = {
 const mm = (value) => value / 1000
 
 const getParameterDefinitions = () => [
-  { name: 'showSite', type: 'checkbox', checked: true, caption: 'Show sloped site approximation' },
+  { name: 'showSite', type: 'checkbox', checked: true, caption: 'Show sloping driveway / grade (no stairs)' },
   { name: 'showAccent', type: 'checkbox', checked: true, caption: 'Show cedar-tone accent cladding' },
   { name: 'showProfile', type: 'checkbox', checked: true, caption: 'Show simplified siding ribs/boards' },
   { name: 'showLights', type: 'checkbox', checked: true, caption: 'Show conceptual exterior lights' },
@@ -169,18 +169,71 @@ const wallLightY = (x, y, z, outward = -1) => {
 }
 
 const createTerrain = (W, D, upperFloorZ) => {
+  // Continuous sloping grade + left-side driveway apron.
+  // Site photos show a gravel driveway sloping down the side — not stairs.
   const parts = []
-  const steps = 9
   const apron = 2.4
-  for (let i = 0; i < steps; i += 1) {
-    const y0 = -apron + i * (D + 2 * apron) / steps
-    const y1 = -apron + (i + 1) * (D + 2 * apron) / steps
-    const yMid = (y0 + y1) / 2
-    const t = Math.max(0, Math.min(1, yMid / D))
-    const top = upperFloorZ + 0.15 - t * (upperFloorZ + 0.15)
-    const base = -0.55
-    parts.push(box([W + 2 * apron, y1 - y0 + 0.02, Math.max(0.08, top - base)], [W / 2, yMid, base + Math.max(0.08, top - base) / 2], PALETTE.terrain))
-  }
+  const base = -0.55
+  const yFront = -apron
+  const yBack = D + apron
+  const zFront = upperFloorZ + 0.12
+  const zBack = 0.08
+
+  // Main site pad: solid prism with a continuous top slope along Y (front → back).
+  const pad = colorize(
+    PALETTE.terrain,
+    polyhedron({
+      points: [
+        [-apron, yFront, base],
+        [W + apron, yFront, base],
+        [W + apron, yBack, base],
+        [-apron, yBack, base],
+        [-apron, yFront, zFront],
+        [W + apron, yFront, zFront],
+        [W + apron, yBack, zBack],
+        [-apron, yBack, zBack]
+      ],
+      faces: [
+        [0, 1, 2, 3],
+        [4, 7, 6, 5],
+        [0, 4, 5, 1],
+        [1, 5, 6, 2],
+        [2, 6, 7, 3],
+        [3, 7, 4, 0]
+      ],
+      orientation: 'outward'
+    })
+  )
+  parts.push(pad)
+
+  // Explicit left-side driveway strip (sloping gravel run along the sidewall).
+  const driveW = 3.2
+  const drive = colorize(
+    hexToRgb('#5A5852'),
+    polyhedron({
+      points: [
+        [-apron - 0.15, yFront + 0.4, zFront + 0.02],
+        [-apron - 0.15 + driveW, yFront + 0.4, zFront + 0.02],
+        [-apron - 0.15 + driveW, yBack - 0.2, zBack + 0.02],
+        [-apron - 0.15, yBack - 0.2, zBack + 0.02],
+        [-apron - 0.15, yFront + 0.4, zFront - 0.12],
+        [-apron - 0.15 + driveW, yFront + 0.4, zFront - 0.12],
+        [-apron - 0.15 + driveW, yBack - 0.2, zBack - 0.12],
+        [-apron - 0.15, yBack - 0.2, zBack - 0.12]
+      ],
+      faces: [
+        [0, 1, 2, 3],
+        [4, 7, 6, 5],
+        [0, 4, 5, 1],
+        [1, 5, 6, 2],
+        [2, 6, 7, 3],
+        [3, 7, 4, 0]
+      ],
+      orientation: 'outward'
+    })
+  )
+  parts.push(drive)
+
   return parts
 }
 
@@ -253,7 +306,7 @@ const main = (params) => {
   parts.push(...windowY(13.55, -0.10, upperFloorZ + 0.90, 1.22, 1.22, 1, 2))
 
   // Lower shop/garage façade openings.
-  parts.push(...doorY(0.72, D + 0.11, 0.06, 0.91, 2.03))
+  // As-built: man door is on the left sidewall near this corner — not on the garage wall.
   parts.push(...sectionalDoorY(3.35, D + 0.12, 0.05, 2.74, 2.44))
   parts.push(...sectionalDoorY(8.00, D + 0.12, 0.05, 3.73, 2.44))
   parts.push(...sectionalDoorY(12.68, D + 0.12, 0.05, 2.74, 2.44))
@@ -261,12 +314,13 @@ const main = (params) => {
   parts.push(...windowY(12.68, D + 0.10, upperFloorZ + 0.94, 1.42, 0.57, 2, 1))
 
   // Left side openings.
-  parts.push(...doorX(-0.11, 1.05, 0.05, 0.91, 2.03))
+  // Man door at lower grade near the garage/back corner (matches site photo).
+  parts.push(...doorX(-0.11, D - 0.70, 0.05, 0.91, 2.03))
   parts.push(...windowX(-0.10, 5.20, 2.20, 1.42, 0.57, 2, 1))
   parts.push(...windowX(-0.10, 7.55, 2.20, 1.42, 0.57, 2, 1))
   parts.push(...windowX(-0.10, 1.55, upperFloorZ + 0.82, 0.91, 1.52, 1, 2))
   parts.push(...windowX(-0.10, D / 2, upperFloorZ + 0.96, 1.22, 1.22, 1, 2))
-  parts.push(...windowX(-0.10, D - 1.55, upperFloorZ + 0.82, 0.91, 1.52, 1, 2))
+  parts.push(...windowX(-0.10, D - 2.35, upperFloorZ + 0.82, 0.91, 1.52, 1, 2))
 
   // Right side openings.
   parts.push(...windowX(W + 0.10, 5.10, 2.20, 1.42, 0.57, 2, 1))

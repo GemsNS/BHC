@@ -59,7 +59,7 @@ Source sheets: A.03.1 Elevation Back and A.03.2 Elevation Face.
 
 | Elevation | Verified drawing content | Modeling treatment |
 | --- | --- | --- |
-| Back / lower shop façade | One D04 man door at the far left and three sectional garage doors. The drawing labels the three façade bays approximately **488 cm, 549 cm, and 488 cm** across the grid intervals. Two high horizontal windows occur in the upper wall, one over each outer bay. | Model three garage doors using schedule widths **2.74 m, 3.73 m, and 2.74 m** within those bays, plus the 0.91 m man door. Use the bay dimensions to distribute openings rather than treating the 488/549/488 labels as door widths. |
+| Back / lower shop façade | Permit drawing shows one D04 man door at the far left and three sectional garage doors. The drawing labels the three façade bays approximately **488 cm, 549 cm, and 488 cm** across the grid intervals. Two high horizontal windows occur in the upper wall, one over each outer bay. | **As-built (site photo):** three garage doors only on this wall — the man door is on the adjacent left sidewall near the corner. Model three garage doors using schedule widths **2.74 m, 3.73 m, and 2.74 m** within those bays. Use the bay dimensions to distribute openings rather than treating the 488/549/488 labels as door widths. |
 | Front / principal upper entrance façade | A paired entrance door sits below a projecting rectangular canopy/feature frame. One sectional garage-style opening is to the right of the entrance. A W-02-type square window appears near each outer side. | Retain the entrance/canopy as a distinct façade feature and use it as the principal wood-look accent zone. Model the right-side sectional opening and flanking square windows from the permit geometry, then apply the new finish palette independently. |
 | Roof profile | Both front and back show a symmetrical gable with moderate overhang. | Use the written **3:12** pitch and a provisional **0.45 m** overhang until a written overhang dimension is confirmed. |
 
@@ -71,10 +71,10 @@ Source sheets: A.03.3 Elevation Left and A.03.4 Elevation Right.
 
 | Elevation | Verified drawing content | Modeling treatment |
 | --- | --- | --- |
-| Left side | One lower-level D04 man door near the shop/garage end; two W-03 high horizontal basement windows around the middle; one W-02 square upper-level window near the middle; W-01 tall windows near both upper corners. The elevation drawing itself presents a level baseline, while the site photos show substantial sloping grade. | Model all scheduled openings and use a separate site/grade mesh so the building geometry remains traceable to the permit set while the exposed foundation follows the photographed slope. |
+| Left side | One lower-level D04 man door near the shop/garage end; two W-03 high horizontal basement windows around the middle; one W-02 square upper-level window near the middle; W-01 tall windows near both upper corners. The elevation drawing itself presents a level baseline, while the site photos show a sloping driveway along this side (no outdoor stairs). | Place the lower man door on this sidewall near the garage-end corner (as-built). Use a continuous sloping site/driveway mesh — not stepped “stair” boxes — so the building shell stays permit-traceable while grade matches the photographed driveway. |
 | Right side | Two W-03 high horizontal basement windows, two upper W-01 tall windows near the corners, and no lower man door visible on this elevation. | Keep the opposing side simpler, with the same upper charcoal/wood finish logic but without inventing an unshown lower door. |
 
-The field photos show that the actual site grade exposes much more of the lower level along portions of the side walls than the clean permit elevations communicate. For presentation views, the model will include a stepped/sloped ground surface as a **site-condition approximation**, clearly separated from the permit-derived building shell.
+The field photos show that the actual site grade exposes much more of the lower level along portions of the side walls than the clean permit elevations communicate. For presentation views, the model includes a **continuous sloping driveway / grade surface** (not stairs), clearly separated from the permit-derived building shell.
 
 ## Vertical Datums From Section A.04.1
 
