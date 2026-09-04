@@ -76,6 +76,9 @@ describe("walid presentation package", () => {
       expect(js).toContain("Framed Bays");
       expect(js).toContain("walid_concept_02_full-battens.png");
       expect(js).not.toContain("foundry-bronze");
+      expect(js).toContain("contract-full-embed");
+      expect(js).toContain("Walid_Siding_Contract.embed.html");
+      expect(js).toContain("$13,050.26");
     }
     expect(existsSync("presentations/walid/clean/project-assets/Walid_Siding_Contract.docx")).toBe(
       true,

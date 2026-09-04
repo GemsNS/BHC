@@ -112,6 +112,11 @@
       "sha256": "dc20d45260594688111a6a6a2aae4a7523d99b7f7dd24203ae6777576c8a8eb5"
     },
     {
+      "path": "03_Contract/Walid_Siding_Contract.embed.html",
+      "bytes": 30961,
+      "sha256": "2ef737d070d24194f4a9ff26a5b3be068baa859fd2b4da392a90c3cf830aca30"
+    },
+    {
       "path": "03_Contract/Walid_Siding_Contract.md",
       "bytes": 24188,
       "sha256": "b71c01151f3c69a7fda8f935926e6cf9d98b35d2d8796117d72c05da025c84c9"
@@ -247,5 +252,5 @@
       "sha256": "af3803e40fa03cb225a6e288314d2db347d47f6e4d7217611756a84d70f451e8"
     }
   ],
-  "fileCount": 49
+  "fileCount": 50
 }
