@@ -5,8 +5,6 @@
 **Design basis:** Issued-for-permit geometry, supplied construction photographs, and two user-provided façade reference boards  
 **Status:** Façade design brief for project review
 
-**Geometry lock:** Permit dimensions, door/window openings, and ground slope are fixed. The design options below are cladding finish / pattern alternatives only — not a new building plan.
-
 ## Design Intent
 
 The exterior concept uses a **dark charcoal vertical profile as the primary field**, with **warm cedar-tone wood-look siding as a controlled accent**. Black window, door, fascia, and trim components unify the two finishes. The concept is intentionally simple enough to install as repeated panel fields while giving the entrance and shop-door elevations a stronger architectural identity.

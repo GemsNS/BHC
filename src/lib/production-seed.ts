@@ -4,7 +4,6 @@
  */
 
 import { DEFAULT_STAFF_PIN } from "./auth-credentials";
-import { UNIACKE_SITE_TRAVEL, travelCost } from "./fuel-travel";
 import type {
   AppData,
   AssistantCriteriaProfile,
@@ -184,24 +183,7 @@ export function buildProductionSeed(): AppData {
       wakeLock: true,
     },
     materials: [],
-    fuelLogs: [
-      {
-        id: "fuel-travel-uniacke",
-        kind: "travel",
-        vehicleId: "veh-1",
-        employeeId: "emp-driver",
-        gallons: 0,
-        cost: travelCost(UNIACKE_SITE_TRAVEL.distanceKm),
-        odometer: 42070,
-        station: "Travel / mileage",
-        filledAt: now,
-        notes: UNIACKE_SITE_TRAVEL.notes,
-        fromAddress: UNIACKE_SITE_TRAVEL.fromAddress,
-        toAddress: UNIACKE_SITE_TRAVEL.toAddress,
-        distanceKm: UNIACKE_SITE_TRAVEL.distanceKm,
-        ratePerKm: UNIACKE_SITE_TRAVEL.ratePerKm,
-      },
-    ],
+    fuelLogs: [],
     projections: [],
     announcements: [
       {
