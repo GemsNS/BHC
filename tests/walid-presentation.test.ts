@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, existsSync } from "fs";
-import path from "path";
 import {
   hashPresentationPassword,
   verifyPresentationPassword,
@@ -25,9 +24,9 @@ describe("walid presentation package", () => {
       "03_Contract/Walid_Siding_Contract.docx",
       "04_Renderings/birdseye_view.webp",
       "05_Design_Options/walid_concept_01_cedar-datum.png",
-      "05_Design_Options/walid_concept_02_full-battens.png",
-      "05_Design_Options/walid_concept_03_split-storey.png",
-      "05_Design_Options/walid_concept_04_framed-bays.png",
+      "05_Design_Options/walid_concept_02_foundry-bronze.png",
+      "05_Design_Options/walid_concept_03_coastal-zinc.png",
+      "05_Design_Options/walid_concept_04_night-cedar.png",
       "06_Site_Photos/site_existing_02.webp",
       "06_Site_Photos/site_corner_man_door_sidewall.png",
       "07_Permit/walid_permit_drawings.pdf",
@@ -36,7 +35,7 @@ describe("walid presentation package", () => {
       expect(paths.has(r), `missing ${r}`).toBe(true);
     }
     expect(paths.has("06_Site_Photos/site_existing_01.webp")).toBe(false);
-    expect(paths.has("05_Design_Options/walid_concept_02_foundry-bronze.png")).toBe(false);
+    expect(paths.has("05_Design_Options/walid_concept_02_full-battens.png")).toBe(false);
     expect(manifest.files.length).toBeGreaterThanOrEqual(45);
   });
 
@@ -54,7 +53,7 @@ describe("walid presentation package", () => {
     expect(contract).not.toMatch(/\*\*\$13,000\.00\*\*/);
   });
 
-  it("clean Manus presentation has no AI/lawyer/draft banners or manus telemetry", () => {
+  it("clean Manus presentation keeps official geometry concepts and contract embed", () => {
     const index = readFileSync("presentations/walid/clean/index.html", "utf8");
     expect(index.toLowerCase()).not.toContain("manus");
     expect(index).not.toContain("__manus__");
@@ -71,11 +70,17 @@ describe("walid presentation package", () => {
       expect(js).toContain('hero:"./project-assets/front_entrance_view.webp"');
       expect(js).toContain("CONCEPT MODEL RENDER / NOT A SITE PHOTO");
       expect(js).not.toContain("site_existing_01.webp");
-      expect(js).toContain("Full Battens");
-      expect(js).toContain("Split Storey");
-      expect(js).toContain("Framed Bays");
-      expect(js).toContain("walid_concept_02_full-battens.png");
-      expect(js).not.toContain("foundry-bronze");
+      expect(js).toContain("Cedar Datum");
+      expect(js).toContain("Foundry Bronze");
+      expect(js).toContain("Coastal Zinc");
+      expect(js).toContain("Night Cedar");
+      expect(js).toContain("walid_concept_01_cedar-datum.png");
+      expect(js).toContain("walid_concept_02_foundry-bronze.png");
+      expect(js).toContain("walid_concept_03_coastal-zinc.png");
+      expect(js).toContain("walid_concept_04_night-cedar.png");
+      expect(js).not.toContain("full-battens");
+      expect(js).not.toContain("split-storey");
+      expect(js).not.toContain("framed-bays");
       expect(js).toContain("contract-full-embed");
       expect(js).toContain("Walid_Siding_Contract.embed.html");
       expect(js).toContain("$13,050.26");

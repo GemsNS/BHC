@@ -8,28 +8,28 @@
     },
     {
       "path": "01_Model/Walid_3D_Viewer.html",
-      "bytes": 543515,
-      "sha256": "d8e10f173f7c02eeaa27e22cf5357200e4fe00b11430330a9ba9f59a0d7db94f"
+      "bytes": 292733,
+      "sha256": "1336728f0b2e4c952912e22bb2e998b66e1943065000f1959215d15df3debb34"
     },
     {
       "path": "01_Model/model_validation.md",
-      "bytes": 2390,
-      "sha256": "b0e7e7d1340045eda07c7246ba16b8ab9ae0fe5d27581987f92260882306fa62"
+      "bytes": 1997,
+      "sha256": "b68da083d1fcc33cab845a74abfde26ca858fd5fe4c96f708cf591d098bd9de2"
     },
     {
       "path": "01_Model/walid_warehouse.3mf",
-      "bytes": 104027,
-      "sha256": "71b4b16bd130e8bfe76d4577cee68b33a7257ec4198158ad659e94f70b5fee89"
+      "bytes": 90776,
+      "sha256": "ff0fbecbe0f30a86525f7126d6328435152d457c33bcf49300aff39b7a0c8405"
     },
     {
       "path": "01_Model/walid_warehouse.glb",
-      "bytes": 402400,
-      "sha256": "8f6d1d932621f11059f74fa9c3748bc8ddee6cec679c7cef73761da42310d428"
+      "bytes": 214316,
+      "sha256": "c93647d592ebf12fddea995b849603aa7eb087ff74eabc7baf26b84d843bded6"
     },
     {
       "path": "01_Model/walid_warehouse.jscad.js",
-      "bytes": 15955,
-      "sha256": "c589e5a4b2357c0e029b87e0715c4835f47e0eaa3b5cee31da536a227c534e14"
+      "bytes": 15303,
+      "sha256": "baeddcd804f83fb45c70dd7622ea3cd8681e5483d734ad49f42dd12d37bb8fe2"
     },
     {
       "path": "01_Model/walid_warehouse.mtl",
@@ -38,18 +38,18 @@
     },
     {
       "path": "01_Model/walid_warehouse.obj",
-      "bytes": 331662,
-      "sha256": "d50b2ce62aeb86bec954355d8bae94f842984f1ab72415569e79bdef8aeec79f"
+      "bytes": 570091,
+      "sha256": "fb1d963e1998560dcc1e5eaa6fcbbf84ed4840d57dfa35bbbfc2095fa3df1766"
     },
     {
       "path": "01_Model/walid_warehouse.stl",
-      "bytes": 327084,
-      "sha256": "4c9909ecda2655f1d4fbad1c1890b89be5e14734551096cc45f1f40c8899acdb"
+      "bytes": 280884,
+      "sha256": "8dd09868072e4041363866c8369944dc255af6e683763ed0ed55665fc1275156"
     },
     {
       "path": "02_Plans_and_Takeoff/facade_design_brief.md",
-      "bytes": 2423,
-      "sha256": "4ef94b988594f3f7a2a9c85e4ec8e9435e0f4e2e01e5b8614dfd339aa14a30c4"
+      "bytes": 6019,
+      "sha256": "f87703fbc1cd60dd4d629c79f4e733ffde29e0122b62a5a21ae93c55d81ddead"
     },
     {
       "path": "02_Plans_and_Takeoff/walid_dimension_register.md",
@@ -183,23 +183,23 @@
     },
     {
       "path": "05_Design_Options/walid_concept_01_cedar-datum.png",
-      "bytes": 2227277,
-      "sha256": "9c196538cf733171922ab2cf86d304ba5ada00b05ada169ba6f54f9ec6d0d073"
+      "bytes": 149160,
+      "sha256": "e80ccdd58c3962909ef2b5711ac7a295d90b24cbe2953c37ec523686d8682171"
     },
     {
-      "path": "05_Design_Options/walid_concept_02_full-battens.png",
-      "bytes": 1986008,
-      "sha256": "63fbb642eeeeaabf63e807a9838f904b4c2882658c709d0cfe4f51f5e84811e0"
+      "path": "05_Design_Options/walid_concept_02_foundry-bronze.png",
+      "bytes": 148253,
+      "sha256": "316964589ed4cdbe809483c026fde0070117591088521d2bdb8a792ec062fcbd"
     },
     {
-      "path": "05_Design_Options/walid_concept_03_split-storey.png",
-      "bytes": 2569638,
-      "sha256": "20400cdf43ba6afbb93c804eff238b0226d4e0f455794d6fc4afd7add4c9da42"
+      "path": "05_Design_Options/walid_concept_03_coastal-zinc.png",
+      "bytes": 153255,
+      "sha256": "ba12105efab0c71dda68fe99ae10be2f48490674183c76f9d833f50b1316d6c7"
     },
     {
-      "path": "05_Design_Options/walid_concept_04_framed-bays.png",
-      "bytes": 2319745,
-      "sha256": "2a233541893f6e8ac0edaec4306936e1f77692de49bd80bf7c8e44d073906c71"
+      "path": "05_Design_Options/walid_concept_04_night-cedar.png",
+      "bytes": 149868,
+      "sha256": "990e8b93f6cb4fe3572ac6de3de221727ffea81834a4226d992b7ea4bccbb616"
     },
     {
       "path": "05_Design_Options/walid_hero_architectural.jpg",
