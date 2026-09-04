@@ -3,6 +3,7 @@
 import { buildSeedData } from "./seed";
 import { normalizeStore } from "./normalize";
 import { isStaticDemo, withBasePath } from "./paths";
+import { sessionHeaders } from "./session-headers";
 import type { AppData } from "./types";
 
 /** Bump when seed credentials/schema must replace stale browser demos */
@@ -61,6 +62,7 @@ export async function fetchJson<T>(
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...sessionHeaders(),
       ...(init?.headers || {}),
     },
   });
@@ -74,11 +76,22 @@ export async function fetchJson<T>(
 /** Load full store — API when available, else localStorage demo */
 export async function loadAppData(): Promise<AppData> {
   if (isStaticDemo()) return readLocal();
+  const headers = sessionHeaders();
+  const hasSession = Boolean(headers["x-bhc-user-id"]);
   try {
-    const res = await fetch(withBasePath("/api/store"));
+    const res = await fetch(withBasePath("/api/store"), { headers });
     if (!res.ok) throw new Error("api");
     return (await res.json()) as AppData;
   } catch {
+    if (hasSession) {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return normalizeStore(JSON.parse(raw) as Partial<AppData>);
+      } catch {
+        /* fall through */
+      }
+      throw new Error("Could not load store");
+    }
     return readLocal();
   }
 }
@@ -91,7 +104,10 @@ export async function saveAppData(data: AppData): Promise<void> {
   try {
     await fetch(withBasePath("/api/store"), {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...sessionHeaders(),
+      },
       body: JSON.stringify(data),
     });
   } catch {

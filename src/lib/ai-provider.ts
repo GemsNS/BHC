@@ -1,8 +1,8 @@
 /**
- * Unified AI provider — Gemini (preferred), OpenAI-compatible, or local fallback.
+ * Unified AI provider — Anthropic Claude (preferred for Mainframe), Gemini, OpenAI-compatible, or local fallback.
  */
 
-export type AIProviderId = "gemini" | "openai" | "none";
+export type AIProviderId = "anthropic" | "gemini" | "openai" | "none";
 
 export type AIStatus = {
   provider: AIProviderId;
@@ -10,6 +10,7 @@ export type AIStatus = {
   model: string | null;
   chat: boolean;
   summarize: boolean;
+  anthropic: boolean;
   gemini: boolean;
   openai: boolean;
 };
@@ -45,13 +46,26 @@ function getGeminiApiKey(): string | undefined {
   return trimKey(process.env.GOOGLE_API_KEY) ?? trimKey(process.env.GEMINI_API_KEY);
 }
 
+function getAnthropicApiKey(): string | undefined {
+  return trimKey(process.env.ANTHROPIC_API_KEY) ?? trimKey(process.env.CLAUDE_API_KEY);
+}
+
 export function resolveAIProvider(): AIProviderId {
   const forced = process.env.AI_PROVIDER?.trim().toLowerCase();
+  if (forced === "anthropic" || forced === "claude") {
+    return getAnthropicApiKey() ? "anthropic" : "none";
+  }
   if (forced === "gemini") return getGeminiApiKey() ? "gemini" : "none";
   if (forced === "openai") return trimKey(process.env.OPENAI_API_KEY) ? "openai" : "none";
+  // Prefer Claude for Mainframe CRM when available
+  if (getAnthropicApiKey()) return "anthropic";
   if (getGeminiApiKey()) return "gemini";
   if (trimKey(process.env.OPENAI_API_KEY)) return "openai";
   return "none";
+}
+
+export function getAnthropicModel(): string {
+  return process.env.ANTHROPIC_MODEL?.trim() || process.env.CLAUDE_MODEL?.trim() || "claude-sonnet-4-20250514";
 }
 
 export function getGeminiModel(): string {
@@ -68,15 +82,18 @@ export function getOpenAIBaseUrl(): string {
 
 export function getAIStatus(): AIStatus {
   const provider = resolveAIProvider();
+  const anthropic = Boolean(getAnthropicApiKey());
   const gemini = Boolean(getGeminiApiKey());
   const openai = Boolean(trimKey(process.env.OPENAI_API_KEY));
   const configured = provider !== "none";
   const model =
-    provider === "gemini"
-      ? getGeminiModel()
-      : provider === "openai"
-        ? getOpenAIModel()
-        : null;
+    provider === "anthropic"
+      ? getAnthropicModel()
+      : provider === "gemini"
+        ? getGeminiModel()
+        : provider === "openai"
+          ? getOpenAIModel()
+          : null;
 
   return {
     provider,
@@ -84,6 +101,7 @@ export function getAIStatus(): AIStatus {
     model,
     chat: configured,
     summarize: configured,
+    anthropic,
     gemini,
     openai,
   };
@@ -97,6 +115,15 @@ export async function completeChat(input: {
 }): Promise<{ text: string; provider: AIProviderId } | null> {
   const provider = resolveAIProvider();
   if (provider === "none") return null;
+
+  if (provider === "anthropic") {
+    const text = await anthropicGenerateText({
+      system: input.system,
+      user: input.user,
+      temperature: input.temperature ?? 0.3,
+    });
+    return text ? { text, provider: "anthropic" } : null;
+  }
 
   if (provider === "gemini") {
     const text = await geminiGenerateText({
@@ -130,10 +157,150 @@ export async function runAIAgentLoop(input: {
   const provider = resolveAIProvider();
   if (provider === "none") return null;
 
+  if (provider === "anthropic") {
+    return anthropicAgentLoop(input);
+  }
   if (provider === "gemini") {
     return geminiAgentLoop(input);
   }
   return openaiAgentLoop(input);
+}
+
+async function anthropicGenerateText(input: {
+  system: string;
+  user: string;
+  temperature: number;
+}): Promise<string | null> {
+  const key = getAnthropicApiKey();
+  if (!key) return null;
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: getAnthropicModel(),
+        max_tokens: 2048,
+        temperature: input.temperature,
+        system: input.system,
+        messages: [{ role: "user", content: input.user }],
+      }),
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as {
+      content?: Array<{ type?: string; text?: string }>;
+    };
+    return (
+      json.content
+        ?.filter((c) => c.type === "text")
+        .map((c) => c.text ?? "")
+        .join("")
+        .trim() || null
+    );
+  } catch {
+    return null;
+  }
+}
+
+async function anthropicAgentLoop(input: {
+  systemPrompt: string;
+  contextPrompt?: string;
+  messages: AIChatMessage[];
+  tools: AIToolDefinition[];
+  executeTool: (
+    name: string,
+    args: Record<string, unknown>,
+  ) => { summary: string; ok: boolean } | Promise<{ summary: string; ok: boolean }>;
+  maxSteps?: number;
+}): Promise<AIAgentLoopResult | null> {
+  const key = getAnthropicApiKey();
+  if (!key) return null;
+
+  const toolRuns: AIToolRun[] = [];
+  const system = [input.systemPrompt, input.contextPrompt].filter(Boolean).join("\n\n");
+  const tools = input.tools.map((t) => ({
+    name: t.name,
+    description: t.description,
+    input_schema: {
+      type: "object",
+      ...(t.parameters || {}),
+      properties: (t.parameters as { properties?: Record<string, unknown> })?.properties ?? {},
+    },
+  }));
+
+  type ContentBlock =
+    | { type: "text"; text: string }
+    | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
+    | { type: "tool_result"; tool_use_id: string; content: string };
+
+  const apiMessages: Array<{ role: "user" | "assistant"; content: string | ContentBlock[] }> =
+    input.messages
+      .filter((m) => m.role !== "system")
+      .map((m) => ({
+        role: m.role === "assistant" ? ("assistant" as const) : ("user" as const),
+        content: m.content,
+      }));
+
+  for (let step = 0; step < (input.maxSteps ?? 5); step++) {
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": key,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: getAnthropicModel(),
+          max_tokens: 4096,
+          temperature: 0.2,
+          system,
+          messages: apiMessages,
+          tools,
+        }),
+      });
+      if (!res.ok) return toolRuns.length ? summarizeToolRuns(toolRuns) : null;
+      const json = (await res.json()) as {
+        stop_reason?: string;
+        content?: ContentBlock[];
+      };
+      const content = json.content ?? [];
+      const toolUses = content.filter(
+        (b): b is Extract<ContentBlock, { type: "tool_use" }> => b.type === "tool_use",
+      );
+
+      if (toolUses.length) {
+        apiMessages.push({ role: "assistant", content });
+        const results: ContentBlock[] = [];
+        for (const call of toolUses) {
+          const result = await input.executeTool(call.name, call.input ?? {});
+          toolRuns.push({ tool: call.name, summary: result.summary, ok: result.ok });
+          results.push({
+            type: "tool_result",
+            tool_use_id: call.id,
+            content: result.summary,
+          });
+        }
+        apiMessages.push({ role: "user", content: results });
+        continue;
+      }
+
+      const reply = content
+        .filter((b): b is Extract<ContentBlock, { type: "text" }> => b.type === "text")
+        .map((b) => b.text)
+        .join("")
+        .trim();
+      if (reply) return { reply, toolRuns };
+      return toolRuns.length ? summarizeToolRuns(toolRuns) : null;
+    } catch {
+      return toolRuns.length ? summarizeToolRuns(toolRuns) : null;
+    }
+  }
+
+  return summarizeToolRuns(toolRuns);
 }
 
 async function geminiGenerateText(input: {

@@ -55,8 +55,8 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="mailto:info@bhcontracting.co" className="hover:text-primary-aqua">
-                  info@bhcontracting.co
+                <a href="mailto:info@bhcontracting.ca" className="hover:text-primary-aqua">
+                  info@bhcontracting.ca
                 </a>
               </li>
               <li className="flex items-start gap-2.5 pt-1">

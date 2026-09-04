@@ -84,7 +84,7 @@ export async function geocodeNovaScotia(query: string): Promise<GeocodeResult[]>
   });
   const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
     headers: {
-      "User-Agent": "BHContracting-BHC-CRM/1.0 (ops@bhcontracting.co)",
+      "User-Agent": "BHContracting-BHC-CRM/1.0 (ops@bhcontracting.ca)",
       Accept: "application/json",
     },
     next: { revalidate: 3600 },

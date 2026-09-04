@@ -21,8 +21,13 @@ export function verifyStaffSecret(
 export function needsPasswordSetup(employee: {
   mustChangePassword?: boolean;
   passwordHash?: string | null;
+  hasPassword?: boolean;
 }): boolean {
-  return Boolean(employee.mustChangePassword) || !employee.passwordHash;
+  if (employee.mustChangePassword === true) return true;
+  if (employee.mustChangePassword === false) return false;
+  if (employee.hasPassword === true) return false;
+  if (employee.hasPassword === false) return true;
+  return !employee.passwordHash;
 }
 
 /** Browser-safe SHA-256 for client-side auth on static demo */

@@ -126,6 +126,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         });
         const json = (await res.json()) as { ok?: boolean; error?: string };
         if (!res.ok) return { ok: false, error: json.error ?? "Could not update password" };
+        setEmployees((prev) =>
+          prev.map((e) =>
+            e.id === id ? { ...e, mustChangePassword: false, hasPassword: true } : e,
+          ),
+        );
         await refresh();
         return { ok: true };
       }

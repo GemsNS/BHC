@@ -229,6 +229,8 @@ export interface Employee {
   passwordHash?: string | null;
   /** When true, user must set a password after signing in with default PIN */
   mustChangePassword?: boolean;
+  /** Client-only: true when API stripped passwordHash from the response */
+  hasPassword?: boolean;
   role: EmployeeRole;
   phone: string;
   hireDate: string;
@@ -756,6 +758,26 @@ export interface Announcement {
   createdAt: string;
 }
 
+/** Imported contract on disk — synced to CRM job/lead via Mainframe */
+export interface ContractRecord {
+  id: string;
+  slug: string;
+  title: string;
+  /** Public URL path e.g. /contracts/snow */
+  publicPath: string;
+  fileName: string;
+  mimeType: string;
+  jobId: string | null;
+  leadId: string | null;
+  customerName: string;
+  contractValue: number;
+  status: "draft" | "active" | "completed" | "void";
+  notes: string;
+  syncedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AppData {
   employees: Employee[];
   leads: Lead[];
@@ -805,6 +827,7 @@ export interface AppData {
   assistantAutomations: AssistantDailyAutomation[];
   assistantAudit: AssistantAuditEntry[];
   assistantMemory: AssistantMemoryEntry[];
+  contracts: ContractRecord[];
 }
 
 export const ROLE_LABELS: Record<EmployeeRole, string> = {

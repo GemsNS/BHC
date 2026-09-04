@@ -63,6 +63,7 @@ export function browserAiStatus(base?: AIStatus | null): AIStatus {
       model: getClientGeminiModel(),
       chat: true,
       summarize: true,
+      anthropic: base?.anthropic ?? false,
       gemini: true,
       openai: base?.openai ?? false,
     };
@@ -74,6 +75,7 @@ export function browserAiStatus(base?: AIStatus | null): AIStatus {
       model: null,
       chat: false,
       summarize: false,
+      anthropic: false,
       gemini: false,
       openai: false,
     }
