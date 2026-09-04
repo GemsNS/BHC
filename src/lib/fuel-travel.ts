@@ -14,3 +14,16 @@ export const UNIACKE_SITE_TRAVEL = {
 export function travelCost(distanceKm: number, ratePerKm = CRA_RATE_PER_KM): number {
   return Math.round(distanceKm * ratePerKm * 100) / 100;
 }
+
+/** Walid siding job: projected duration + pushback for included crew travel. */
+export const WALID_JOB_TRAVEL = {
+  projectedWeeks: 3,
+  pushbackWeeks: 1,
+  workdaysPerWeek: 5,
+  /** (3 + 1) weeks × 5 workdays */
+  includedRoundTrips: 20,
+  /** 69.8 km × 20 RTs */
+  totalDistanceKm: 1396.0,
+  /** CRA allowance for included trips */
+  includedCost: 1005.12,
+} as const;
