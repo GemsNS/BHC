@@ -14,8 +14,9 @@ Two views behind the same password:
 
 ```bash
 cd /opt/bhc
-git fetch origin cursor/walid-presentation-22fe
-git checkout cursor/walid-presentation-22fe && git pull
+git fetch origin
+git checkout main
+git pull origin main
 npm ci && npm run build && sudo systemctl restart bhc
 ```
 
