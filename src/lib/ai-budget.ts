@@ -1,10 +1,11 @@
 /**
  * AI usage quotas and soft cost controls (local JSON ledger).
+ * Server-only — do not import from client components.
  */
 
 import { promises as fs } from "fs";
 import path from "path";
-import { envInt } from "./rate-limit";
+import { getAiBudgetLimits, type AiBudgetLimits } from "./ai-budget-limits";
 
 export type AiUsageDay = {
   date: string; // YYYY-MM-DD UTC
@@ -52,22 +53,14 @@ function todayBucket(file: AiUsageFile): AiUsageDay {
   return day;
 }
 
-export function getAiBudgetLimits() {
-  return {
-    dailyRequests: envInt("AI_DAILY_REQUEST_LIMIT", 200),
-    dailyTokens: envInt("AI_DAILY_TOKEN_BUDGET", 500_000),
-    perEmployeeDaily: envInt("AI_EMPLOYEE_DAILY_REQUEST_LIMIT", 80),
-    maxSteps: envInt("AI_MAX_STEPS", 6),
-    maxMessageChars: envInt("AI_MAX_MESSAGE_CHARS", 12_000),
-    maxHistoryMessages: envInt("AI_MAX_HISTORY_MESSAGES", 24),
-  };
-}
+export { getAiBudgetLimits };
+export type { AiBudgetLimits };
 
 export type AiBudgetCheck = {
   ok: boolean;
   reason?: string;
   day: AiUsageDay;
-  limits: ReturnType<typeof getAiBudgetLimits>;
+  limits: AiBudgetLimits;
 };
 
 export async function checkAiBudget(input: {

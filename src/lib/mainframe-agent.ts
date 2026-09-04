@@ -12,7 +12,7 @@ import {
 } from "./mainframe-tools";
 import { automationsDue } from "./mainframe-automations";
 import { composeAgentSystemPrompt, type MainframeAgentId } from "./mainframe-agents";
-import { getAiBudgetLimits } from "./ai-budget";
+import { getAiBudgetLimits } from "./ai-budget-limits";
 import type { AppData } from "./types";
 
 export type ChatMessage = AIChatMessage;
