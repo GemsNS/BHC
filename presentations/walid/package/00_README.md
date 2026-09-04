@@ -19,7 +19,7 @@ This package reconstructs the warehouse exterior from the supplied issued-for-pe
 | Concept elevation sheet | `02_Plans/walid_facade_elevations.svg` and `.png` | Review dimensions, opening patterns, finish zoning, and grade concept. |
 | Editable CAD elevation linework | `02_Plans/walid_facade_elevations.dxf` | Open in compatible CAD software for further drafting and annotation. |
 | Quantity workbook | `02_Plans/walid_facade_takeoff.xlsx` | Review preliminary gross, opening-deduction, net, and finish-allocation quantities. |
-| Main agreement | `03_Contract/Walid_Siding_Contract.docx` | Trade agreement for the 30-square siding, two-door scope, and Dartmouth↔site fuel/travel for 3 weeks + 1-week pushback (20 RTs). |
+| Main agreement | `03_Contract/Walid_Siding_Contract.docx` | Trade agreement for the 30-square siding, two-door scope, and included Dartmouth↔site fuel/travel. |
 | Contract controls | Three additional `.docx` forms in `03_Contract` | Document field measurement/layout approval, change orders, and substantial performance/deficiencies. |
 
 ## How to Edit the Model for Free

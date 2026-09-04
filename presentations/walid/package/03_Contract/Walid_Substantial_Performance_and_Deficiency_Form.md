@@ -11,7 +11,7 @@ BH Contracting Ltd. gives notice that, in its opinion, the contracted work was s
 
 | Contract summary | Amount before HST |
 | --- | ---: |
-| Original contract price | $14,005.12 |
+| Original contract price | $13,050.26 |
 | Approved change orders | $________________ |
 | Revised contract price | $________________ |
 | Gross value completed to date | $________________ |
