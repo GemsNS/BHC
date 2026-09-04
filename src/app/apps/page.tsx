@@ -84,7 +84,7 @@ const apps = [
   },
   {
     href: "/admin/fuel",
-    title: "Fuel & travel",
+    title: "Fuel",
     blurb: "Log fills and track spend.",
     perm: "fuel" as const,
   },

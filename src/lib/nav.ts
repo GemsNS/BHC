@@ -73,7 +73,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
       { href: "/admin/inventory", label: "Inventory", short: "Stock", perm: "inventory" },
       { href: "/admin/tools", label: "Tools", short: "Tools", perm: "tools" },
       { href: "/admin/fleet", label: "Fleet", short: "Fleet", perm: "fleet" },
-      { href: "/admin/fuel", label: "Fuel & travel", short: "Fuel", perm: "fuel" },
+      { href: "/admin/fuel", label: "Fuel logs", short: "Fuel", perm: "fuel" },
       { href: "/admin/damage", label: "Damage", short: "Dmg", perm: "damage" },
     ],
   },

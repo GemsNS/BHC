@@ -726,28 +726,16 @@ export interface MaterialCost {
   notes: string;
 }
 
-export type FuelLogKind = "fill" | "travel";
-
 export interface FuelLog {
   id: string;
   vehicleId: string;
   employeeId: string;
-  /** Pump fill (default) or mileage/travel reimbursement */
-  kind: FuelLogKind;
-  /** Litres/gallons for fills; 0 for travel */
   gallons: number;
   cost: number;
   odometer: number;
   station: string;
   filledAt: string;
   notes: string;
-  /** Travel / mileage fields (kind === "travel") */
-  fromAddress?: string;
-  toAddress?: string;
-  /** Round-trip distance in kilometres */
-  distanceKm?: number;
-  /** CAD per km (e.g. CRA reasonable rate) */
-  ratePerKm?: number;
 }
 
 export interface SalesProjection {
