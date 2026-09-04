@@ -171,58 +171,75 @@ const wallLightY = (x, y, z, outward = -1) => {
 }
 
 const gradeAtY = (y, D, upperFloorZ) => {
-  // Piecewise driveway / site grade so openings stay clear:
-  // - high at front entrance
-  // - below basement window sills by mid-side (z≈2.20)
+  // Piecewise driveway / site grade so openings stay clearly clear:
+  // - high only at the front entrance apron
+  // - well below basement window sills (sill z≈2.20) by mid-side
   // - near slab at man-door / garage end (y≈D-0.70)
   const t = Math.max(0, Math.min(1, y / D))
-  if (t <= 0.12) return upperFloorZ + 0.10
-  if (t <= 0.38) {
-    // Drop quickly through the mid-side window zone
-    const u = (t - 0.12) / 0.26
-    return upperFloorZ + 0.10 - u * (upperFloorZ + 0.10 - 1.75)
+  if (t <= 0.10) return upperFloorZ + 0.08
+  if (t <= 0.32) {
+    // Drop fast through the upper-side / first basement window zone
+    const u = (t - 0.10) / 0.22
+    return upperFloorZ + 0.08 - u * (upperFloorZ + 0.08 - 1.05)
   }
-  if (t <= 0.72) {
-    const u = (t - 0.38) / 0.34
-    return 1.75 - u * (1.75 - 0.12)
+  if (t <= 0.58) {
+    const u = (t - 0.32) / 0.26
+    return 1.05 - u * (1.05 - 0.08)
   }
   // Garage / man-door landing stays at slab
-  return 0.02
+  return 0.0
 }
 
 const createTerrain = (W, D, upperFloorZ) => {
-  // Continuous sloping driveway (not stairs). Multi-segment so grade
-  // does not bury the sidewall man-door or basement windows.
+  // Continuous sloping driveway (not stairs). Full-width under-building
+  // wedges read as burying sidewall openings in left elevation — so the
+  // sloping mass is limited to the left driveway strip + short aprons.
   const parts = []
   const apron = 2.4
-  const base = -0.55
-  const samples = 14
+  const base = -0.45
+  const samples = 18
   const y0 = -apron
   const y1 = D + apron
-  const driveW = 3.2
+  const driveW = 3.4
+
+  // Flat working slab under the building footprint (garage / lower level).
+  parts.push(
+    box([W + 0.8, D + 0.8, 0.18], [W / 2, D / 2, -0.09], hexToRgb('#8A8680')),
+  )
+
+  // Front entrance apron stays high (upper floor arrival).
+  parts.push(
+    box(
+      [W + 2 * apron, 3.2, Math.max(0.2, upperFloorZ + 0.08 - base)],
+      [W / 2, -0.4, base + Math.max(0.2, upperFloorZ + 0.08 - base) / 2],
+      PALETTE.terrain,
+    ),
+  )
 
   for (let i = 0; i < samples; i += 1) {
     const ya = y0 + (i / samples) * (y1 - y0)
     const yb = y0 + ((i + 1) / samples) * (y1 - y0)
     const yMid = (ya + yb) / 2
     const top = gradeAtY(yMid, D, upperFloorZ)
-    const thick = Math.max(0.12, top - base)
-    // Main pad under / around building
+    const thick = Math.max(0.1, top - base)
+
+    // Left driveway strip only — this is what the left elevation reads.
     parts.push(
       box(
-        [W + 2 * apron, yb - ya + 0.01, thick],
-        [W / 2, yMid, base + thick / 2],
-        PALETTE.terrain,
+        [driveW, yb - ya + 0.02, thick],
+        [-apron + driveW / 2 - 0.15, yMid, base + thick / 2],
+        hexToRgb('#5A5852'),
       ),
     )
-    // Left driveway strip — same grade profile, darker gravel
-    const driveTop = Math.min(top, gradeAtY(yMid, D, upperFloorZ))
-    const dThick = Math.max(0.1, driveTop - base)
+
+    // Thin gravel shoulder past the right wall (no tall wedge).
+    const rightTop = Math.min(top, 0.35)
+    const rThick = Math.max(0.08, rightTop - base)
     parts.push(
       box(
-        [driveW, yb - ya + 0.01, dThick],
-        [-apron + driveW / 2 - 0.1, yMid, base + dThick / 2],
-        hexToRgb('#5A5852'),
+        [1.6, yb - ya + 0.02, rThick],
+        [W + apron - 0.7, yMid, base + rThick / 2],
+        PALETTE.terrain,
       ),
     )
   }

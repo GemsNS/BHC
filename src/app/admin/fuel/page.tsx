@@ -17,7 +17,18 @@ import {
 } from "@/lib/fuel-travel";
 import { isStaticDemo } from "@/lib/paths";
 import type { Employee, FuelLog, Vehicle } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+function formatMoney(value: number): string {
+  return new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: "CAD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatRate(value: number): string {
+  return `${formatMoney(value)}/km`;
+}
 
 export default function FuelPage() {
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
@@ -146,14 +157,14 @@ export default function FuelPage() {
         subtitle="Log pump fills and mileage / travel reimbursement by vehicle."
       />
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total spend" value={formatCurrency(spend)} />
-        <StatCard label="Travel / mileage" value={formatCurrency(travelSpend)} />
+        <StatCard label="Total spend" value={formatMoney(spend)} />
+        <StatCard label="Travel / mileage" value={formatMoney(travelSpend)} />
         <StatCard label="Gallons (fills)" value={gallons.toFixed(1)} />
         <StatCard
           label="$ / gal"
           value={
             gallons
-              ? formatCurrency((spend - travelSpend) / gallons)
+              ? formatMoney((spend - travelSpend) / gallons)
               : "—"
           }
         />
@@ -205,7 +216,7 @@ export default function FuelPage() {
         </h2>
         <p className="text-sm text-[var(--muted)] sm:col-span-2 lg:col-span-3">
           Defaults to the Mount Uniacke site round trip from Regency Drive (Dartmouth). Cost uses the CRA
-          reasonable rate ({formatCurrency(CRA_RATE_PER_KM)}/km).
+          reasonable rate ({formatRate(CRA_RATE_PER_KM)}).
         </p>
         <select name="vehicleId" required className="rounded-md border border-[var(--line)] px-3 py-2" defaultValue={vehicles[0]?.id || ""}>
           <option value="" disabled>
@@ -280,10 +291,10 @@ export default function FuelPage() {
         />
         <div className="flex items-center gap-3 sm:col-span-2 lg:col-span-3">
           <button type="submit" className="rounded-md bg-[var(--amber)] px-4 py-2 font-semibold text-[var(--ink)]">
-            Save travel expense ({formatCurrency(previewCost)})
+            Save travel expense ({formatMoney(previewCost)})
           </button>
           <span className="text-sm text-[var(--muted)]">
-            {travelDistance || "0"} km × {formatCurrency(Number(travelRate) || 0)}/km
+            {travelDistance || "0"} km × {formatRate(Number(travelRate) || 0)}
           </span>
         </div>
       </form>
@@ -321,7 +332,7 @@ export default function FuelPage() {
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3">{formatCurrency(f.cost)}</td>
+                <td className="px-4 py-3">{formatMoney(f.cost)}</td>
                 <td className="px-4 py-3">{f.odometer.toLocaleString()}</td>
               </tr>
             ))}

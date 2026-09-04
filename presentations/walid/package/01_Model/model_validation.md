@@ -13,7 +13,8 @@
 
 ## Grade clearance (Sep 2026)
 
-Driveway / site grade uses a piecewise profile so grade is ~slab at the garage-end man-door and below basement window sills mid-side. Charcoal field reads as **vertical board-and-batten**; wood accents as **horizontal** grain.
+Driveway is a **left-side strip + front apron** (not a full-width under-building wedge). Piecewise grade stays near slab at the garage-end man-door and ~0.5–0.8 m at basement windows (sills at 2.20 m). Charcoal field reads as **vertical board-and-batten**; wood accents as **horizontal** grain.
+
 
 ## As-built corrections (site photo, Sep 2026)
 

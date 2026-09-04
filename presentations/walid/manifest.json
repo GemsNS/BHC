@@ -1,350 +1,251 @@
 {
-  "title": "BH Contracting Ltd. \u2014 Walid Warehouse Project Package",
-  "project": "Warehouse Extension, 9 Alicia Scott Ave., Mount Uniacke, Nova Scotia B0N 1Z0",
-  "preparedFor": "BH Contracting Ltd.",
-  "email": "info@bhcontracting.ca",
-  "packageStatus": "Project model, quantities, design options, and contract documents",
+  "name": "BH_Contracting_Walid_Complete_Package",
   "files": [
     {
       "path": "00_README.md",
-      "size": 7395,
-      "ext": ".md"
+      "bytes": 7395,
+      "sha256": "03b0e88855a16122a72eae4cbaa282d4060e72bec98da5e2c573d9dab6a1f309"
     },
     {
       "path": "01_Model/Walid_3D_Viewer.html",
-      "size": 326341,
-      "ext": ".html"
+      "bytes": 543515,
+      "sha256": "d8e10f173f7c02eeaa27e22cf5357200e4fe00b11430330a9ba9f59a0d7db94f"
     },
     {
       "path": "01_Model/model_validation.md",
-      "size": 2256,
-      "ext": ".md"
+      "bytes": 2390,
+      "sha256": "b0e7e7d1340045eda07c7246ba16b8ab9ae0fe5d27581987f92260882306fa62"
     },
     {
       "path": "01_Model/walid_warehouse.3mf",
-      "size": 101423,
-      "ext": ".3mf"
+      "bytes": 104027,
+      "sha256": "71b4b16bd130e8bfe76d4577cee68b33a7257ec4198158ad659e94f70b5fee89"
     },
     {
       "path": "01_Model/walid_warehouse.glb",
-      "size": 239520,
-      "ext": ".glb"
+      "bytes": 402400,
+      "sha256": "8f6d1d932621f11059f74fa9c3748bc8ddee6cec679c7cef73761da42310d428"
     },
     {
       "path": "01_Model/walid_warehouse.jscad.js",
-      "size": 15371,
-      "ext": ".js"
+      "bytes": 15955,
+      "sha256": "c589e5a4b2357c0e029b87e0715c4835f47e0eaa3b5cee31da536a227c534e14"
     },
     {
       "path": "01_Model/walid_warehouse.mtl",
-      "size": 1347,
-      "ext": ".mtl"
+      "bytes": 1347,
+      "sha256": "bba50ad5265eedea7083e9ed19ca81803cfb9a86ab1cf6e36b15c4d38305323e"
     },
     {
       "path": "01_Model/walid_warehouse.obj",
-      "size": 630368,
-      "ext": ".obj"
+      "bytes": 331662,
+      "sha256": "d50b2ce62aeb86bec954355d8bae94f842984f1ab72415569e79bdef8aeec79f"
     },
     {
       "path": "01_Model/walid_warehouse.stl",
-      "size": 321084,
-      "ext": ".stl"
+      "bytes": 327084,
+      "sha256": "4c9909ecda2655f1d4fbad1c1890b89be5e14734551096cc45f1f40c8899acdb"
     },
     {
       "path": "02_Plans_and_Takeoff/facade_design_brief.md",
-      "size": 2423,
-      "ext": ".md"
+      "bytes": 2423,
+      "sha256": "4ef94b988594f3f7a2a9c85e4ec8e9435e0f4e2e01e5b8614dfd339aa14a30c4"
     },
     {
       "path": "02_Plans_and_Takeoff/walid_dimension_register.md",
-      "size": 8689,
-      "ext": ".md"
+      "bytes": 8689,
+      "sha256": "dbaa22d60c32a877eb86074cf974feaeec93e4b05e841619126b16a1cd22a00d"
     },
     {
       "path": "02_Plans_and_Takeoff/walid_facade_elevations.dxf",
-      "size": 20238,
-      "ext": ".dxf"
+      "bytes": 20238,
+      "sha256": "2775edbc4531c3fdf4836dae59b09a3f4720b2d2af3d569fd3f449a40aaac2de"
     },
     {
       "path": "02_Plans_and_Takeoff/walid_facade_elevations.png",
-      "size": 145996,
-      "ext": ".png"
+      "bytes": 145996,
+      "sha256": "789cfc98c94b36c2a1b22ea7eb93c73a7739c49c23601e0cf8708fe5037cd509"
     },
     {
       "path": "02_Plans_and_Takeoff/walid_facade_elevations.svg",
-      "size": 17888,
-      "ext": ".svg"
+      "bytes": 17888,
+      "sha256": "25e44c9a1ddf5748c3d70de5f0485f92c9bf3b098951aedb48a67439432d0930"
     },
     {
       "path": "02_Plans_and_Takeoff/walid_facade_quantity_basis.md",
-      "size": 2028,
-      "ext": ".md"
+      "bytes": 2028,
+      "sha256": "b4161777d606bf2a1bce03e6fd5bfe10955f7306ecb1fa93661ec5dc7e246833"
     },
     {
       "path": "02_Plans_and_Takeoff/walid_facade_takeoff.csv",
-      "size": 453,
-      "ext": ".csv"
+      "bytes": 453,
+      "sha256": "7f70db8e6edb47905994083eb30ec804cd734da71759ceb133b35385093a257a"
     },
     {
       "path": "02_Plans_and_Takeoff/walid_facade_takeoff.xlsx",
-      "size": 6260,
-      "ext": ".xlsx"
+      "bytes": 6260,
+      "sha256": "32cb929984971ce03d4b5cabbee1ed3664332d30c683ee2df84a59bdb85ca7c8"
     },
     {
       "path": "03_Contract/Walid_Change_Order_Form.docx",
-      "size": 37843,
-      "ext": ".docx"
+      "bytes": 37843,
+      "sha256": "151a63eeb311c7980b49f6829052049caffcf758ff8aa75a2c77ce6986462e0d"
     },
     {
       "path": "03_Contract/Walid_Change_Order_Form.md",
-      "size": 2731,
-      "ext": ".md"
+      "bytes": 2731,
+      "sha256": "0ecda3a21f6d1d542d02f6cc4c75938666916234f2c4aa3c747fe58227e8fa35"
     },
     {
       "path": "03_Contract/Walid_Field_Measurement_and_Layout_Approval.docx",
-      "size": 38838,
-      "ext": ".docx"
+      "bytes": 38838,
+      "sha256": "e80e23c8cb7fcfd84361deb09fe8b4cbc069a49e76d87521ed11cbf9aefaceaf"
     },
     {
       "path": "03_Contract/Walid_Field_Measurement_and_Layout_Approval.md",
-      "size": 5714,
-      "ext": ".md"
+      "bytes": 5714,
+      "sha256": "a64cc7f6cc47018d0b94e986ec9c033d0863c9ace987d4a0c2070634424152c6"
     },
     {
       "path": "03_Contract/Walid_Siding_Contract.docx",
-      "size": 45477,
-      "ext": ".docx"
+      "bytes": 45477,
+      "sha256": "807d3ebe7e0d0f4b66f53c5345ee2179957c462aadc335431cc83c4cca94addb"
     },
     {
       "path": "03_Contract/Walid_Siding_Contract.md",
-      "size": 23375,
-      "ext": ".md"
+      "bytes": 23375,
+      "sha256": "a3fad6a549107baf0269927320fac03d9dfca6067eed8792e2a6881ca13b727a"
     },
     {
       "path": "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.docx",
-      "size": 38349,
-      "ext": ".docx"
+      "bytes": 38349,
+      "sha256": "07190a9ccaaae44216ca9d39c812a77f97638af8ef21d43728e80cc21293512b"
     },
     {
       "path": "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.md",
-      "size": 3575,
-      "ext": ".md"
+      "bytes": 3575,
+      "sha256": "1dcbaa466829a52cfdea899ad94aedc75f243a3b25b5c56037ddf275796f189c"
     },
     {
       "path": "04_Renderings/birdseye_view.webp",
-      "size": 29238,
-      "ext": ".webp"
+      "bytes": 29238,
+      "sha256": "d4eba413ebcb4ec1a8728ac58e3945a1c5a44c9516149f8c2a8fb7c4d77a7453"
     },
     {
       "path": "04_Renderings/front_entrance_view.webp",
-      "size": 302618,
-      "ext": ".webp"
+      "bytes": 302618,
+      "sha256": "ca4a93e39187e7e9cff67cddc5e1c2bee283db57be86e20df1fa3c960c966484"
     },
     {
       "path": "04_Renderings/garage_facade_view.webp",
-      "size": 23852,
-      "ext": ".webp"
+      "bytes": 23852,
+      "sha256": "f8b19aaaba09437fb2948d24688e6f3eeeac1acc206c9d1742d45f3154dfa189"
     },
     {
       "path": "04_Renderings/left_side_view.webp",
-      "size": 22898,
-      "ext": ".webp"
+      "bytes": 22898,
+      "sha256": "504a8a076d24f422c0da9e6b0299166eb845929ccb4cf366fb0e0a8b5741f740"
     },
     {
       "path": "05_Design_Options/architectural_grid_texture.jpg",
-      "size": 6087357,
-      "ext": ".jpg"
+      "bytes": 6087357,
+      "sha256": "34f84b49e36e8c9dafaf3644b01116560da72d3e43ccafed7ed89105a43eff94"
     },
     {
       "path": "05_Design_Options/bh_folded_profile_mark.png",
-      "size": 4472686,
-      "ext": ".png"
+      "bytes": 4472686,
+      "sha256": "a98224cae27f864bee50a08b71c074c4120848f8838687c0232967b87400c164"
     },
     {
       "path": "05_Design_Options/cedar_rainscreen_profile.jpg",
-      "size": 6159099,
-      "ext": ".jpg"
+      "bytes": 6159099,
+      "sha256": "675c1f3a750ca9e2ca6e50e9affc9550672d985a372fdf205f82a9f3c1ebf930"
     },
     {
       "path": "05_Design_Options/charcoal_vertical_profile.jpg",
-      "size": 6559249,
-      "ext": ".jpg"
+      "bytes": 6559249,
+      "sha256": "99091c67457e9d7fe598272e3707a61b593e925c93a4a9b948746f504b7fb661"
     },
     {
       "path": "05_Design_Options/client_reference_board.png",
-      "size": 1789785,
-      "ext": ".png"
+      "bytes": 1789785,
+      "sha256": "d7d16b8c079484839d8cb709e694c8455b7e5aa8cb0469defd66e11a8e6960ff"
     },
     {
       "path": "05_Design_Options/original_facade_reference.jpg",
-      "size": 187705,
-      "ext": ".jpg"
+      "bytes": 187705,
+      "sha256": "87dd9a8e907c92957c99e49c4c8c91c78ade3d2256cbc30791051c696c2aea18"
     },
     {
       "path": "05_Design_Options/walid_concept_01_cedar-datum.png",
-      "size": 2227277,
-      "ext": ".png"
+      "bytes": 2227277,
+      "sha256": "9c196538cf733171922ab2cf86d304ba5ada00b05ada169ba6f54f9ec6d0d073"
     },
     {
       "path": "05_Design_Options/walid_concept_02_full-battens.png",
-      "size": 1986008,
-      "ext": ".png"
+      "bytes": 1986008,
+      "sha256": "63fbb642eeeeaabf63e807a9838f904b4c2882658c709d0cfe4f51f5e84811e0"
     },
     {
       "path": "05_Design_Options/walid_concept_03_split-storey.png",
-      "size": 2569638,
-      "ext": ".png"
+      "bytes": 2569638,
+      "sha256": "20400cdf43ba6afbb93c804eff238b0226d4e0f455794d6fc4afd7add4c9da42"
     },
     {
       "path": "05_Design_Options/walid_concept_04_framed-bays.png",
-      "size": 2319745,
-      "ext": ".png"
+      "bytes": 2319745,
+      "sha256": "2a233541893f6e8ac0edaec4306936e1f77692de49bd80bf7c8e44d073906c71"
     },
     {
       "path": "05_Design_Options/walid_hero_architectural.jpg",
-      "size": 5218398,
-      "ext": ".jpg"
+      "bytes": 5218398,
+      "sha256": "a21a0d8cba4ea3fa89c9a96968c28cbd8bad865d0c0a9ab28829600d45fa5d64"
     },
     {
       "path": "06_Site_Photos/site_corner_man_door_sidewall.png",
-      "size": 79154,
-      "ext": ".png"
+      "bytes": 79154,
+      "sha256": "6ecd2c1b33e6ca59d17a26175250f1992feb8c53e641d44fd89fae51baedf2ae"
     },
     {
       "path": "06_Site_Photos/site_existing_02.webp",
-      "size": 651558,
-      "ext": ".webp"
+      "bytes": 651558,
+      "sha256": "98634768c62e66e0d067cff77d3751ebdf32be7af457086645a72ea633a8f7d7"
     },
     {
       "path": "06_Site_Photos/site_existing_03.webp",
-      "size": 633836,
-      "ext": ".webp"
+      "bytes": 633836,
+      "sha256": "1724c203cd601c9ab316475f438dcee7a1e9fc592ca9b9fbfbd80bbf20725913"
     },
     {
       "path": "06_Site_Photos/site_existing_04.webp",
-      "size": 591188,
-      "ext": ".webp"
+      "bytes": 591188,
+      "sha256": "07dc19cbacdf5e2cb97189a8355313121a5b44e98f6081cf83b45a64a5d4afa8"
     },
     {
       "path": "07_Permit/permit_sheet_05_floor_plan.png",
-      "size": 644554,
-      "ext": ".png"
+      "bytes": 644554,
+      "sha256": "5e59630ac8d8b452da9b4abe0c4a31892dfae385fbab29919d6a7e2c567676ce"
     },
     {
       "path": "07_Permit/permit_sheet_07_back_elevation.png",
-      "size": 242865,
-      "ext": ".png"
+      "bytes": 242865,
+      "sha256": "38185191d7a372852594184ae21c94fe2e5230159ae308b8cb855019e10da71e"
     },
     {
       "path": "07_Permit/permit_sheet_08_front_elevation.png",
-      "size": 236829,
-      "ext": ".png"
+      "bytes": 236829,
+      "sha256": "74675567604a3044c11a91d5c18d7f13759963c484fce040953dea79d9a4b5fc"
     },
     {
       "path": "07_Permit/permit_sheet_11_section.png",
-      "size": 725562,
-      "ext": ".png"
+      "bytes": 725562,
+      "sha256": "194a4ef57368fb1ed94196a33f3f73ba63c87928a3b705d308b45e45d291740d"
     },
     {
       "path": "07_Permit/walid_permit_drawings.pdf",
-      "size": 2927278,
-      "ext": ".pdf"
+      "bytes": 2927278,
+      "sha256": "af3803e40fa03cb225a6e288314d2db347d47f6e4d7217611756a84d70f451e8"
     }
   ],
-  "zip": {
-    "path": "BH_Contracting_Walid_Complete_Package.zip",
-    "size": 44933190,
-    "ext": ".zip"
-  },
-  "sections": [
-    {
-      "id": "overview",
-      "title": "Package Overview",
-      "md": "00_README.md"
-    },
-    {
-      "id": "model",
-      "title": "3D Model",
-      "dir": "01_Model",
-      "md": [
-        "01_Model/model_validation.md"
-      ],
-      "viewer": "01_Model/Walid_3D_Viewer.html"
-    },
-    {
-      "id": "plans",
-      "title": "Plans & Takeoff",
-      "dir": "02_Plans_and_Takeoff",
-      "md": [
-        "02_Plans_and_Takeoff/facade_design_brief.md",
-        "02_Plans_and_Takeoff/walid_dimension_register.md",
-        "02_Plans_and_Takeoff/walid_facade_quantity_basis.md"
-      ],
-      "images": [
-        "02_Plans_and_Takeoff/walid_facade_elevations.png",
-        "02_Plans_and_Takeoff/walid_facade_elevations.svg"
-      ]
-    },
-    {
-      "id": "contract",
-      "title": "Contract Documents",
-      "dir": "03_Contract",
-      "md": [
-        "03_Contract/Walid_Siding_Contract.md",
-        "03_Contract/Walid_Field_Measurement_and_Layout_Approval.md",
-        "03_Contract/Walid_Change_Order_Form.md",
-        "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.md"
-      ]
-    },
-    {
-      "id": "renderings",
-      "title": "Renderings",
-      "dir": "04_Renderings",
-      "images": [
-        "04_Renderings/birdseye_view.webp",
-        "04_Renderings/front_entrance_view.webp",
-        "04_Renderings/garage_facade_view.webp",
-        "04_Renderings/left_side_view.webp"
-      ]
-    },
-    {
-      "id": "design",
-      "title": "Design Options",
-      "dir": "05_Design_Options",
-      "images": [
-        "05_Design_Options/walid_concept_01_cedar-datum.png",
-        "05_Design_Options/walid_concept_02_full-battens.png",
-        "05_Design_Options/walid_concept_03_split-storey.png",
-        "05_Design_Options/walid_concept_04_framed-bays.png",
-        "05_Design_Options/client_reference_board.png"
-      ]
-    },
-    {
-      "id": "site",
-      "title": "Site Photos",
-      "dir": "06_Site_Photos",
-      "images": [
-        "06_Site_Photos/site_existing_02.webp",
-        "06_Site_Photos/site_existing_03.webp",
-        "06_Site_Photos/site_existing_04.webp",
-        "06_Site_Photos/site_corner_man_door_sidewall.png"
-      ]
-    },
-    {
-      "id": "permit",
-      "title": "Permit Drawings",
-      "dir": "07_Permit",
-      "images": [
-        "07_Permit/permit_sheet_05_floor_plan.png",
-        "07_Permit/permit_sheet_07_back_elevation.png",
-        "07_Permit/permit_sheet_08_front_elevation.png",
-        "07_Permit/permit_sheet_11_section.png"
-      ]
-    },
-    {
-      "id": "downloads",
-      "title": "Complete File Downloads",
-      "dir": null
-    }
-  ]
+  "fileCount": 49
 }
