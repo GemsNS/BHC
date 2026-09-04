@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "00_README.md",
-      "bytes": 7592,
-      "sha256": "17ecdbcbec856fcaecc9ed1abe9341c597c23e1a7691cc3f4701f1200d5c2c28"
+      "bytes": 7636,
+      "sha256": "39769b15744015bb0e8ee16cc919194a31a5da0ec2ad4799a7d0fc974a38befb"
     },
     {
       "path": "01_Model/Walid_3D_Viewer.html",
@@ -13,8 +13,8 @@
     },
     {
       "path": "01_Model/model_validation.md",
-      "bytes": 2245,
-      "sha256": "614dab6437b0d1e2c85188d6ead4e4565d64846089e091f425d837c249a64b68"
+      "bytes": 2252,
+      "sha256": "4c7e5f4f7145cfdf6ea62f0be6e4339f64bbd3eb7a937834750514dd4fa86db8"
     },
     {
       "path": "01_Model/walid_warehouse.3mf",
@@ -88,13 +88,13 @@
     },
     {
       "path": "03_Contract/Walid_Change_Order_Form.docx",
-      "bytes": 37843,
-      "sha256": "151a63eeb311c7980b49f6829052049caffcf758ff8aa75a2c77ce6986462e0d"
+      "bytes": 37844,
+      "sha256": "2f0fa72cb5deab1e1487249e2cbf166d1cfcbf8af0353486bb1337b32e8328cb"
     },
     {
       "path": "03_Contract/Walid_Change_Order_Form.md",
       "bytes": 2731,
-      "sha256": "0ecda3a21f6d1d542d02f6cc4c75938666916234f2c4aa3c747fe58227e8fa35"
+      "sha256": "725fb20cc15ae24ffb3447d119c20be160f04a2a177b1ae7d4a0387332cd4329"
     },
     {
       "path": "03_Contract/Walid_Field_Measurement_and_Layout_Approval.docx",
@@ -108,23 +108,23 @@
     },
     {
       "path": "03_Contract/Walid_Siding_Contract.docx",
-      "bytes": 45477,
-      "sha256": "807d3ebe7e0d0f4b66f53c5345ee2179957c462aadc335431cc83c4cca94addb"
+      "bytes": 45603,
+      "sha256": "079a614e0285e84dbb65d6b5b5cd987e4a5dce64e00bc5c4a024d485a4310ce9"
     },
     {
       "path": "03_Contract/Walid_Siding_Contract.md",
-      "bytes": 23375,
-      "sha256": "a3fad6a549107baf0269927320fac03d9dfca6067eed8792e2a6881ca13b727a"
+      "bytes": 24446,
+      "sha256": "2ace8e97cc14df4e6f3b6713506c6b9ccb939eeb7a97d779da1b690380e4b7c3"
     },
     {
       "path": "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.docx",
-      "bytes": 38349,
-      "sha256": "07190a9ccaaae44216ca9d39c812a77f97638af8ef21d43728e80cc21293512b"
+      "bytes": 38352,
+      "sha256": "261db52c9b86f492982c15733cfaf84bf1a017c65dc35ba05e09e5a3e49d7c32"
     },
     {
       "path": "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.md",
       "bytes": 3575,
-      "sha256": "1dcbaa466829a52cfdea899ad94aedc75f243a3b25b5c56037ddf275796f189c"
+      "sha256": "f4e5db09f5f4b4934e2d1b5e407116bd2a6b279eecd58ddeafd70f5717bdf985"
     },
     {
       "path": "04_Renderings/birdseye_view.webp",
