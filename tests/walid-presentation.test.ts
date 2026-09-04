@@ -40,6 +40,20 @@ describe("walid presentation package", () => {
     expect(manifest.files.length).toBeGreaterThanOrEqual(45);
   });
 
+  it("prices Dartmouth↔Mount Uniacke fuel/travel into the siding contract", () => {
+    const contract = readFileSync(
+      "presentations/walid/package/03_Contract/Walid_Siding_Contract.md",
+      "utf8",
+    );
+    expect(contract).toContain("9A Regency Drive, Dartmouth");
+    expect(contract).toContain("Mount Uniacke");
+    expect(contract).toContain("$50.26");
+    expect(contract).toContain("$0.72");
+    expect(contract).toContain("69.8 km");
+    expect(contract).toContain("$13,050.26");
+    expect(contract).not.toMatch(/\*\*\$13,000\.00\*\*/);
+  });
+
   it("clean Manus presentation has no AI/lawyer/draft banners or manus telemetry", () => {
     const index = readFileSync("presentations/walid/clean/index.html", "utf8");
     expect(index.toLowerCase()).not.toContain("manus");

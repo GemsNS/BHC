@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "00_README.md",
-      "bytes": 7395,
-      "sha256": "03b0e88855a16122a72eae4cbaa282d4060e72bec98da5e2c573d9dab6a1f309"
+      "bytes": 7435,
+      "sha256": "ab371d9743f2b9888ab9a77911cdad0a6dcfe3f01093b494a6f218b294a2cccf"
     },
     {
       "path": "01_Model/Walid_3D_Viewer.html",
@@ -108,23 +108,23 @@
     },
     {
       "path": "03_Contract/Walid_Siding_Contract.docx",
-      "bytes": 45477,
-      "sha256": "807d3ebe7e0d0f4b66f53c5345ee2179957c462aadc335431cc83c4cca94addb"
+      "bytes": 45774,
+      "sha256": "dc20d45260594688111a6a6a2aae4a7523d99b7f7dd24203ae6777576c8a8eb5"
     },
     {
       "path": "03_Contract/Walid_Siding_Contract.md",
-      "bytes": 23375,
-      "sha256": "a3fad6a549107baf0269927320fac03d9dfca6067eed8792e2a6881ca13b727a"
+      "bytes": 24188,
+      "sha256": "b71c01151f3c69a7fda8f935926e6cf9d98b35d2d8796117d72c05da025c84c9"
     },
     {
       "path": "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.docx",
-      "bytes": 38349,
-      "sha256": "07190a9ccaaae44216ca9d39c812a77f97638af8ef21d43728e80cc21293512b"
+      "bytes": 38366,
+      "sha256": "81691b2d5c1fea347f610c0485e8a31296288a27a75385914138a59d9701d560"
     },
     {
       "path": "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.md",
       "bytes": 3575,
-      "sha256": "1dcbaa466829a52cfdea899ad94aedc75f243a3b25b5c56037ddf275796f189c"
+      "sha256": "41f442d1e14a67465e479377f45bedab587502ecb6f9215fe5bf3c4540800c9d"
     },
     {
       "path": "04_Renderings/birdseye_view.webp",
