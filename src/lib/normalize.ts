@@ -125,7 +125,10 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     notifications: raw.notifications ?? seed.notifications,
     gpsConfig: raw.gpsConfig ?? seed.gpsConfig,
     materials: raw.materials ?? seed.materials,
-    fuelLogs: raw.fuelLogs ?? seed.fuelLogs,
+    fuelLogs: (raw.fuelLogs ?? seed.fuelLogs).map((f) => ({
+      ...f,
+      kind: f.kind === "travel" ? "travel" : "fill",
+    })),
     projections: raw.projections ?? seed.projections,
     announcements: raw.announcements ?? seed.announcements,
     tools: raw.tools ?? seed.tools,
