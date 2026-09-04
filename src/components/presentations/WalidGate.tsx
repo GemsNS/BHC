@@ -102,7 +102,7 @@ export function WalidGate({ slug }: { slug: string }) {
           <strong>Walid warehouse presentation</strong>
         </div>
         <div className="walid-manus-actions">
-          <a className="walid-download-main" href={`/presentations/${slug}/view/`}>
+          <a className="walid-download-main" href={`/presentations/${slug}/view`}>
             Open fullscreen
           </a>
           <Link className="walid-raw-link" href={`/presentations/${slug}/raw`}>
@@ -119,7 +119,7 @@ export function WalidGate({ slug }: { slug: string }) {
       <iframe
         className="walid-manus-frame"
         title="Walid private presentation"
-        src={`/presentations/${slug}/view/`}
+        src={`/presentations/${slug}/view`}
       />
     </div>
   );
