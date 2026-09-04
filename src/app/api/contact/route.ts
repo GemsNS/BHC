@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 import { mailConfigStatus, sendContactEmail } from "@/lib/mail";
+import {
+  checkRateLimit,
+  clientIp,
+  envInt,
+  rateLimitHeaders,
+} from "@/lib/rate-limit";
+import { verifyCaptchaToken } from "@/lib/captcha";
 
 const LIMITS = { name: 120, email: 254, phone: 40, details: 4000 } as const;
 
@@ -10,8 +17,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-function json(data: unknown, status: number) {
-  return NextResponse.json(data, { status, headers: corsHeaders });
+function json(data: unknown, status: number, extraHeaders?: Record<string, string>) {
+  return NextResponse.json(data, {
+    status,
+    headers: { ...corsHeaders, ...(extraHeaders || {}) },
+  });
 }
 
 export async function OPTIONS() {
@@ -35,6 +45,20 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const ip = clientIp(req);
+  const rl = checkRateLimit({
+    key: `contact:${ip}`,
+    limit: envInt("CONTACT_RATE_PER_HOUR", 8),
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!rl.ok) {
+    return json(
+      { error: "Too many messages from this network. Please try later." },
+      429,
+      rateLimitHeaders(rl),
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -46,7 +70,24 @@ export async function POST(req: Request) {
     return json({ error: "Invalid payload" }, 400);
   }
 
-  const { name, email, phone, details, quoteType } = body as Record<string, unknown>;
+  const { name, email, phone, details, quoteType, captchaToken, website } = body as Record<
+    string,
+    unknown
+  >;
+
+  // Honeypot — bots fill hidden "website" fields
+  if (typeof website === "string" && website.trim()) {
+    return json({ ok: true }, 200, rateLimitHeaders(rl));
+  }
+
+  const captcha = await verifyCaptchaToken({
+    token: typeof captchaToken === "string" ? captchaToken : undefined,
+    ip,
+  });
+  if (!captcha.ok) {
+    return json({ error: captcha.error || "Captcha required." }, 400, rateLimitHeaders(rl));
+  }
+
   const nameStr = typeof name === "string" ? name.trim() : "";
   const emailStr = typeof email === "string" ? email.trim() : "";
   const phoneStr = typeof phone === "string" ? phone.trim() : "";
@@ -81,13 +122,14 @@ export async function POST(req: Request) {
 
   if (!result.ok) {
     if (result.code === "not_configured") {
-      return json({ error: result.error }, 503);
+      return json({ error: result.error }, 503, rateLimitHeaders(rl));
     }
     return json(
       { error: "Could not send your message. Please call us or try again later." },
       500,
+      rateLimitHeaders(rl),
     );
   }
 
-  return json({ ok: true }, 200);
+  return json({ ok: true }, 200, rateLimitHeaders(rl));
 }

@@ -11,11 +11,20 @@ import { isStaticDemo } from "@/lib/paths";
 import type { AssistantCriteriaProfile } from "@/lib/types";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
+import { MAINFRAME_AGENTS, type MainframeAgentId } from "@/lib/mainframe-agents";
 
 type UiMessage = ChatMessage & {
   id: string;
   source?: "ai" | "mainframe";
   toolRuns?: Array<{ tool: string; summary: string; ok: boolean }>;
+  agentId?: string;
+};
+
+type UploadRecord = {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
 };
 
 const QUICK = [
@@ -33,7 +42,7 @@ const WELCOME: UiMessage = {
   role: "assistant",
   source: "mainframe",
   content:
-    "BHC MAINFRAME online. I execute CRM actions — leads, workflows, invoices, prospect hunting, and daily automations. Outreach always queues for your approval before send.\n\nFeed me criteria (regions, keywords, job types) or say \"help\" for commands.",
+    "BHC MAINFRAME online. Pick an agent (Orchestrator / CRM / Estimator / Research / Design·Manus), attach files, and run CRM actions. Outreach always queues for approval before send.\n\nPreferred server AI: Claude (ANTHROPIC_API_KEY). Gemini remains optional.",
 };
 
 export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
@@ -44,7 +53,11 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
   const [profile, setProfile] = useState<AssistantCriteriaProfile | null>(null);
   const [due, setDue] = useState<string[]>([]);
   const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
+  const [agentId, setAgentId] = useState<MainframeAgentId>("orchestrator");
+  const [attachments, setAttachments] = useState<UploadRecord[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const refreshMeta = useCallback(async () => {
     const data = await loadAppData();
@@ -86,14 +99,36 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, busy]);
 
+  async function onPickFiles(files: FileList | null) {
+    if (!files?.length || isStaticDemo()) return;
+    setUploadError(null);
+    const form = new FormData();
+    Array.from(files).slice(0, 6).forEach((f) => form.append("files", f));
+    try {
+      const res = await fetch("/api/uploads", { method: "POST", body: form });
+      const json = (await res.json()) as { error?: string; files?: UploadRecord[] };
+      if (!res.ok) {
+        setUploadError(json.error || "Upload failed");
+        return;
+      }
+      setAttachments((prev) => [...prev, ...(json.files ?? [])]);
+    } catch {
+      setUploadError("Upload failed");
+    }
+  }
+
   async function send(text: string) {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
     setInput("");
+    const attachNote = attachments.length
+      ? `\n\n[Attachments: ${attachments.map((a) => a.originalName).join(", ")}]`
+      : "";
     const userMsg: UiMessage = {
       id: `u-${Date.now()}`,
       role: "user",
-      content: trimmed,
+      content: trimmed + attachNote,
+      agentId,
     };
     setMessages((m) => [...m, userMsg]);
     setBusy(true);
@@ -101,7 +136,10 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
       const history: ChatMessage[] = [...messages, userMsg]
         .filter((m) => m.id !== "welcome")
         .map(({ role, content }) => ({ role, content }));
-      const result = await sendMainframeMessage(history, user?.id ?? "emp-admin");
+      const result = await sendMainframeMessage(history, user?.id ?? "emp-admin", {
+        agentId,
+        attachmentIds: attachments.map((a) => a.id),
+      });
       setMessages((m) => [
         ...m,
         {
@@ -110,8 +148,10 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
           content: result.reply,
           source: result.source,
           toolRuns: result.toolRuns,
+          agentId: result.agentId ?? agentId,
         },
       ]);
+      setAttachments([]);
       if (result.automationsDue?.length) setDue(result.automationsDue);
       await refreshMeta();
     } finally {
@@ -119,24 +159,36 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
     }
   }
 
+  const providerLabel = (() => {
+    if (!aiStatus) return null;
+    if (aiStatus.configured) {
+      const name =
+        isStaticDemo() && hasClientAiKey()
+          ? "BROWSER GEMINI"
+          : aiStatus.provider === "anthropic"
+            ? "CLAUDE"
+            : aiStatus.provider.toUpperCase();
+      return `${name} · ${aiStatus.model ?? "AI"}`;
+    }
+    return isStaticDemo()
+      ? "LOCAL PARSER — set ANTHROPIC_API_KEY on server or paste Gemini key in static demo"
+      : "Configure ANTHROPIC_API_KEY (Claude) on server for full AI";
+  })();
+
   return (
     <div className={cn("mainframe-chat", embedded && "mainframe-chat-embedded")}>
       <header className="mainframe-chat-head">
         <div>
           <p className="mainframe-chat-eyebrow">BHC MAINFRAME AI</p>
           <h2 className="mainframe-chat-title">Command assistant</h2>
-          {aiStatus ? (
+          {providerLabel ? (
             <p
               className={cn(
                 "mainframe-chat-provider",
-                aiStatus.configured ? "mainframe-ai-live" : "mainframe-ai-local",
+                aiStatus?.configured ? "mainframe-ai-live" : "mainframe-ai-local",
               )}
             >
-              {aiStatus.configured
-                ? `${isStaticDemo() && hasClientAiKey() ? "BROWSER GEMINI" : aiStatus.provider.toUpperCase()} · ${aiStatus.model ?? "AI"}`
-                : isStaticDemo()
-                  ? "LOCAL PARSER — set GEMINI_API_KEY on server or paste key in static demo"
-                  : "Configure GEMINI_API_KEY on server for full AI"}
+              {providerLabel}
             </p>
           ) : null}
         </div>
@@ -146,6 +198,22 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
           </Link>
         ) : null}
       </header>
+
+      <div className="mainframe-agent-row" role="tablist" aria-label="Mainframe agents">
+        {MAINFRAME_AGENTS.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            role="tab"
+            aria-selected={agentId === a.id}
+            className={cn("mainframe-agent-chip", agentId === a.id && "is-active")}
+            title={a.blurb}
+            onClick={() => setAgentId(a.id)}
+          >
+            {a.label}
+          </button>
+        ))}
+      </div>
 
       {due.length ? (
         <div className="mainframe-due-banner">
@@ -180,7 +248,10 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
                 )}
               >
                 {m.role === "assistant" && m.source ? (
-                  <span className="mainframe-msg-badge">{m.source.toUpperCase()}</span>
+                  <span className="mainframe-msg-badge">
+                    {m.source.toUpperCase()}
+                    {m.agentId ? ` · ${m.agentId}` : ""}
+                  </span>
                 ) : null}
                 <p className="mainframe-msg-text">{m.content}</p>
                 {m.toolRuns?.length ? (
@@ -205,6 +276,20 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
             ))}
           </div>
 
+          {attachments.length ? (
+            <ul className="mainframe-attach-list">
+              {attachments.map((a) => (
+                <li key={a.id}>
+                  {a.originalName}{" "}
+                  <button type="button" onClick={() => setAttachments((p) => p.filter((x) => x.id !== a.id))}>
+                    remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {uploadError ? <p className="mainframe-upload-error">{uploadError}</p> : null}
+
           <form
             className="mainframe-input-row"
             onSubmit={(e) => {
@@ -212,6 +297,29 @@ export function MainframeChat({ embedded = false }: { embedded?: boolean }) {
               send(input);
             }}
           >
+            {!isStaticDemo() ? (
+              <>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  multiple
+                  className="mainframe-file-input"
+                  accept="image/*,.pdf,.txt,.csv,.json,.docx,.xlsx"
+                  onChange={(e) => {
+                    void onPickFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  className="mainframe-attach-btn"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={busy}
+                >
+                  Attach
+                </button>
+              </>
+            ) : null}
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}

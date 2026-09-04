@@ -2,39 +2,60 @@
 
 ## Providers
 
-Resolved in `src/lib/ai-provider.ts`:
+Resolved in `src/lib/ai-provider.ts` (preference order when `AI_PROVIDER` unset):
 
-1. `AI_PROVIDER` override if set
-2. Else `GEMINI_API_KEY` or `GOOGLE_API_KEY` → Gemini (`x-goog-api-key`)
-3. Else `OPENAI_API_KEY` → OpenAI-compatible chat completions + tools
+1. `ANTHROPIC_API_KEY` / `CLAUDE_API_KEY` → **Claude** (preferred for Mainframe CRM)
+2. `GEMINI_API_KEY` / `GOOGLE_API_KEY` → Gemini
+3. `OPENAI_API_KEY` → OpenAI-compatible chat + tools
 4. Else local heuristics / Mainframe regex parser
 
-Browser (Pages): `src/lib/ai-client.ts` uses `localStorage bhc-gemini-api-key` or `NEXT_PUBLIC_GEMINI_API_KEY`.
+Override with `AI_PROVIDER=anthropic|gemini|openai`.
+
+Browser (Pages static demo): `src/lib/ai-client.ts` still uses Gemini localStorage / `NEXT_PUBLIC_GEMINI_*` only.
 
 ## Surfaces
 
 | Surface | Path |
 |---------|------|
 | Mainframe chat | `/admin/assistant`, floating launcher |
-| Progress summarize | `/apps/progress`, `/admin/progress`, invoices |
+| Progress summarize | `/apps/progress`, `/admin/progress` (auth required) |
+| Uploads | `POST /api/uploads`, `GET /api/uploads/:id` |
 | CLI | `npm run bhc -- ai *` |
-| Status | `GET /api/ai/status` |
+| Status | `GET /api/ai/status` (includes usage + agents) |
+
+## Multi-agent Mainframe
+
+Agents in `src/lib/mainframe-agents.ts`:
+
+| Id | Role |
+|----|------|
+| `orchestrator` | Default router |
+| `crm` | Leads/jobs/invoices/outreach |
+| `estimator` | Quantities / contracts |
+| `research` | HRM + hunt + memory |
+| `design` | Design / Manus-style presentation honesty |
+
+UI: agent chips + file Attach on `/admin/assistant`.
+
+## Rate limits, quotas, captchas
+
+| Control | Module / env |
+|---------|----------------|
+| Per-IP / per-user throttles | `src/lib/rate-limit.ts` |
+| Daily AI request + token budget | `src/lib/ai-budget.ts` → `data/ai-usage.json` |
+| Turnstile / hCaptcha | `src/lib/captcha.ts` (skipped when secret unset) |
+| Contact honeypot | hidden `website` field |
+| Presentation unlock lockout | `PRESENTATION_UNLOCK_RATE_PER_HOUR` |
+
+See `.env.example` for all knobs.
 
 ## Mainframe tools
 
-Defined in `src/lib/mainframe-tools.ts`, schemas in `mainframe-agent.ts`:
-
-`get_summary` `list_leads` `create_lead` `update_lead_status` `list_jobs` `create_invoice` `run_workflow` `process_sequences` `approve_outreach` `find_prospects` `hunt_leads` `save_criteria_profile` `create_task` `run_daily_automations`
-
-Outreach is **never auto-sent** (`pending_approval`).
+Defined in `src/lib/mainframe-tools.ts` / CRM tools. Outreach is **never auto-sent** (`pending_approval`).
 
 ## Security
 
 - Server keys only in `.env`
-- Client keys are extractable — label as TEST in UI
+- Client Gemini keys are extractable — label as TEST in UI
 - Do not log API keys
-- AQ. Gemini auth keys may 401 from restricted IPs; use a key allowed for the host
-
-## Local fallback
-
-If no key: `parseLocalIntent` understands phrases like “CRM summary”, “Hunt leads”, “Create lead: …”.
+- Uploads: auth required, MIME allow-list, size + rate limits, stored under `data/uploads/`

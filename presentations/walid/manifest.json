@@ -211,11 +211,6 @@
       "ext": ".png"
     },
     {
-      "path": "06_Site_Photos/site_existing_01.webp",
-      "size": 67546,
-      "ext": ".webp"
-    },
-    {
       "path": "06_Site_Photos/site_existing_02.webp",
       "size": 651558,
       "ext": ".webp"
@@ -258,7 +253,7 @@
   ],
   "zip": {
     "path": "BH_Contracting_Walid_Complete_Package.zip",
-    "size": 37064503,
+    "size": 36997816,
     "ext": ".zip"
   },
   "sections": [
@@ -330,7 +325,6 @@
       "title": "Site Photos",
       "dir": "06_Site_Photos",
       "images": [
-        "06_Site_Photos/site_existing_01.webp",
         "06_Site_Photos/site_existing_02.webp",
         "06_Site_Photos/site_existing_03.webp",
         "06_Site_Photos/site_existing_04.webp",

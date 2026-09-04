@@ -11,6 +11,8 @@ import {
   type ToolContext,
 } from "./mainframe-tools";
 import { automationsDue } from "./mainframe-automations";
+import { composeAgentSystemPrompt, type MainframeAgentId } from "./mainframe-agents";
+import { getAiBudgetLimits } from "./ai-budget";
 import type { AppData } from "./types";
 
 export type ChatMessage = AIChatMessage;
@@ -20,6 +22,7 @@ export type ChatTurnResult = {
   source: "ai" | "mainframe";
   toolRuns: Array<{ tool: string; summary: string; ok: boolean }>;
   automationsDue?: string[];
+  agentId?: string;
 };
 
 const SYSTEM_PROMPT = `You are BHC MAINFRAME — admin AI for BH Contracting LTD. (Halifax Regional Municipality, Nova Scotia).
@@ -431,6 +434,7 @@ export async function runMainframeTurn(
   data: AppData,
   messages: ChatMessage[],
   ctx: ToolContext,
+  options?: { agentId?: MainframeAgentId | string },
 ): Promise<ChatTurnResult> {
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   if (!lastUser) {
@@ -438,17 +442,23 @@ export async function runMainframeTurn(
   }
 
   if (/^(help|commands|\?)/i.test(lastUser.content.trim())) {
-    return { reply: helpText(), source: "mainframe", toolRuns: [] };
+    return { reply: helpText(), source: "mainframe", toolRuns: [], agentId: options?.agentId };
   }
 
   const due = automationsDue(data).map((a) => a.name);
   const contextPrompt = await buildContextPrompt(data);
+  const limits = getAiBudgetLimits();
+  const clipped = messages.slice(-limits.maxHistoryMessages).map((m) => ({
+    ...m,
+    content: m.content.slice(0, limits.maxMessageChars),
+  }));
 
   const ai = await runAIAgentLoop({
-    systemPrompt: SYSTEM_PROMPT,
+    systemPrompt: composeAgentSystemPrompt(SYSTEM_PROMPT, options?.agentId),
     contextPrompt,
-    messages,
+    messages: clipped,
     tools: buildMainframeTools(),
+    maxSteps: limits.maxSteps,
     executeTool: async (name, args) => {
       if (name === "lookup_hrm") {
         const result = await toolLookupHrmAsync(args);
@@ -465,6 +475,7 @@ export async function runMainframeTurn(
       source: "ai",
       toolRuns: ai.toolRuns,
       automationsDue: due.length ? due : undefined,
+      agentId: options?.agentId,
     };
   }
 
@@ -473,10 +484,11 @@ export async function runMainframeTurn(
 
   if (!intents.length) {
     return {
-      reply: `MAINFRAME LOCAL MODE — limited command parser. Configure GEMINI_API_KEY on the server for full natural-language CRM control.\n\n${helpText()}`,
+      reply: `MAINFRAME LOCAL MODE — limited command parser. Configure ANTHROPIC_API_KEY (Claude) or GEMINI_API_KEY on the server for full natural-language CRM control.\n\n${helpText()}`,
       source: "mainframe",
       toolRuns: [],
       automationsDue: due.length ? due : undefined,
+      agentId: options?.agentId,
     };
   }
 
