@@ -4,7 +4,7 @@ Two views behind the same password:
 
 | URL | What it is |
 |-----|------------|
-| `https://bhcontracting.ca/presentations/walid` | **Clean presentation** (Manus design) |
+| `https://bhcontracting.ca/presentations/walid` | **Clean presentation** (customer package) |
 | `https://bhcontracting.ca/presentations/walid/raw` | **Raw package view** (full file inventory + documents) |
 | `https://bhcontracting.ca/presentations/walid/view/` | Fullscreen clean presentation |
 
@@ -41,11 +41,11 @@ curl -s -b /tmp/walid.ck -o /dev/null -w '%{http_code}\n' \
 presentations/walid/
   meta.json                 # password SHA-256
   manifest.json             # raw view inventory
-  clean/                    # Manus static presentation (telemetry removed)
+  clean/                    # Static customer presentation (telemetry removed)
   package/                  # full package for raw view + ZIP
   BH_Contracting_Walid_Complete_Package.zip
 ```
 
-Clean presentation uses Manus Fixed systems (Cedar Datum / Full Battens / Split Storey / Framed Bays) on locked permit geometry with verified site hero photo.
+Clean presentation uses four siding application systems (Cedar Datum / Full Battens / Split Storey / Framed Bays) on locked permit geometry with a verified site hero photo.
 
 Share only the password-protected URL with the customer — not linked from the public marketing site.

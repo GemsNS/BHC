@@ -47,7 +47,7 @@ ______________________________________________________________________________
 | HST | $________________ |
 | **Total change including HST** | **$________________** |
 
-Original contract price before HST: **$13,000.00**  
+Original contract price before HST: **$14,005.12**  
 Net of previous approved change orders before HST: **$________________**  
 This change before HST: **$________________**  
 **Revised contract price before HST: $________________**
