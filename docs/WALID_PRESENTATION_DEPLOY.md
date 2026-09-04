@@ -46,4 +46,6 @@ presentations/walid/
   BH_Contracting_Walid_Complete_Package.zip
 ```
 
+Clean presentation uses Manus Fixed systems (Cedar Datum / Full Battens / Split Storey / Framed Bays) on locked permit geometry with verified site hero photo.
+
 Share only the password-protected URL with the customer — not linked from the public marketing site.
