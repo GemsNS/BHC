@@ -3,7 +3,7 @@
   "project": "Warehouse Extension, 9 Alicia Scott Ave., Mount Uniacke, Nova Scotia B0N 1Z0",
   "preparedFor": "BH Contracting Ltd.",
   "email": "info@bhcontracting.ca",
-  "packageStatus": "Project model, quantities, and contract documents",
+  "packageStatus": "Project model, quantities, design options, and contract documents",
   "files": [
     {
       "path": "00_README.md",
@@ -149,11 +149,111 @@
       "path": "04_Renderings/left_side_view.webp",
       "size": 324448,
       "ext": ".webp"
+    },
+    {
+      "path": "05_Design_Options/architectural_grid_texture.jpg",
+      "size": 6087357,
+      "ext": ".jpg"
+    },
+    {
+      "path": "05_Design_Options/bh_folded_profile_mark.png",
+      "size": 4472686,
+      "ext": ".png"
+    },
+    {
+      "path": "05_Design_Options/cedar_rainscreen_profile.jpg",
+      "size": 6159099,
+      "ext": ".jpg"
+    },
+    {
+      "path": "05_Design_Options/charcoal_vertical_profile.jpg",
+      "size": 6559249,
+      "ext": ".jpg"
+    },
+    {
+      "path": "05_Design_Options/client_reference_board.png",
+      "size": 1789785,
+      "ext": ".png"
+    },
+    {
+      "path": "05_Design_Options/original_facade_reference.jpg",
+      "size": 187705,
+      "ext": ".jpg"
+    },
+    {
+      "path": "05_Design_Options/walid_concept_01_cedar-datum.png",
+      "size": 149160,
+      "ext": ".png"
+    },
+    {
+      "path": "05_Design_Options/walid_concept_02_foundry-bronze.png",
+      "size": 148253,
+      "ext": ".png"
+    },
+    {
+      "path": "05_Design_Options/walid_concept_03_coastal-zinc.png",
+      "size": 153255,
+      "ext": ".png"
+    },
+    {
+      "path": "05_Design_Options/walid_concept_04_night-cedar.png",
+      "size": 149868,
+      "ext": ".png"
+    },
+    {
+      "path": "05_Design_Options/walid_hero_architectural.jpg",
+      "size": 5218398,
+      "ext": ".jpg"
+    },
+    {
+      "path": "06_Site_Photos/site_existing_01.webp",
+      "size": 67546,
+      "ext": ".webp"
+    },
+    {
+      "path": "06_Site_Photos/site_existing_02.webp",
+      "size": 651558,
+      "ext": ".webp"
+    },
+    {
+      "path": "06_Site_Photos/site_existing_03.webp",
+      "size": 633836,
+      "ext": ".webp"
+    },
+    {
+      "path": "06_Site_Photos/site_existing_04.webp",
+      "size": 591188,
+      "ext": ".webp"
+    },
+    {
+      "path": "07_Permit/permit_sheet_05_floor_plan.png",
+      "size": 644554,
+      "ext": ".png"
+    },
+    {
+      "path": "07_Permit/permit_sheet_07_back_elevation.png",
+      "size": 242865,
+      "ext": ".png"
+    },
+    {
+      "path": "07_Permit/permit_sheet_08_front_elevation.png",
+      "size": 236829,
+      "ext": ".png"
+    },
+    {
+      "path": "07_Permit/permit_sheet_11_section.png",
+      "size": 725562,
+      "ext": ".png"
+    },
+    {
+      "path": "07_Permit/walid_permit_drawings.pdf",
+      "size": 2927278,
+      "ext": ".pdf"
     }
   ],
   "zip": {
     "path": "BH_Contracting_Walid_Complete_Package.zip",
-    "size": 1847445,
+    "size": 37841943,
     "ext": ".zip"
   },
   "sections": [
@@ -205,6 +305,41 @@
         "04_Renderings/front_entrance_view.webp",
         "04_Renderings/garage_facade_view.webp",
         "04_Renderings/left_side_view.webp"
+      ]
+    },
+    {
+      "id": "design",
+      "title": "Design Options",
+      "dir": "05_Design_Options",
+      "images": [
+        "05_Design_Options/walid_concept_01_cedar-datum.png",
+        "05_Design_Options/walid_concept_02_foundry-bronze.png",
+        "05_Design_Options/walid_concept_03_coastal-zinc.png",
+        "05_Design_Options/walid_concept_04_night-cedar.png",
+        "05_Design_Options/client_reference_board.png",
+        "05_Design_Options/walid_hero_architectural.jpg"
+      ]
+    },
+    {
+      "id": "site",
+      "title": "Site Photos",
+      "dir": "06_Site_Photos",
+      "images": [
+        "06_Site_Photos/site_existing_01.webp",
+        "06_Site_Photos/site_existing_02.webp",
+        "06_Site_Photos/site_existing_03.webp",
+        "06_Site_Photos/site_existing_04.webp"
+      ]
+    },
+    {
+      "id": "permit",
+      "title": "Permit Drawings",
+      "dir": "07_Permit",
+      "images": [
+        "07_Permit/permit_sheet_05_floor_plan.png",
+        "07_Permit/permit_sheet_07_back_elevation.png",
+        "07_Permit/permit_sheet_08_front_elevation.png",
+        "07_Permit/permit_sheet_11_section.png"
       ]
     },
     {

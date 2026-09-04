@@ -1,79 +1,48 @@
 # Walid Warehouse — customer presentation (password protected)
 
-All-in-one web presentation of **BH_Contracting_Walid_Complete_Package**.  
-Every original file is hosted unchanged. Password: set by owner (default for this project: `walid`).
+Two views behind the same password:
 
-## Public URL (after deploy)
+| URL | What it is |
+|-----|------------|
+| `https://bhcontracting.ca/presentations/walid` | **Clean presentation** (Manus design) |
+| `https://bhcontracting.ca/presentations/walid/raw` | **Raw package view** (full file inventory + documents) |
+| `https://bhcontracting.ca/presentations/walid/view/` | Fullscreen clean presentation |
 
-```
-https://bhcontracting.ca/presentations/walid
-```
+**Password:** `walid`
 
-Customer enters password **`walid`** on the lock screen. Session cookie lasts 14 days.
-
-## What is included
-
-| Area | Contents |
-|------|----------|
-| Overview | Full `00_README.md` (unchanged) |
-| 3D Model | Interactive viewer + all model files (`.glb`, `.obj`, `.stl`, `.3mf`, `.jscad.js`, validation notes) |
-| Plans & Takeoff | Elevations (PNG/SVG/DXF), takeoff XLSX/CSV, design brief, dimension register, quantity basis |
-| Contract | All four contract documents as Markdown **and** DOCX |
-| Renderings | All four WEBP views |
-| Downloads | Every package file + complete ZIP |
-
-Source tree on the server:
-
-```
-presentations/walid/
-  meta.json          # password hash (SHA-256), never plaintext
-  manifest.json      # section map + file inventory
-  BH_Contracting_Walid_Complete_Package.zip
-  package/           # exact package folders 00–04
-```
-
-## Deploy to production
+## Deploy
 
 ```bash
 cd /opt/bhc
 git fetch origin cursor/walid-presentation-22fe
-git checkout cursor/walid-presentation-22fe
-git pull origin cursor/walid-presentation-22fe
-
-npm ci
-npm run build
-sudo systemctl restart bhc
+git checkout cursor/walid-presentation-22fe && git pull
+npm ci && npm run build && sudo systemctl restart bhc
 ```
 
 Smoke test:
 
 ```bash
-# Locked status (no cookie)
 curl -s https://bhcontracting.ca/api/presentations/walid/status
-# → {"ok":true,"unlocked":false,...}
+# → unlocked:false
 
-# Unlock
 curl -s -c /tmp/walid.ck -X POST https://bhcontracting.ca/api/presentations/walid/unlock \
   -H 'Content-Type: application/json' \
   -d '{"password":"walid"}'
 
-# Fetch a protected file
-curl -s -b /tmp/walid.ck -o /tmp/readme.md \
-  https://bhcontracting.ca/presentations/walid/files/00_README.md
-head -3 /tmp/readme.md
+curl -s -b /tmp/walid.ck -o /dev/null -w '%{http_code}\n' \
+  https://bhcontracting.ca/presentations/walid/view/
+# → 200
 ```
 
-Open in a browser: `https://bhcontracting.ca/presentations/walid` → password `walid`.
+## Layout on disk
 
-## Change the password later
+```
+presentations/walid/
+  meta.json                 # password SHA-256
+  manifest.json             # raw view inventory
+  clean/                    # Manus static presentation (telemetry removed)
+  package/                  # full package for raw view + ZIP
+  BH_Contracting_Walid_Complete_Package.zip
+```
 
-1. Compute hash: `node -e "console.log(require('crypto').createHash('sha256').update('NEWPASS').digest('hex'))"`
-2. Put the hex string in `presentations/walid/meta.json` → `passwordSha256`
-3. Rebuild and restart
-
-Do **not** store the plaintext password in the repo.
-
-## Notes
-
-- Link is **not** linked from the public marketing site — share the URL directly with the customer.
-- Files require a valid unlock cookie; direct file URLs return `401` until unlocked.
+Share only the password-protected URL with the customer — not linked from the public marketing site.

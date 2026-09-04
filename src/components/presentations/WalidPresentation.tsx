@@ -149,7 +149,7 @@ export function WalidPresentation({ slug }: { slug: string }) {
     <div className="walid-shell">
       <header className="walid-top">
         <div>
-          <p className="walid-eyebrow">BH Contracting LTD.</p>
+          <p className="walid-eyebrow">BH Contracting LTD. · Raw package view</p>
           <h1>{manifest.title}</h1>
           <p className="walid-lede">{manifest.project}</p>
           <p className="walid-muted">
@@ -157,9 +157,14 @@ export function WalidPresentation({ slug }: { slug: string }) {
           </p>
           <p className="walid-status">{manifest.packageStatus}</p>
         </div>
-        <a className="walid-download-main" href={fileUrl(slug, manifest.zip.path)}>
-          Download complete package (ZIP)
-        </a>
+        <div className="walid-manus-actions">
+          <a className="walid-download-main" href={`/presentations/${slug}/view/index.html`}>
+            Clean presentation
+          </a>
+          <a className="walid-download-main" href={fileUrl(slug, manifest.zip.path)}>
+            Download complete package (ZIP)
+          </a>
+        </div>
       </header>
 
       <nav className="walid-nav" aria-label="Presentation sections">

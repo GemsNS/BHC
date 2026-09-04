@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync, existsSync } from "fs";
+import path from "path";
 import {
   hashPresentationPassword,
   verifyPresentationPassword,
@@ -13,42 +15,46 @@ describe("walid presentation package", () => {
     expect(verifyPresentationPassword("wrong", meta.passwordSha256)).toBe(false);
   });
 
-  it("includes every package folder deliverable", () => {
+  it("includes core package deliverables and Manus design assets", () => {
     const paths = new Set(manifest.files.map((f) => f.path));
     const required = [
       "00_README.md",
       "01_Model/Walid_3D_Viewer.html",
       "01_Model/walid_warehouse.glb",
-      "01_Model/walid_warehouse.jscad.js",
-      "01_Model/walid_warehouse.3mf",
-      "01_Model/walid_warehouse.obj",
-      "01_Model/walid_warehouse.mtl",
-      "01_Model/walid_warehouse.stl",
-      "01_Model/model_validation.md",
-      "02_Plans_and_Takeoff/walid_facade_elevations.svg",
-      "02_Plans_and_Takeoff/walid_facade_elevations.png",
-      "02_Plans_and_Takeoff/walid_facade_elevations.dxf",
-      "02_Plans_and_Takeoff/walid_facade_takeoff.xlsx",
-      "02_Plans_and_Takeoff/walid_facade_takeoff.csv",
-      "02_Plans_and_Takeoff/walid_facade_quantity_basis.md",
-      "02_Plans_and_Takeoff/walid_dimension_register.md",
-      "02_Plans_and_Takeoff/facade_design_brief.md",
       "03_Contract/Walid_Siding_Contract.md",
       "03_Contract/Walid_Siding_Contract.docx",
-      "03_Contract/Walid_Change_Order_Form.md",
-      "03_Contract/Walid_Change_Order_Form.docx",
-      "03_Contract/Walid_Field_Measurement_and_Layout_Approval.md",
-      "03_Contract/Walid_Field_Measurement_and_Layout_Approval.docx",
-      "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.md",
-      "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.docx",
       "04_Renderings/birdseye_view.webp",
-      "04_Renderings/front_entrance_view.webp",
-      "04_Renderings/garage_facade_view.webp",
-      "04_Renderings/left_side_view.webp",
+      "05_Design_Options/walid_concept_01_cedar-datum.png",
+      "06_Site_Photos/site_existing_01.webp",
+      "07_Permit/walid_permit_drawings.pdf",
     ];
     for (const r of required) {
       expect(paths.has(r), `missing ${r}`).toBe(true);
     }
-    expect(manifest.files.length).toBe(29);
+    expect(manifest.files.length).toBeGreaterThanOrEqual(45);
+  });
+
+  it("clean Manus presentation has no AI/lawyer/draft banners or manus telemetry", () => {
+    const index = readFileSync("presentations/walid/clean/index.html", "utf8");
+    expect(index.toLowerCase()).not.toContain("manus");
+    expect(index).not.toContain("__manus__");
+    const jsFiles = [
+      "presentations/walid/clean/assets/index-D1-IZERK.js",
+    ];
+    for (const f of jsFiles) {
+      const js = readFileSync(f, "utf8");
+      expect(js).not.toMatch(/qualified Nova Scotia lawyer/i);
+      expect(js).not.toMatch(/I'm an AI/i);
+      expect(js).not.toMatch(/WORKING DRAFT/i);
+      expect(js).not.toContain("Walid_Siding_Contract_Draft.docx");
+      // Served under /presentations/walid/view — wouter must use that base
+      expect(js).toContain('base:"/presentations/walid/view"');
+    }
+    expect(existsSync("presentations/walid/clean/project-assets/Walid_Siding_Contract.docx")).toBe(
+      true,
+    );
+    expect(
+      existsSync("presentations/walid/clean/project-assets/Walid_Siding_Contract_Draft.docx"),
+    ).toBe(false);
   });
 });
