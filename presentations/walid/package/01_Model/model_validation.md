@@ -26,11 +26,11 @@
 
 ## Known Model Limitations
 
-The current model is an exterior coordination/concept model. Openings are represented as applied glazed/door assemblies on the shell rather than as fully boolean-cut interior openings. Terrain is a stepped visual approximation based on the site photographs, not a survey surface. Cladding ribs, wood board lines, sconces, and framing are simplified for reliable browser rendering and quantity-zone communication.
+The current model is an exterior coordination model. Openings are represented as applied glazed/door assemblies on the shell rather than as fully boolean-cut interior openings. Terrain is a stepped visual approximation based on the site photographs, not a survey surface. Cladding ribs, wood board lines, sconces, and framing are simplified for reliable browser rendering and quantity-zone communication.
 
 ## Final Terrain Adjustment Check
 
-After changing the grade interpolation to reach the lower slab datum at the garage façade, the rebuilt model was inspected again in the browser. The entrance side remains at upper-floor grade, the side terrain steps down progressively, and the garage-door thresholds are visible rather than buried. The garage preset clearly shows all three sectional doors, the outer man door, two upper horizontal windows, the charcoal gable field, the cedar header band, and the conceptual wall lights.
+After changing the grade interpolation to reach the lower slab datum at the garage façade, the rebuilt model was inspected again in the browser. The entrance side remains at upper-floor grade, the side terrain steps down progressively, and the garage-door thresholds are visible rather than buried. The garage preset clearly shows all three sectional doors, the outer man door, two upper horizontal windows, the charcoal gable field, the cedar header band, and the wall light markers.
 
 ## Final Elevation-Preset Checks
 

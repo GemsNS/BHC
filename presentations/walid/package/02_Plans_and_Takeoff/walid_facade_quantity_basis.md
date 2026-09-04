@@ -2,7 +2,7 @@
 
 **Prepared for:** BH Contracting Ltd.  
 **Project:** 9 Alicia Scott Ave., Mount Uniacke, Nova Scotia  
-**Status:** Concept/modeling estimate; field verification required
+**Status:** Preliminary quantity estimate; field verification required
 
 The exposed-wall takeoff is based on the permit-set overall dimensions, scheduled opening sizes, and an approximate linear grade transition from upper-floor grade at the principal entrance to lower-slab grade at the garage façade. It is intended to test scope and pricing logic, not to order materials.
 

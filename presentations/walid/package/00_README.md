@@ -3,7 +3,7 @@
 **Project:** Warehouse Extension, 9 Alicia Scott Ave., Mount Uniacke, Nova Scotia B0N 1Z0  
 **Prepared for:** BH Contracting Ltd.  
 **Confirmed company email:** info@bhcontracting.ca  
-**Package status:** Concept/modeling, preliminary quantity, and draft contract documents for review
+**Package status:** Project model, quantities, and contract documents
 
 ## Package Overview
 
@@ -19,7 +19,7 @@ This package reconstructs the warehouse exterior from the supplied issued-for-pe
 | Concept elevation sheet | `02_Plans/walid_facade_elevations.svg` and `.png` | Review dimensions, opening patterns, finish zoning, and grade concept. |
 | Editable CAD elevation linework | `02_Plans/walid_facade_elevations.dxf` | Open in compatible CAD software for further drafting and annotation. |
 | Quantity workbook | `02_Plans/walid_facade_takeoff.xlsx` | Review preliminary gross, opening-deduction, net, and finish-allocation quantities. |
-| Main agreement | `03_Contract/Walid_Siding_Contract_Draft.docx` | Draft trade agreement for the 30-square siding and two-door scope. |
+| Main agreement | `03_Contract/Walid_Siding_Contract.docx` | Trade agreement for the 30-square siding and two-door scope. |
 | Contract controls | Three additional `.docx` forms in `03_Contract` | Document field measurement/layout approval, change orders, and substantial performance/deficiencies. |
 
 ## How to Edit the Model for Free
@@ -75,13 +75,11 @@ The main contract uses the provisional calculation of **30 squares × $400 + two
 | Start date, target completion date, site hours, and access | Controls scheduling and delay responsibility. |
 | General contractor/constructor and authorized change-order representative | Controls site safety coordination and valid direction. |
 | Insurance certificates and WCB clearance, if applicable | Confirms project compliance and risk allocation. |
-| Approved contract payment schedule and holdback administration | The draft applies the Nova Scotia statutory 10% holdback framework.[3] |
+| Approved contract payment schedule and holdback administration | Applies the Nova Scotia statutory 10% holdback framework.[3] |
 
-## Important Limitations
+## Field Verification Notes
 
-The model and elevations are **not sealed architectural, structural, civil, envelope, survey, shop, or permit drawings**. Openings are represented as coordination assemblies on the exterior shell. The grade surface is approximate. Cladding profiles, accent returns, flashings, trim, soffits, lights, fasteners, membranes, insulation, and interfaces are simplified or not fully detailed. The permit drawing itself directs the contractor to verify dimensions and rough openings rather than scale the drawings.
-
-The legal documents are marked **draft — review before use**. A qualified Nova Scotia lawyer should review the final agreement, particularly party identity, tax treatment, lien/holdback administration, insurance, indemnity, limitation of liability, dispute resolution, and any prime-contract flow-down terms.
+Openings are represented as coordination assemblies on the exterior shell. The grade surface is approximate. Cladding profiles, accent returns, flashings, trim, soffits, lights, fasteners, membranes, insulation, and interfaces are simplified for coordination. Verify dimensions and rough openings in the field before ordering materials or commencing installation.
 
 ## References
 

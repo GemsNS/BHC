@@ -18,7 +18,7 @@ Customer enters password **`walid`** on the lock screen. Session cookie lasts 14
 | Overview | Full `00_README.md` (unchanged) |
 | 3D Model | Interactive viewer + all model files (`.glb`, `.obj`, `.stl`, `.3mf`, `.jscad.js`, validation notes) |
 | Plans & Takeoff | Elevations (PNG/SVG/DXF), takeoff XLSX/CSV, design brief, dimension register, quantity basis |
-| Contract | All four draft contracts as Markdown **and** DOCX |
+| Contract | All four contract documents as Markdown **and** DOCX |
 | Renderings | All four WEBP views |
 | Downloads | Every package file + complete ZIP |
 
@@ -76,5 +76,4 @@ Do **not** store the plaintext password in the repo.
 ## Notes
 
 - Link is **not** linked from the public marketing site — share the URL directly with the customer.
-- Legal docs remain marked draft in the source package; this presentation does not alter them.
 - Files require a valid unlock cookie; direct file URLs return `401` until unlocked.

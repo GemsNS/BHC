@@ -3,7 +3,7 @@
 **Prepared for:** BH Contracting Ltd.  
 **Project:** Warehouse Extension, 9 Alicia Scott Ave., Mount Uniacke, Nova Scotia  
 **Design basis:** Issued-for-permit geometry, supplied construction photographs, and two user-provided façade reference boards  
-**Status:** Concept/modeling brief for review; not a permit revision or sealed construction document
+**Status:** Façade design brief for project review
 
 ## Design Intent
 

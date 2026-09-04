@@ -1,6 +1,5 @@
-# Draft Field Measurement and Façade Layout Approval
+# Field Measurement and Façade Layout Approval
 
-**DRAFT — REVIEW BEFORE USE**  
 **Project:** Warehouse Extension, 9 Alicia Scott Ave., Mount Uniacke, Nova Scotia  
 **Contractor:** BH Contracting Ltd.  
 **Customer:** SOI Trade Inc., attention Walid Sallam

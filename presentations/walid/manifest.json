@@ -1,23 +1,23 @@
 {
-  "title": "BH Contracting Ltd. — Walid Warehouse Project Package",
+  "title": "BH Contracting Ltd. \u2014 Walid Warehouse Project Package",
   "project": "Warehouse Extension, 9 Alicia Scott Ave., Mount Uniacke, Nova Scotia B0N 1Z0",
   "preparedFor": "BH Contracting Ltd.",
   "email": "info@bhcontracting.ca",
-  "packageStatus": "Concept/modeling, preliminary quantity, and draft contract documents for review",
+  "packageStatus": "Project model, quantities, and contract documents",
   "files": [
     {
       "path": "00_README.md",
-      "size": 7900,
+      "size": 7395,
       "ext": ".md"
     },
     {
       "path": "01_Model/Walid_3D_Viewer.html",
-      "size": 162675,
+      "size": 162677,
       "ext": ".html"
     },
     {
       "path": "01_Model/model_validation.md",
-      "size": 2807,
+      "size": 2795,
       "ext": ".md"
     },
     {
@@ -52,7 +52,7 @@
     },
     {
       "path": "02_Plans_and_Takeoff/facade_design_brief.md",
-      "size": 5836,
+      "size": 5787,
       "ext": ".md"
     },
     {
@@ -67,17 +67,17 @@
     },
     {
       "path": "02_Plans_and_Takeoff/walid_facade_elevations.png",
-      "size": 155866,
+      "size": 145996,
       "ext": ".png"
     },
     {
       "path": "02_Plans_and_Takeoff/walid_facade_elevations.svg",
-      "size": 17918,
+      "size": 17888,
       "ext": ".svg"
     },
     {
       "path": "02_Plans_and_Takeoff/walid_facade_quantity_basis.md",
-      "size": 2024,
+      "size": 2028,
       "ext": ".md"
     },
     {
@@ -92,42 +92,42 @@
     },
     {
       "path": "03_Contract/Walid_Change_Order_Form.docx",
-      "size": 11282,
+      "size": 37843,
       "ext": ".docx"
     },
     {
       "path": "03_Contract/Walid_Change_Order_Form.md",
-      "size": 2771,
+      "size": 2731,
       "ext": ".md"
     },
     {
       "path": "03_Contract/Walid_Field_Measurement_and_Layout_Approval.docx",
-      "size": 12467,
+      "size": 38838,
       "ext": ".docx"
     },
     {
       "path": "03_Contract/Walid_Field_Measurement_and_Layout_Approval.md",
-      "size": 5754,
+      "size": 5714,
       "ext": ".md"
     },
     {
-      "path": "03_Contract/Walid_Siding_Contract_Draft.docx",
-      "size": 20888,
+      "path": "03_Contract/Walid_Siding_Contract.docx",
+      "size": 45477,
       "ext": ".docx"
     },
     {
-      "path": "03_Contract/Walid_Siding_Contract_Draft.md",
-      "size": 23590,
+      "path": "03_Contract/Walid_Siding_Contract.md",
+      "size": 23375,
       "ext": ".md"
     },
     {
       "path": "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.docx",
-      "size": 11924,
+      "size": 38349,
       "ext": ".docx"
     },
     {
       "path": "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.md",
-      "size": 3615,
+      "size": 3575,
       "ext": ".md"
     },
     {
@@ -153,7 +153,7 @@
   ],
   "zip": {
     "path": "BH_Contracting_Walid_Complete_Package.zip",
-    "size": 1758223,
+    "size": 1847445,
     "ext": ".zip"
   },
   "sections": [
@@ -190,7 +190,7 @@
       "title": "Contract Documents",
       "dir": "03_Contract",
       "md": [
-        "03_Contract/Walid_Siding_Contract_Draft.md",
+        "03_Contract/Walid_Siding_Contract.md",
         "03_Contract/Walid_Field_Measurement_and_Layout_Approval.md",
         "03_Contract/Walid_Change_Order_Form.md",
         "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.md"

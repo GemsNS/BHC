@@ -258,9 +258,9 @@ export function WalidPresentation({ slug }: { slug: string }) {
 
       <footer className="walid-footer">
         <p>
-          All documents are presented unchanged from{" "}
-          <strong>BH_Contracting_Walid_Complete_Package</strong>. Draft legal documents require
-          review before use.
+          Documents and files from{" "}
+          <strong>BH_Contracting_Walid_Complete_Package</strong> for the Mount Uniacke warehouse
+          extension.
         </p>
       </footer>
     </div>

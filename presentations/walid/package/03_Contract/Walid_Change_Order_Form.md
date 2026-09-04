@@ -1,6 +1,5 @@
-# Draft Change Order
+# Change Order
 
-**DRAFT — REVIEW BEFORE USE**  
 **Project:** Warehouse Extension, 9 Alicia Scott Ave., Mount Uniacke, Nova Scotia  
 **Contract:** Exterior Siding, Façade Accents, and Door Installation  
 **Contractor:** BH Contracting Ltd.  

@@ -1,11 +1,8 @@
-# Draft Construction Subcontract / Trade Agreement
+# Construction Subcontract / Trade Agreement
 
 ## Exterior Siding, Façade Accents, and Door Installation
 
-**DRAFT — REVIEW BEFORE SIGNATURE OR USE**  
 **Project:** Warehouse Extension, 9 Alicia Scott Ave., Mount Uniacke, Nova Scotia B0N 1Z0
-
-> I’m an AI, not a lawyer — this is a working draft, not formal legal advice; have a qualified Nova Scotia lawyer review it before relying on or signing it.
 
 This agreement is made as of **________________, 2026** between the following parties.
 
