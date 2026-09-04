@@ -5,9 +5,7 @@
 **Design basis:** Issued-for-permit geometry, supplied construction photographs, and two user-provided façade reference boards  
 **Status:** Façade design brief for project review
 
-**Geometry lock:** Permit dimensions, door/window openings, and ground slope are fixed. Design options are **siding application** alternatives only (orientation / zoning of charcoal vertical vs cedar horizontal) on the same building plate — not a new plan, massing, or opening layout.
-
-**Application concepts shipped with the package:** Cedar Datum (baseline mixed bands), Full Battens (all vertical charcoal), Split Storey (wood lower / charcoal upper), Framed Bays (wood picture-frames at openings).
+**Geometry lock:** Permit dimensions, door/window openings, and ground slope are fixed. The design options below are cladding finish / pattern alternatives only — not a new building plan.
 
 ## Design Intent
 
