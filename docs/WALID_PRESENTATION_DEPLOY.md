@@ -46,4 +46,6 @@ presentations/walid/
   BH_Contracting_Walid_Complete_Package.zip
 ```
 
+The **Contract** tab shows clause breakdowns plus an **embedded full agreement** (`Walid_Siding_Contract.embed.html`) under those collapsibles.
+
 Share only the password-protected URL with the customer — not linked from the public marketing site.
