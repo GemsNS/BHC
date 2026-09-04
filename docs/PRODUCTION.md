@@ -65,7 +65,7 @@ Paste customer lists or dictation in `/admin/assistant`. The AI uses:
 
 ## Browser demos
 
-Static GitHub Pages uses `localStorage` key `bhc-crm-store-v9`. Clear site data or bump storage key after production schema changes.
+Static GitHub Pages uses `localStorage` key `bhc-crm-store-v10`. Clear site data or bump storage key after production schema changes.
 
 ## Legacy demo seed
 

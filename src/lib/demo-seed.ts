@@ -1,6 +1,7 @@
 import type { AppData, EmployeeRole, JobType, WorkflowDefinition } from "./types";
 import { buildKnockerSeed } from "./knocker/seed-data";
 import { normalizeAddressKey } from "./knocker/geo";
+import { UNIACKE_SITE_TRAVEL, travelCost } from "./fuel-travel";
 
 export function buildDemoSeedData(): AppData {
   const now = new Date();
@@ -842,6 +843,7 @@ export function buildDemoSeedData(): AppData {
   const fuelLogs = [
     {
       id: "fuel-1",
+      kind: "fill" as const,
       vehicleId: "veh-1",
       employeeId: "emp-driver-1",
       gallons: 28.4,
@@ -853,6 +855,7 @@ export function buildDemoSeedData(): AppData {
     },
     {
       id: "fuel-2",
+      kind: "fill" as const,
       vehicleId: "veh-2",
       employeeId: "emp-field-2",
       gallons: 14.2,
@@ -861,6 +864,22 @@ export function buildDemoSeedData(): AppData {
       station: "City Pump",
       filledAt: iso(0, 7),
       notes: "Crew van fill",
+    },
+    {
+      id: "fuel-travel-uniacke",
+      kind: "travel" as const,
+      vehicleId: "veh-1",
+      employeeId: "emp-driver-1",
+      gallons: 0,
+      cost: travelCost(UNIACKE_SITE_TRAVEL.distanceKm),
+      odometer: 48250,
+      station: "Travel / mileage",
+      filledAt: iso(0, 9),
+      notes: UNIACKE_SITE_TRAVEL.notes,
+      fromAddress: UNIACKE_SITE_TRAVEL.fromAddress,
+      toAddress: UNIACKE_SITE_TRAVEL.toAddress,
+      distanceKm: UNIACKE_SITE_TRAVEL.distanceKm,
+      ratePerKm: UNIACKE_SITE_TRAVEL.ratePerKm,
     },
   ];
 

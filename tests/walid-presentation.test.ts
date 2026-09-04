@@ -25,6 +25,9 @@ describe("walid presentation package", () => {
       "03_Contract/Walid_Siding_Contract.docx",
       "04_Renderings/birdseye_view.webp",
       "05_Design_Options/walid_concept_01_cedar-datum.png",
+      "05_Design_Options/walid_concept_02_full-battens.png",
+      "05_Design_Options/walid_concept_03_split-storey.png",
+      "05_Design_Options/walid_concept_04_framed-bays.png",
       "06_Site_Photos/site_existing_02.webp",
       "06_Site_Photos/site_corner_man_door_sidewall.png",
       "07_Permit/walid_permit_drawings.pdf",
@@ -33,7 +36,22 @@ describe("walid presentation package", () => {
       expect(paths.has(r), `missing ${r}`).toBe(true);
     }
     expect(paths.has("06_Site_Photos/site_existing_01.webp")).toBe(false);
+    expect(paths.has("05_Design_Options/walid_concept_02_foundry-bronze.png")).toBe(false);
     expect(manifest.files.length).toBeGreaterThanOrEqual(45);
+  });
+
+  it("prices Dartmouth↔Mount Uniacke fuel/travel into the siding contract", () => {
+    const contract = readFileSync(
+      "presentations/walid/package/03_Contract/Walid_Siding_Contract.md",
+      "utf8",
+    );
+    expect(contract).toContain("9A Regency Drive, Dartmouth");
+    expect(contract).toContain("Mount Uniacke");
+    expect(contract).toContain("$50.26");
+    expect(contract).toContain("$0.72");
+    expect(contract).toContain("69.8 km");
+    expect(contract).toContain("$13,050.26");
+    expect(contract).not.toMatch(/\*\*\$13,000\.00\*\*/);
   });
 
   it("clean Manus presentation has no AI/lawyer/draft banners or manus telemetry", () => {
@@ -49,12 +67,18 @@ describe("walid presentation package", () => {
       expect(js).not.toMatch(/I'm an AI/i);
       expect(js).not.toMatch(/WORKING DRAFT/i);
       expect(js).not.toContain("Walid_Siding_Contract_Draft.docx");
-      // Served under /presentations/walid/view — wouter must use that base
       expect(js).toContain('base:"/presentations/walid/view"');
-      // Hero uses honest concept-model render, not the deceptive architectural collage
       expect(js).toContain('hero:"./project-assets/front_entrance_view.webp"');
       expect(js).toContain("CONCEPT MODEL RENDER / NOT A SITE PHOTO");
       expect(js).not.toContain("site_existing_01.webp");
+      expect(js).toContain("Full Battens");
+      expect(js).toContain("Split Storey");
+      expect(js).toContain("Framed Bays");
+      expect(js).toContain("walid_concept_02_full-battens.png");
+      expect(js).not.toContain("foundry-bronze");
+      expect(js).toContain("contract-full-embed");
+      expect(js).toContain("Walid_Siding_Contract.embed.html");
+      expect(js).toContain("$13,050.26");
     }
     expect(existsSync("presentations/walid/clean/project-assets/Walid_Siding_Contract.docx")).toBe(
       true,

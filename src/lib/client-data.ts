@@ -7,8 +7,9 @@ import { sessionHeaders } from "./session-headers";
 import type { AppData } from "./types";
 
 /** Bump when seed credentials/schema must replace stale browser demos */
-const STORAGE_KEY = "bhc-crm-store-v9";
+const STORAGE_KEY = "bhc-crm-store-v10";
 const LEGACY_STORAGE_KEYS = [
+  "bhc-crm-store-v9",
   "bhc-crm-store-v8",
   "bhc-crm-store-v7",
   "bhc-crm-store-v6",
