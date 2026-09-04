@@ -25,6 +25,9 @@ describe("walid presentation package", () => {
       "03_Contract/Walid_Siding_Contract.docx",
       "04_Renderings/birdseye_view.webp",
       "05_Design_Options/walid_concept_01_cedar-datum.png",
+      "05_Design_Options/walid_concept_02_full-battens.png",
+      "05_Design_Options/walid_concept_03_split-storey.png",
+      "05_Design_Options/walid_concept_04_framed-bays.png",
       "06_Site_Photos/site_existing_02.webp",
       "06_Site_Photos/site_corner_man_door_sidewall.png",
       "07_Permit/walid_permit_drawings.pdf",
@@ -33,6 +36,7 @@ describe("walid presentation package", () => {
       expect(paths.has(r), `missing ${r}`).toBe(true);
     }
     expect(paths.has("06_Site_Photos/site_existing_01.webp")).toBe(false);
+    expect(paths.has("05_Design_Options/walid_concept_02_foundry-bronze.png")).toBe(false);
     expect(manifest.files.length).toBeGreaterThanOrEqual(45);
   });
 
@@ -49,12 +53,15 @@ describe("walid presentation package", () => {
       expect(js).not.toMatch(/I'm an AI/i);
       expect(js).not.toMatch(/WORKING DRAFT/i);
       expect(js).not.toContain("Walid_Siding_Contract_Draft.docx");
-      // Served under /presentations/walid/view — wouter must use that base
       expect(js).toContain('base:"/presentations/walid/view"');
-      // Hero uses honest concept-model render, not the deceptive architectural collage
       expect(js).toContain('hero:"./project-assets/front_entrance_view.webp"');
       expect(js).toContain("CONCEPT MODEL RENDER / NOT A SITE PHOTO");
       expect(js).not.toContain("site_existing_01.webp");
+      expect(js).toContain("Full Battens");
+      expect(js).toContain("Split Storey");
+      expect(js).toContain("Framed Bays");
+      expect(js).toContain("walid_concept_02_full-battens.png");
+      expect(js).not.toContain("foundry-bronze");
     }
     expect(existsSync("presentations/walid/clean/project-assets/Walid_Siding_Contract.docx")).toBe(
       true,

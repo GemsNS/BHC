@@ -12,27 +12,27 @@
     },
     {
       "path": "01_Model/Walid_3D_Viewer.html",
-      "size": 292733,
+      "size": 326341,
       "ext": ".html"
     },
     {
       "path": "01_Model/model_validation.md",
-      "size": 1997,
+      "size": 2256,
       "ext": ".md"
     },
     {
       "path": "01_Model/walid_warehouse.3mf",
-      "size": 90776,
+      "size": 101423,
       "ext": ".3mf"
     },
     {
       "path": "01_Model/walid_warehouse.glb",
-      "size": 214316,
+      "size": 239520,
       "ext": ".glb"
     },
     {
       "path": "01_Model/walid_warehouse.jscad.js",
-      "size": 15303,
+      "size": 15371,
       "ext": ".js"
     },
     {
@@ -42,17 +42,17 @@
     },
     {
       "path": "01_Model/walid_warehouse.obj",
-      "size": 570091,
+      "size": 630368,
       "ext": ".obj"
     },
     {
       "path": "01_Model/walid_warehouse.stl",
-      "size": 280884,
+      "size": 321084,
       "ext": ".stl"
     },
     {
       "path": "02_Plans_and_Takeoff/facade_design_brief.md",
-      "size": 5828,
+      "size": 2423,
       "ext": ".md"
     },
     {
@@ -82,7 +82,7 @@
     },
     {
       "path": "02_Plans_and_Takeoff/walid_facade_takeoff.csv",
-      "size": 458,
+      "size": 453,
       "ext": ".csv"
     },
     {
@@ -182,22 +182,22 @@
     },
     {
       "path": "05_Design_Options/walid_concept_01_cedar-datum.png",
-      "size": 149160,
+      "size": 2227277,
       "ext": ".png"
     },
     {
-      "path": "05_Design_Options/walid_concept_02_foundry-bronze.png",
-      "size": 148253,
+      "path": "05_Design_Options/walid_concept_02_full-battens.png",
+      "size": 1986008,
       "ext": ".png"
     },
     {
-      "path": "05_Design_Options/walid_concept_03_coastal-zinc.png",
-      "size": 153255,
+      "path": "05_Design_Options/walid_concept_03_split-storey.png",
+      "size": 2569638,
       "ext": ".png"
     },
     {
-      "path": "05_Design_Options/walid_concept_04_night-cedar.png",
-      "size": 149868,
+      "path": "05_Design_Options/walid_concept_04_framed-bays.png",
+      "size": 2319745,
       "ext": ".png"
     },
     {
@@ -253,7 +253,7 @@
   ],
   "zip": {
     "path": "BH_Contracting_Walid_Complete_Package.zip",
-    "size": 36997816,
+    "size": 44933190,
     "ext": ".zip"
   },
   "sections": [
@@ -313,11 +313,10 @@
       "dir": "05_Design_Options",
       "images": [
         "05_Design_Options/walid_concept_01_cedar-datum.png",
-        "05_Design_Options/walid_concept_02_foundry-bronze.png",
-        "05_Design_Options/walid_concept_03_coastal-zinc.png",
-        "05_Design_Options/walid_concept_04_night-cedar.png",
-        "05_Design_Options/client_reference_board.png",
-        "05_Design_Options/walid_hero_architectural.jpg"
+        "05_Design_Options/walid_concept_02_full-battens.png",
+        "05_Design_Options/walid_concept_03_split-storey.png",
+        "05_Design_Options/walid_concept_04_framed-bays.png",
+        "05_Design_Options/client_reference_board.png"
       ]
     },
     {

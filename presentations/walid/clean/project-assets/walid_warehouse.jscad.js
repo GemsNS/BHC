@@ -21,9 +21,9 @@ const PALETTE = {
 const mm = (value) => value / 1000
 
 const getParameterDefinitions = () => [
-  { name: 'showSite', type: 'checkbox', checked: true, caption: 'Show sloping driveway / grade (no stairs)' },
-  { name: 'showAccent', type: 'checkbox', checked: true, caption: 'Show cedar-tone accent cladding' },
-  { name: 'showProfile', type: 'checkbox', checked: true, caption: 'Show simplified siding ribs/boards' },
+  { name: 'showSite', type: 'checkbox', checked: true, caption: 'Show sloping driveway (clears door/windows)' },
+  { name: 'showAccent', type: 'checkbox', checked: true, caption: 'Show horizontal wood-look accent cladding' },
+  { name: 'showProfile', type: 'checkbox', checked: true, caption: 'Show vertical board-and-batten ribs' },
   { name: 'showLights', type: 'checkbox', checked: true, caption: 'Show conceptual exterior lights' },
   { name: 'gableWidth', type: 'float', initial: 15.42, min: 10, max: 25, step: 0.01, caption: 'Front/back gable width (m)' },
   { name: 'sideDepth', type: 'float', initial: 12.38, min: 8, max: 25, step: 0.01, caption: 'Side-wall depth (m)' },
@@ -124,40 +124,42 @@ const sectionalDoorY = (x, y, z, width, height) => {
   return parts
 }
 
-const profileRibsFrontBack = (width, y, z0, z1, spacing = 0.46) => {
+const profileRibsFrontBack = (width, y, z0, z1, spacing = 0.38) => {
+  // Charcoal field = vertical board-and-batten (protruding battens).
   const parts = []
   const count = Math.floor(width / spacing)
   for (let i = 1; i < count; i += 1) {
     const x = i * width / count
-    parts.push(box([0.026, 0.026, z1 - z0], [x, y, (z0 + z1) / 2], PALETTE.charcoalDark))
+    parts.push(box([0.04, 0.032, z1 - z0], [x, y, (z0 + z1) / 2], PALETTE.charcoalDark))
   }
   return parts
 }
 
-const profileRibsSides = (depth, x, z0, z1, spacing = 0.46) => {
+const profileRibsSides = (depth, x, z0, z1, spacing = 0.38) => {
   const parts = []
   const count = Math.floor(depth / spacing)
   for (let i = 1; i < count; i += 1) {
     const y = i * depth / count
-    parts.push(box([0.026, 0.026, z1 - z0], [x, y, (z0 + z1) / 2], PALETTE.charcoalDark))
+    parts.push(box([0.032, 0.04, z1 - z0], [x, y, (z0 + z1) / 2], PALETTE.charcoalDark))
   }
   return parts
 }
 
-const horizontalBoardsY = (x, y, z0, width, height, spacing = 0.24) => {
+const horizontalBoardsY = (x, y, z0, width, height, spacing = 0.18) => {
+  // Wood-look accent = horizontal grain / rainscreen boards.
   const parts = []
   const count = Math.floor(height / spacing)
   for (let i = 1; i < count; i += 1) {
-    parts.push(box([width, 0.026, 0.018], [x, y, z0 + i * height / count], PALETTE.cedarDark))
+    parts.push(box([width, 0.03, 0.022], [x, y, z0 + i * height / count], PALETTE.cedarDark))
   }
   return parts
 }
 
-const horizontalBoardsX = (x, y, z0, width, height, spacing = 0.24) => {
+const horizontalBoardsX = (x, y, z0, width, height, spacing = 0.18) => {
   const parts = []
   const count = Math.floor(height / spacing)
   for (let i = 1; i < count; i += 1) {
-    parts.push(box([0.026, width, 0.018], [x, y, z0 + i * height / count], PALETTE.cedarDark))
+    parts.push(box([0.03, width, 0.022], [x, y, z0 + i * height / count], PALETTE.cedarDark))
   }
   return parts
 }
@@ -168,71 +170,62 @@ const wallLightY = (x, y, z, outward = -1) => {
   return [plate, glow]
 }
 
+const gradeAtY = (y, D, upperFloorZ) => {
+  // Piecewise driveway / site grade so openings stay clear:
+  // - high at front entrance
+  // - below basement window sills by mid-side (z≈2.20)
+  // - near slab at man-door / garage end (y≈D-0.70)
+  const t = Math.max(0, Math.min(1, y / D))
+  if (t <= 0.12) return upperFloorZ + 0.10
+  if (t <= 0.38) {
+    // Drop quickly through the mid-side window zone
+    const u = (t - 0.12) / 0.26
+    return upperFloorZ + 0.10 - u * (upperFloorZ + 0.10 - 1.75)
+  }
+  if (t <= 0.72) {
+    const u = (t - 0.38) / 0.34
+    return 1.75 - u * (1.75 - 0.12)
+  }
+  // Garage / man-door landing stays at slab
+  return 0.02
+}
+
 const createTerrain = (W, D, upperFloorZ) => {
-  // Continuous sloping grade + left-side driveway apron.
-  // Site photos show a gravel driveway sloping down the side — not stairs.
+  // Continuous sloping driveway (not stairs). Multi-segment so grade
+  // does not bury the sidewall man-door or basement windows.
   const parts = []
   const apron = 2.4
   const base = -0.55
-  const yFront = -apron
-  const yBack = D + apron
-  const zFront = upperFloorZ + 0.12
-  const zBack = 0.08
-
-  // Main site pad: solid prism with a continuous top slope along Y (front → back).
-  const pad = colorize(
-    PALETTE.terrain,
-    polyhedron({
-      points: [
-        [-apron, yFront, base],
-        [W + apron, yFront, base],
-        [W + apron, yBack, base],
-        [-apron, yBack, base],
-        [-apron, yFront, zFront],
-        [W + apron, yFront, zFront],
-        [W + apron, yBack, zBack],
-        [-apron, yBack, zBack]
-      ],
-      faces: [
-        [0, 1, 2, 3],
-        [4, 7, 6, 5],
-        [0, 4, 5, 1],
-        [1, 5, 6, 2],
-        [2, 6, 7, 3],
-        [3, 7, 4, 0]
-      ],
-      orientation: 'outward'
-    })
-  )
-  parts.push(pad)
-
-  // Explicit left-side driveway strip (sloping gravel run along the sidewall).
+  const samples = 14
+  const y0 = -apron
+  const y1 = D + apron
   const driveW = 3.2
-  const drive = colorize(
-    hexToRgb('#5A5852'),
-    polyhedron({
-      points: [
-        [-apron - 0.15, yFront + 0.4, zFront + 0.02],
-        [-apron - 0.15 + driveW, yFront + 0.4, zFront + 0.02],
-        [-apron - 0.15 + driveW, yBack - 0.2, zBack + 0.02],
-        [-apron - 0.15, yBack - 0.2, zBack + 0.02],
-        [-apron - 0.15, yFront + 0.4, zFront - 0.12],
-        [-apron - 0.15 + driveW, yFront + 0.4, zFront - 0.12],
-        [-apron - 0.15 + driveW, yBack - 0.2, zBack - 0.12],
-        [-apron - 0.15, yBack - 0.2, zBack - 0.12]
-      ],
-      faces: [
-        [0, 1, 2, 3],
-        [4, 7, 6, 5],
-        [0, 4, 5, 1],
-        [1, 5, 6, 2],
-        [2, 6, 7, 3],
-        [3, 7, 4, 0]
-      ],
-      orientation: 'outward'
-    })
-  )
-  parts.push(drive)
+
+  for (let i = 0; i < samples; i += 1) {
+    const ya = y0 + (i / samples) * (y1 - y0)
+    const yb = y0 + ((i + 1) / samples) * (y1 - y0)
+    const yMid = (ya + yb) / 2
+    const top = gradeAtY(yMid, D, upperFloorZ)
+    const thick = Math.max(0.12, top - base)
+    // Main pad under / around building
+    parts.push(
+      box(
+        [W + 2 * apron, yb - ya + 0.01, thick],
+        [W / 2, yMid, base + thick / 2],
+        PALETTE.terrain,
+      ),
+    )
+    // Left driveway strip — same grade profile, darker gravel
+    const driveTop = Math.min(top, gradeAtY(yMid, D, upperFloorZ))
+    const dThick = Math.max(0.1, driveTop - base)
+    parts.push(
+      box(
+        [driveW, yb - ya + 0.01, dThick],
+        [-apron + driveW / 2 - 0.1, yMid, base + dThick / 2],
+        hexToRgb('#5A5852'),
+      ),
+    )
+  }
 
   return parts
 }
