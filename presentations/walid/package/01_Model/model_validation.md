@@ -33,3 +33,8 @@ Source photo: `06_Site_Photos/site_corner_man_door_sidewall.png` (OSB shell — 
 ## Known Model Limitations
 
 The current model is an exterior coordination model. Openings are represented as applied glazed/door assemblies on the shell rather than as fully boolean-cut interior openings. Terrain and driveway are a visual approximation based on site photographs, not a survey surface. Cladding ribs, wood board lines, sconces, and framing are simplified for reliable browser rendering and quantity-zone communication.
+
+
+## Grade revision (Manus fixed)
+
+Driveway grade is offset 0.45 m from the side finish plane with a low landing at the downhill man door so the conceptual grade does not cover the lower side windows or door leaf. Field-verify before construction.

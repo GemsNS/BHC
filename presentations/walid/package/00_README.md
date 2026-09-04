@@ -86,3 +86,8 @@ Openings are represented as coordination assemblies on the exterior shell. The g
 [1]: https://openjscad.xyz/ "JSCAD — browser-based parametric CAD and supported formats"
 [2]: https://github.com/jscad/OpenJSCAD.org/blob/master/packages/cli/README.md "JSCAD command-line interface usage"
 [3]: https://canlii.ca/t/52zbh "Nova Scotia Builders’ Lien Act, RSNS 1989, c 277, section 13"
+
+
+## Façade application systems
+
+Design options in `05_Design_Options/` compare Cedar Datum, Full Battens, Split Storey, and Framed Bays on the locked permit geometry (official elevation pixels).
