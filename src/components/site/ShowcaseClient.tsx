@@ -704,10 +704,10 @@ export function ShowcaseClient() {
             </p>
             <p className="text-slate-300">
               <a
-                href="mailto:info@bhcontracting.co"
+                href="mailto:info@bhcontracting.ca"
                 className="hover:text-[var(--sea-accent)]"
               >
-                info@bhcontracting.co
+                info@bhcontracting.ca
               </a>
             </p>
             <div className="flex gap-4">

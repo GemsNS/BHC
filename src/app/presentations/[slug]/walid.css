@@ -1,0 +1,338 @@
+.walid-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(168, 111, 61, 0.12), transparent 55%),
+    linear-gradient(180deg, #f7f4ef 0%, #ebe7e0 100%);
+  color: #12161b;
+  font-family: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+}
+
+.walid-lock {
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.walid-lock-card {
+  width: min(440px, 100%);
+  background: #fff;
+  border: 1px solid #d5d0c7;
+  padding: 2rem;
+  box-shadow: 0 18px 40px rgba(18, 22, 27, 0.08);
+}
+
+.walid-eyebrow {
+  margin: 0 0 0.5rem;
+  color: #a86f3d;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.walid-lock-card h1,
+.walid-top h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.walid-lede {
+  margin: 0.75rem 0 0;
+  color: #3a424b;
+  line-height: 1.5;
+}
+
+.walid-muted {
+  color: #66707b;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.walid-status {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: #30343b;
+  border-left: 3px solid #30343b;
+  padding-left: 0.75rem;
+}
+
+.walid-lock-form {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+}
+
+.walid-lock-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.walid-lock-form input {
+  border: 1px solid #cfc8bc;
+  padding: 0.7rem 0.8rem;
+  font-size: 1rem;
+}
+
+.walid-lock-form button,
+.walid-download-main {
+  border: 0;
+  background: #30343b;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.walid-lock-form button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.walid-error {
+  color: #9b1c1c;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.walid-fine {
+  margin: 1rem 0 0;
+  font-size: 0.78rem;
+  color: #8a929b;
+}
+
+.walid-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 2rem clamp(1rem, 4vw, 3rem) 1rem;
+  border-bottom: 1px solid #d5d0c7;
+}
+
+.walid-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.85rem clamp(1rem, 4vw, 3rem);
+  border-bottom: 1px solid #d5d0c7;
+  background: rgba(255, 255, 255, 0.55);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.walid-nav button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #3a424b;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.walid-nav button.is-active {
+  background: #fff;
+  border-color: #d5d0c7;
+  color: #12161b;
+}
+
+.walid-main {
+  padding: 1.5rem clamp(1rem, 4vw, 3rem) 3rem;
+  max-width: 1100px;
+}
+
+.walid-main > h2 {
+  margin: 0 0 1.25rem;
+  font-size: 1.55rem;
+  letter-spacing: -0.02em;
+}
+
+.walid-block {
+  background: #fff;
+  border: 1px solid #d5d0c7;
+  padding: 1.25rem 1.35rem;
+  margin-bottom: 1.25rem;
+}
+
+.walid-block h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.walid-viewer {
+  width: 100%;
+  min-height: 620px;
+  border: 1px solid #d5d0c7;
+  background: #e7e5e0;
+}
+
+.walid-gallery {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.walid-gallery figure {
+  margin: 0;
+}
+
+.walid-gallery img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid #d5d0c7;
+  background: #f5f2ed;
+}
+
+.walid-gallery figcaption {
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+}
+
+.walid-filelist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.walid-filelist li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0.35rem;
+  border-bottom: 1px solid #ece7df;
+  font-size: 0.92rem;
+}
+
+.walid-filelist span {
+  color: #66707b;
+  white-space: nowrap;
+}
+
+.walid-footer {
+  padding: 1rem clamp(1rem, 4vw, 3rem) 2.5rem;
+  color: #66707b;
+  font-size: 0.85rem;
+}
+
+.walid-md {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: #1c2228;
+  overflow-x: auto;
+}
+
+.walid-md h1,
+.walid-md h2,
+.walid-md h3,
+.walid-md h4 {
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.walid-md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.88rem;
+}
+
+.walid-md th,
+.walid-md td {
+  border: 1px solid #d5d0c7;
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.walid-md th {
+  background: #f5f2ed;
+}
+
+.walid-md blockquote {
+  margin: 1rem 0;
+  padding: 0.35rem 0 0.35rem 0.9rem;
+  border-left: 3px solid #a86f3d;
+  color: #3a424b;
+}
+
+.walid-md code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86em;
+  background: #f5f2ed;
+  padding: 0.1em 0.3em;
+}
+
+.walid-md a {
+  color: #7a4a22;
+}
+
+.walid-manus-host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.walid-manus-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem clamp(1rem, 3vw, 2rem);
+  border-bottom: 1px solid #d5d0c7;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.walid-manus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.walid-raw-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cfc8bc;
+  background: #fff;
+  color: #12161b;
+  text-decoration: none;
+  font-weight: 650;
+  font-size: 0.88rem;
+  padding: 0.7rem 0.9rem;
+}
+
+.walid-manus-frame {
+  flex: 1;
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  border: 0;
+  background: #ebe7e0;
+}
+
+@media (max-width: 720px) {
+  .walid-viewer {
+    min-height: 420px;
+  }
+  .walid-top {
+    align-items: stretch;
+  }
+  .walid-manus-frame {
+    min-height: calc(100vh - 120px);
+  }
+}
+

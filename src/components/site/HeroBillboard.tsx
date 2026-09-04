@@ -164,7 +164,7 @@ export function HeroBillboard({ motion, waterBand }: Props) {
               textLength="400"
               lengthAdjust="spacing"
             >
-              www.bhcontracting.co
+              www.bhcontracting.ca
             </text>
           </g>
 

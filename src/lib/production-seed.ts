@@ -219,5 +219,6 @@ export function buildProductionSeed(): AppData {
       { id: "audit-seed", action: "production_seed", detail: "HRM production seed", createdAt: now },
     ],
     assistantMemory,
+    contracts: [],
   };
 }

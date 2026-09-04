@@ -34,9 +34,23 @@ describe("mainframe tools", () => {
     expect(result.summary.length).toBeGreaterThan(10);
   });
 
-  it("hunts leads and queues outreach", () => {
+  it("syncs snow contract into CRM", () => {
     const data = buildSeedData();
-    const result = executeMainframeTool(data, "hunt_leads", {}, ctx);
+    const result = executeMainframeTool(data, "sync_contract", { slug: "snow" }, ctx);
+    expect(result.ok).toBe(true);
+    expect(data.contracts.length).toBe(1);
+    expect(data.jobs.length).toBeGreaterThan(0);
+  });
+
+  it("deletes a lead by name", () => {
+    const data = buildSeedData();
+    executeMainframeTool(
+      data,
+      "create_lead",
+      { name: "Delete Me Lead", city: "Halifax" },
+      ctx,
+    );
+    const result = executeMainframeTool(data, "delete_lead", { query: "Delete Me" }, ctx);
     expect(result.ok).toBe(true);
   });
 });

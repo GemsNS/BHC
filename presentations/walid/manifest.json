@@ -1,0 +1,351 @@
+{
+  "title": "BH Contracting Ltd. \u2014 Walid Warehouse Project Package",
+  "project": "Warehouse Extension, 9 Alicia Scott Ave., Mount Uniacke, Nova Scotia B0N 1Z0",
+  "preparedFor": "BH Contracting Ltd.",
+  "email": "info@bhcontracting.ca",
+  "packageStatus": "Project model, quantities, design options, and contract documents",
+  "files": [
+    {
+      "path": "00_README.md",
+      "size": 7395,
+      "ext": ".md"
+    },
+    {
+      "path": "01_Model/Walid_3D_Viewer.html",
+      "size": 292733,
+      "ext": ".html"
+    },
+    {
+      "path": "01_Model/model_validation.md",
+      "size": 1997,
+      "ext": ".md"
+    },
+    {
+      "path": "01_Model/walid_warehouse.3mf",
+      "size": 90776,
+      "ext": ".3mf"
+    },
+    {
+      "path": "01_Model/walid_warehouse.glb",
+      "size": 214316,
+      "ext": ".glb"
+    },
+    {
+      "path": "01_Model/walid_warehouse.jscad.js",
+      "size": 15303,
+      "ext": ".js"
+    },
+    {
+      "path": "01_Model/walid_warehouse.mtl",
+      "size": 1347,
+      "ext": ".mtl"
+    },
+    {
+      "path": "01_Model/walid_warehouse.obj",
+      "size": 570091,
+      "ext": ".obj"
+    },
+    {
+      "path": "01_Model/walid_warehouse.stl",
+      "size": 280884,
+      "ext": ".stl"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/facade_design_brief.md",
+      "size": 5828,
+      "ext": ".md"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_dimension_register.md",
+      "size": 8689,
+      "ext": ".md"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_facade_elevations.dxf",
+      "size": 20238,
+      "ext": ".dxf"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_facade_elevations.png",
+      "size": 145996,
+      "ext": ".png"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_facade_elevations.svg",
+      "size": 17888,
+      "ext": ".svg"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_facade_quantity_basis.md",
+      "size": 2028,
+      "ext": ".md"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_facade_takeoff.csv",
+      "size": 458,
+      "ext": ".csv"
+    },
+    {
+      "path": "02_Plans_and_Takeoff/walid_facade_takeoff.xlsx",
+      "size": 6260,
+      "ext": ".xlsx"
+    },
+    {
+      "path": "03_Contract/Walid_Change_Order_Form.docx",
+      "size": 37843,
+      "ext": ".docx"
+    },
+    {
+      "path": "03_Contract/Walid_Change_Order_Form.md",
+      "size": 2731,
+      "ext": ".md"
+    },
+    {
+      "path": "03_Contract/Walid_Field_Measurement_and_Layout_Approval.docx",
+      "size": 38838,
+      "ext": ".docx"
+    },
+    {
+      "path": "03_Contract/Walid_Field_Measurement_and_Layout_Approval.md",
+      "size": 5714,
+      "ext": ".md"
+    },
+    {
+      "path": "03_Contract/Walid_Siding_Contract.docx",
+      "size": 45477,
+      "ext": ".docx"
+    },
+    {
+      "path": "03_Contract/Walid_Siding_Contract.md",
+      "size": 23375,
+      "ext": ".md"
+    },
+    {
+      "path": "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.docx",
+      "size": 38349,
+      "ext": ".docx"
+    },
+    {
+      "path": "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.md",
+      "size": 3575,
+      "ext": ".md"
+    },
+    {
+      "path": "04_Renderings/birdseye_view.webp",
+      "size": 29238,
+      "ext": ".webp"
+    },
+    {
+      "path": "04_Renderings/front_entrance_view.webp",
+      "size": 302618,
+      "ext": ".webp"
+    },
+    {
+      "path": "04_Renderings/garage_facade_view.webp",
+      "size": 23852,
+      "ext": ".webp"
+    },
+    {
+      "path": "04_Renderings/left_side_view.webp",
+      "size": 22898,
+      "ext": ".webp"
+    },
+    {
+      "path": "05_Design_Options/architectural_grid_texture.jpg",
+      "size": 6087357,
+      "ext": ".jpg"
+    },
+    {
+      "path": "05_Design_Options/bh_folded_profile_mark.png",
+      "size": 4472686,
+      "ext": ".png"
+    },
+    {
+      "path": "05_Design_Options/cedar_rainscreen_profile.jpg",
+      "size": 6159099,
+      "ext": ".jpg"
+    },
+    {
+      "path": "05_Design_Options/charcoal_vertical_profile.jpg",
+      "size": 6559249,
+      "ext": ".jpg"
+    },
+    {
+      "path": "05_Design_Options/client_reference_board.png",
+      "size": 1789785,
+      "ext": ".png"
+    },
+    {
+      "path": "05_Design_Options/original_facade_reference.jpg",
+      "size": 187705,
+      "ext": ".jpg"
+    },
+    {
+      "path": "05_Design_Options/walid_concept_01_cedar-datum.png",
+      "size": 149160,
+      "ext": ".png"
+    },
+    {
+      "path": "05_Design_Options/walid_concept_02_foundry-bronze.png",
+      "size": 148253,
+      "ext": ".png"
+    },
+    {
+      "path": "05_Design_Options/walid_concept_03_coastal-zinc.png",
+      "size": 153255,
+      "ext": ".png"
+    },
+    {
+      "path": "05_Design_Options/walid_concept_04_night-cedar.png",
+      "size": 149868,
+      "ext": ".png"
+    },
+    {
+      "path": "05_Design_Options/walid_hero_architectural.jpg",
+      "size": 5218398,
+      "ext": ".jpg"
+    },
+    {
+      "path": "06_Site_Photos/site_corner_man_door_sidewall.png",
+      "size": 79154,
+      "ext": ".png"
+    },
+    {
+      "path": "06_Site_Photos/site_existing_02.webp",
+      "size": 651558,
+      "ext": ".webp"
+    },
+    {
+      "path": "06_Site_Photos/site_existing_03.webp",
+      "size": 633836,
+      "ext": ".webp"
+    },
+    {
+      "path": "06_Site_Photos/site_existing_04.webp",
+      "size": 591188,
+      "ext": ".webp"
+    },
+    {
+      "path": "07_Permit/permit_sheet_05_floor_plan.png",
+      "size": 644554,
+      "ext": ".png"
+    },
+    {
+      "path": "07_Permit/permit_sheet_07_back_elevation.png",
+      "size": 242865,
+      "ext": ".png"
+    },
+    {
+      "path": "07_Permit/permit_sheet_08_front_elevation.png",
+      "size": 236829,
+      "ext": ".png"
+    },
+    {
+      "path": "07_Permit/permit_sheet_11_section.png",
+      "size": 725562,
+      "ext": ".png"
+    },
+    {
+      "path": "07_Permit/walid_permit_drawings.pdf",
+      "size": 2927278,
+      "ext": ".pdf"
+    }
+  ],
+  "zip": {
+    "path": "BH_Contracting_Walid_Complete_Package.zip",
+    "size": 36997816,
+    "ext": ".zip"
+  },
+  "sections": [
+    {
+      "id": "overview",
+      "title": "Package Overview",
+      "md": "00_README.md"
+    },
+    {
+      "id": "model",
+      "title": "3D Model",
+      "dir": "01_Model",
+      "md": [
+        "01_Model/model_validation.md"
+      ],
+      "viewer": "01_Model/Walid_3D_Viewer.html"
+    },
+    {
+      "id": "plans",
+      "title": "Plans & Takeoff",
+      "dir": "02_Plans_and_Takeoff",
+      "md": [
+        "02_Plans_and_Takeoff/facade_design_brief.md",
+        "02_Plans_and_Takeoff/walid_dimension_register.md",
+        "02_Plans_and_Takeoff/walid_facade_quantity_basis.md"
+      ],
+      "images": [
+        "02_Plans_and_Takeoff/walid_facade_elevations.png",
+        "02_Plans_and_Takeoff/walid_facade_elevations.svg"
+      ]
+    },
+    {
+      "id": "contract",
+      "title": "Contract Documents",
+      "dir": "03_Contract",
+      "md": [
+        "03_Contract/Walid_Siding_Contract.md",
+        "03_Contract/Walid_Field_Measurement_and_Layout_Approval.md",
+        "03_Contract/Walid_Change_Order_Form.md",
+        "03_Contract/Walid_Substantial_Performance_and_Deficiency_Form.md"
+      ]
+    },
+    {
+      "id": "renderings",
+      "title": "Renderings",
+      "dir": "04_Renderings",
+      "images": [
+        "04_Renderings/birdseye_view.webp",
+        "04_Renderings/front_entrance_view.webp",
+        "04_Renderings/garage_facade_view.webp",
+        "04_Renderings/left_side_view.webp"
+      ]
+    },
+    {
+      "id": "design",
+      "title": "Design Options",
+      "dir": "05_Design_Options",
+      "images": [
+        "05_Design_Options/walid_concept_01_cedar-datum.png",
+        "05_Design_Options/walid_concept_02_foundry-bronze.png",
+        "05_Design_Options/walid_concept_03_coastal-zinc.png",
+        "05_Design_Options/walid_concept_04_night-cedar.png",
+        "05_Design_Options/client_reference_board.png",
+        "05_Design_Options/walid_hero_architectural.jpg"
+      ]
+    },
+    {
+      "id": "site",
+      "title": "Site Photos",
+      "dir": "06_Site_Photos",
+      "images": [
+        "06_Site_Photos/site_existing_02.webp",
+        "06_Site_Photos/site_existing_03.webp",
+        "06_Site_Photos/site_existing_04.webp",
+        "06_Site_Photos/site_corner_man_door_sidewall.png"
+      ]
+    },
+    {
+      "id": "permit",
+      "title": "Permit Drawings",
+      "dir": "07_Permit",
+      "images": [
+        "07_Permit/permit_sheet_05_floor_plan.png",
+        "07_Permit/permit_sheet_07_back_elevation.png",
+        "07_Permit/permit_sheet_08_front_elevation.png",
+        "07_Permit/permit_sheet_11_section.png"
+      ]
+    },
+    {
+      "id": "downloads",
+      "title": "Complete File Downloads",
+      "dir": null
+    }
+  ]
+}

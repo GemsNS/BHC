@@ -11,6 +11,8 @@ import {
   type ToolContext,
 } from "./mainframe-tools";
 import { automationsDue } from "./mainframe-automations";
+import { composeAgentSystemPrompt, type MainframeAgentId } from "./mainframe-agents";
+import { getAiBudgetLimits } from "./ai-budget";
 import type { AppData } from "./types";
 
 export type ChatMessage = AIChatMessage;
@@ -20,15 +22,15 @@ export type ChatTurnResult = {
   source: "ai" | "mainframe";
   toolRuns: Array<{ tool: string; summary: string; ok: boolean }>;
   automationsDue?: string[];
+  agentId?: string;
 };
 
 const SYSTEM_PROMPT = `You are BHC MAINFRAME — admin AI for BH Contracting LTD. (Halifax Regional Municipality, Nova Scotia).
-You execute real CRM actions via tools: leads, jobs, invoices, employees, workflows, outreach (always pending approval), lead hunting, and daily automations.
-You LEARN: use remember_knowledge to store facts from chat, imports, and lookup_hrm. Use search_knowledge before answering repeat operational questions.
-You POPULATE: when the user pastes customer lists, job info, or company data, use import_data or create_lead/create_job/create_employee.
-Default geography is HRM (Halifax, Dartmouth, Bedford, Sackville, Cole Harbour). Use lookup_hrm for weather and geocoding.
-Be concise, command-center tone. Confirm what you did.
-Outreach is NEVER sent automatically — only queued for admin approval.`;
+You have FULL CRM access via tools: read, create, update, and delete leads, jobs, invoices, deals, tickets, companies, employees, activities, outreach, memory, and contracts.
+Contracts live on disk at /contracts/<slug> (e.g. /contracts/snow). Use register_contract and sync_contract to link them to jobs/leads in the CRM.
+When users paste customer lists or contract job info, use import_data or sync_contract.
+Use remember_knowledge / search_knowledge for operational facts. lookup_hrm for weather/geocoding.
+Be concise, command-center tone. Confirm destructive deletes. Outreach drafts are never auto-sent — approve then mark sent via update_outreach.`;
 
 async function buildContextPrompt(data: AppData): Promise<string> {
   const profile = data.assistantProfiles.find((p) => p.enabled) ?? {};
@@ -58,30 +60,60 @@ export function buildMainframeTools(): AIToolDefinition[] {
 }
 
 function toolDescription(name: MainframeToolName): string {
-  const map: Record<MainframeToolName, string> = {
+  const map: Partial<Record<MainframeToolName, string>> = {
     get_summary: "CRM ops summary — open leads, jobs, outreach pending, automations",
     list_leads: "List/filter leads by status or city",
     create_lead: "Create a new lead (default city Halifax, NS)",
     update_lead: "Update lead fields (name, phone, address, city, notes, status)",
     update_lead_status: "Change lead status by name or id",
+    delete_lead: "Delete a lead by id or name",
     list_jobs: "List jobs by title, customer, or id query",
     create_job: "Create a job (optionally linked to a lead)",
+    update_job: "Update job fields (status, value, crew, dates, notes)",
+    delete_job: "Delete a job by id or title",
+    list_invoices: "List invoices",
     create_invoice: "Generate draft invoice or full report for a job",
+    update_invoice: "Update invoice status or notes",
+    delete_invoice: "Delete an invoice",
+    list_deals: "List deals in pipeline",
+    create_deal: "Create a sales deal",
+    update_deal: "Update deal stage, amount, or notes",
+    delete_deal: "Delete a deal",
+    list_tickets: "List service tickets",
+    create_ticket: "Create a support ticket",
+    update_ticket: "Update ticket status, priority, or assignee",
+    delete_ticket: "Delete a ticket",
+    list_companies: "List companies",
+    update_company: "Update company record",
+    delete_company: "Delete a company",
+    list_employees: "List staff accounts",
+    create_employee: "Add staff account (default PIN 0000 until password set)",
+    update_employee: "Update employee role, contact, or active status",
+    list_activities: "List CRM activities/tasks",
+    create_task: "Create CRM task/activity",
+    complete_activity: "Mark activity/task complete",
+    delete_activity: "Delete an activity",
+    list_outreach: "List outreach queue items",
+    approve_outreach: "Approve outreach drafts (never sends email)",
+    update_outreach: "Update outreach status (e.g. sent, cancelled)",
+    delete_outreach: "Remove outreach draft",
+    list_workflows: "List automation workflows",
+    list_contracts: "List registered contracts and public URLs",
+    register_contract: "Register a contract slug and metadata",
+    sync_contract: "Sync contract from contracts/<slug>/meta.json into CRM job/lead",
     run_workflow: "Run a workflow by id on an optional lead",
     process_sequences: "Process due sequence steps",
-    approve_outreach: "Approve outreach drafts (never sends email)",
     find_prospects: "Find prospects for a specific lead",
     hunt_leads: "Hunt leads using criteria profile + queue outreach",
     save_criteria_profile: "Save lead hunt criteria (regions, keywords, job types)",
-    create_task: "Create CRM task/activity",
     run_daily_automations: "Run due daily automations",
     remember_knowledge: "Save a fact for future turns (self-learning memory)",
     search_knowledge: "Search saved assistant memory",
+    delete_memory: "Delete an assistant memory entry",
     import_data: "Bulk import leads, jobs, companies, or memory from records array",
-    create_employee: "Add staff account with login and PIN",
     lookup_hrm: "HRM public data: weather (Open-Meteo), geocode address (Nominatim), or summary",
   };
-  return map[name];
+  return map[name] ?? `${name.replace(/_/g, " ")} — CRM operation`;
 }
 
 function toolParameters(name: MainframeToolName): Record<string, unknown> {
@@ -284,7 +316,14 @@ function toolParameters(name: MainframeToolName): Record<string, unknown> {
         },
       };
     default:
-      return { type: "object", properties: {} };
+      return {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          query: { type: "string" },
+          slug: { type: "string" },
+        },
+      };
   }
 }
 
@@ -365,6 +404,11 @@ function parseLocalIntent(text: string): Array<{ tool: MainframeToolName; args: 
     }
   }
 
+  if (/sync contract|import contract/i.test(t)) {
+    const m = t.match(/(?:sync contract|import contract)\s+(\w[\w-]*)/i);
+    runs.push({ tool: "sync_contract", args: { slug: m?.[1] ?? "snow" } });
+  }
+
   if (/qualify\s+(.+)/i.test(t)) {
     const m = t.match(/qualify\s+(.+)/i);
     runs.push({ tool: "update_lead_status", args: { lead: m?.[1], status: "qualified" } });
@@ -390,6 +434,7 @@ export async function runMainframeTurn(
   data: AppData,
   messages: ChatMessage[],
   ctx: ToolContext,
+  options?: { agentId?: MainframeAgentId | string },
 ): Promise<ChatTurnResult> {
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   if (!lastUser) {
@@ -397,17 +442,23 @@ export async function runMainframeTurn(
   }
 
   if (/^(help|commands|\?)/i.test(lastUser.content.trim())) {
-    return { reply: helpText(), source: "mainframe", toolRuns: [] };
+    return { reply: helpText(), source: "mainframe", toolRuns: [], agentId: options?.agentId };
   }
 
   const due = automationsDue(data).map((a) => a.name);
   const contextPrompt = await buildContextPrompt(data);
+  const limits = getAiBudgetLimits();
+  const clipped = messages.slice(-limits.maxHistoryMessages).map((m) => ({
+    ...m,
+    content: m.content.slice(0, limits.maxMessageChars),
+  }));
 
   const ai = await runAIAgentLoop({
-    systemPrompt: SYSTEM_PROMPT,
+    systemPrompt: composeAgentSystemPrompt(SYSTEM_PROMPT, options?.agentId),
     contextPrompt,
-    messages,
+    messages: clipped,
     tools: buildMainframeTools(),
+    maxSteps: limits.maxSteps,
     executeTool: async (name, args) => {
       if (name === "lookup_hrm") {
         const result = await toolLookupHrmAsync(args);
@@ -424,6 +475,7 @@ export async function runMainframeTurn(
       source: "ai",
       toolRuns: ai.toolRuns,
       automationsDue: due.length ? due : undefined,
+      agentId: options?.agentId,
     };
   }
 
@@ -432,10 +484,11 @@ export async function runMainframeTurn(
 
   if (!intents.length) {
     return {
-      reply: `MAINFRAME LOCAL MODE — I parse direct commands (no API key). Set GEMINI_API_KEY or OPENAI_API_KEY in .env for full NLU.\n\n${helpText()}`,
+      reply: `MAINFRAME LOCAL MODE — limited command parser. Configure ANTHROPIC_API_KEY (Claude) or GEMINI_API_KEY on the server for full natural-language CRM control.\n\n${helpText()}`,
       source: "mainframe",
       toolRuns: [],
       automationsDue: due.length ? due : undefined,
+      agentId: options?.agentId,
     };
   }
 
