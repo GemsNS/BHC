@@ -20,7 +20,7 @@ import type { AdSource, AppData } from "./types";
  */
 
 export function discoveryConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY?.trim() || process.env.CLAUDE_API_KEY?.trim()) && process.env.DISCOVERY_ENABLED !== "0";
+  return Boolean(process.env.ANTHROPIC_API_KEY?.trim() || process.env.ANTHROPIC_AUTH_TOKEN?.trim() || process.env.CLAUDE_API_KEY?.trim()) && process.env.DISCOVERY_ENABLED !== "0";
 }
 
 const DEFAULT_QUERIES = [
@@ -58,7 +58,7 @@ export async function discoverLeadsOnline(
   data: AppData,
   ctx: { newId: () => string; nowIso: () => string; fetcher?: typeof fetch },
 ): Promise<{ summary: string; created: number; qualified: number; errors: string[] }> {
-  const key = process.env.ANTHROPIC_API_KEY?.trim() || process.env.CLAUDE_API_KEY?.trim();
+  const key = process.env.ANTHROPIC_API_KEY?.trim() || process.env.ANTHROPIC_AUTH_TOKEN?.trim() || process.env.CLAUDE_API_KEY?.trim();
   if (!key) return { summary: "Lead discovery: ANTHROPIC_API_KEY not set.", created: 0, qualified: 0, errors: [] };
   const fetcher = ctx.fetcher ?? fetch;
   const region = process.env.DISCOVERY_REGION?.trim() || "Halifax Regional Municipality, Nova Scotia";

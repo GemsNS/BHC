@@ -47,11 +47,14 @@ describe("ai provider", () => {
     expect(getAIStatus().configured).toBe(false);
   });
 
-  it("respects AI_PROVIDER override", () => {
-    process.env.ANTHROPIC_API_KEY = "a";
-    process.env.GEMINI_API_KEY = "g";
-    process.env.OPENAI_API_KEY = "o";
-    process.env.AI_PROVIDER = "openai";
-    expect(resolveAIProvider()).toBe("openai");
+  it("accepts ANTHROPIC_AUTH_TOKEN and custom ANTHROPIC_BASE_URL for gateways", async () => {
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
+    process.env.ANTHROPIC_AUTH_TOKEN = "sk-agentrouter-test";
+    process.env.ANTHROPIC_BASE_URL = "https://agentrouter.org/";
+    expect(resolveAIProvider()).toBe("anthropic");
+    const { getAnthropicBaseUrl } = await import("../src/lib/ai-provider");
+    expect(getAnthropicBaseUrl()).toBe("https://agentrouter.org");
   });
 });

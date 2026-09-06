@@ -49,7 +49,27 @@ function getGeminiApiKey(): string | undefined {
 }
 
 function getAnthropicApiKey(): string | undefined {
-  return trimKey(process.env.ANTHROPIC_API_KEY) ?? trimKey(process.env.CLAUDE_API_KEY);
+  return (
+    trimKey(process.env.ANTHROPIC_API_KEY) ??
+    trimKey(process.env.ANTHROPIC_AUTH_TOKEN) ??
+    trimKey(process.env.CLAUDE_API_KEY)
+  );
+}
+
+/** Anthropic Messages API root. Override for gateways like AgentRouter. */
+export function getAnthropicBaseUrl(): string {
+  const raw =
+    trimKey(process.env.ANTHROPIC_BASE_URL) ??
+    trimKey(process.env.ANTHROPIC_API_BASE) ??
+    "https://api.anthropic.com";
+  return raw.replace(/\/$/, "");
+}
+
+function anthropicMessagesUrl(): string {
+  const base = getAnthropicBaseUrl();
+  // Accept either https://host or https://host/v1
+  if (/\/v1$/i.test(base)) return `${base}/messages`;
+  return `${base}/v1/messages`;
 }
 
 export function resolveAIProvider(): AIProviderId {
@@ -198,11 +218,12 @@ async function anthropicGenerateText(input: {
   if (!key) return null;
   const model = input.model ?? getAnthropicModel();
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch(anthropicMessagesUrl(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": key,
+        Authorization: `Bearer ${key}`,
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
@@ -270,11 +291,12 @@ async function anthropicAgentLoop(input: {
 
   for (let step = 0; step < (input.maxSteps ?? 5); step++) {
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch(anthropicMessagesUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-api-key": key,
+          Authorization: `Bearer ${key}`,
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
