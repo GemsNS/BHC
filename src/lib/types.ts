@@ -258,6 +258,17 @@ export interface InvoiceDoc {
   aiSummary: string | null;
   createdAt: string;
   createdById: string;
+  /** Human number, e.g. INV-2026-0012 */
+  number?: string;
+  /** Public pay/view token → /pay/<token> */
+  token?: string;
+  dueAt?: string | null;
+  sentAt?: string | null;
+  paidAt?: string | null;
+  paidAmount?: number;
+  /** Hosted checkout URL once created (Stripe) */
+  payUrl?: string | null;
+  remindersSent?: number;
 }
 export interface Employee {
   id: string;
@@ -297,6 +308,9 @@ export interface Lead {
   leadScore: number;
   createdAt: string;
   updatedAt: string;
+  /** Referral tracking: who sent them, and their own code once they become a customer */
+  referredByCode?: string | null;
+  referralCode?: string | null;
 }
 
 export interface Company {
@@ -453,6 +467,136 @@ export interface OutreachQueueItem {
   /** Set when this item is an automatic follow-up to an earlier outreach */
   followUpOf?: string | null;
   repliedAt?: string | null;
+  /** What kind of touch this is (defaults to ad_reply / prospect) */
+  kind?: OutreachKind;
+  jobId?: string | null;
+  invoiceId?: string | null;
+  quoteId?: string | null;
+}
+
+export type OutreachKind =
+  | "prospect"
+  | "ad_reply"
+  | "follow_up"
+  | "review"
+  | "referral"
+  | "payment_reminder"
+  | "quote"
+  | "document"
+  | "custom";
+
+/* ------------------------------------------------------------------ */
+/* Quotes, documents, payments, messages (job hub)                      */
+/* ------------------------------------------------------------------ */
+
+export type QuoteStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
+
+export interface QuoteLine {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  kind: "material" | "labour" | "service" | "other";
+}
+
+export interface Quote {
+  id: string;
+  /** Human number, e.g. Q-2026-0007 */
+  number: string;
+  jobId: string | null;
+  leadId: string | null;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  address: string;
+  title: string;
+  /** Scope of work paragraph(s) */
+  scope: string;
+  lines: QuoteLine[];
+  /** 0.15 = NS HST */
+  taxRate: number;
+  discount: number;
+  depositPercent: number;
+  validUntil: string | null;
+  status: QuoteStatus;
+  /** Public signing token → /q/<token> */
+  token: string;
+  sentAt: string | null;
+  viewedAt: string | null;
+  signedAt: string | null;
+  signerName: string | null;
+  signerEmail: string | null;
+  signatureDataUrl: string | null;
+  declinedReason: string | null;
+  notes: string;
+  terms: string;
+  pdfUrl: string | null;
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DocumentKind = "quote" | "contract" | "invoice" | "job_report" | "receipt";
+
+export interface JobDocument {
+  id: string;
+  kind: DocumentKind;
+  title: string;
+  number: string;
+  jobId: string | null;
+  leadId: string | null;
+  quoteId: string | null;
+  invoiceId: string | null;
+  /** /api/media/<file>.pdf */
+  fileUrl: string;
+  bytes: number;
+  sentAt: string | null;
+  sentTo: string | null;
+  sentVia: string | null;
+  createdById: string;
+  createdAt: string;
+}
+
+export type PaymentMethod = "stripe" | "etransfer" | "cash" | "cheque" | "other";
+
+export interface Payment {
+  id: string;
+  invoiceId: string | null;
+  jobId: string | null;
+  amount: number;
+  currency: string;
+  method: PaymentMethod;
+  provider: string | null;
+  providerId: string | null;
+  status: "pending" | "succeeded" | "failed" | "refunded";
+  receivedAt: string;
+  note: string;
+  createdAt: string;
+}
+
+export type MessageChannel = "sms" | "email" | "voice";
+
+export interface Message {
+  id: string;
+  channel: MessageChannel;
+  direction: "in" | "out";
+  from: string;
+  to: string;
+  subject: string;
+  body: string;
+  leadId: string | null;
+  jobId: string | null;
+  adId: string | null;
+  provider: string | null;
+  providerId: string | null;
+  status: "received" | "queued" | "sent" | "failed";
+  readAt: string | null;
+  /** Voice: recording + transcription */
+  recordingUrl: string | null;
+  transcription: string | null;
+  durationSec: number | null;
+  createdAt: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -579,7 +723,13 @@ export type AutomationActionName =
   | "daily_digest"
   | "ad_ingest"
   | "outreach_send"
-  | "outreach_followup";
+  | "outreach_followup"
+  | "media_offload"
+  | "review_requests"
+  | "referral_asks"
+  | "payment_reminders"
+  | "lead_discovery"
+  | "job_reports";
 
 /** One execution of the automation engine (scheduler tick, API, CLI, UI) */
 export interface AutomationTickRecord {
@@ -635,6 +785,12 @@ export interface Job {
   contractValue: number;
   notes: string;
   createdAt: string;
+  /** Customer portal magic link → /portal/<token> */
+  portalToken?: string | null;
+  quoteId?: string | null;
+  /** Human number, e.g. JOB-2026-0012 */
+  number?: string;
+  completedAt?: string | null;
 }
 
 export interface Vehicle {
@@ -1043,6 +1199,11 @@ export interface AppData {
   adListings: AdListing[];
   /** Do-not-contact list enforced before every send */
   optOuts: OptOutRecord[];
+  /** Job hub: quotes, generated PDFs, payments, two-way messages */
+  quotes: Quote[];
+  documents: JobDocument[];
+  payments: Payment[];
+  messages: Message[];
 }
 
 export const ROLE_LABELS: Record<EmployeeRole, string> = {

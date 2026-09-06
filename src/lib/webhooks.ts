@@ -1,3 +1,4 @@
+import { live } from "./events";
 import type { AppData, WebhookDelivery, WebhookEndpoint, WebhookEventName, WebhookFormat } from "./types";
 
 function toHex(buffer: ArrayBuffer): string {
@@ -278,6 +279,11 @@ export async function deliverPendingWebhooks(
     if (outcome.ok) result.sent += 1;
     else if (delivery.attempts >= WEBHOOK_MAX_ATTEMPTS) result.abandoned += 1;
     else result.failed += 1;
+    live.webhook(
+      `${delivery.event} → ${endpoint.name}`,
+      outcome.ok ? `delivered (attempt ${delivery.attempts})` : `${outcome.error} · attempt ${delivery.attempts}${delivery.nextRetryAt ? " · will retry" : " · abandoned"}`,
+      outcome.ok ? "out" : "warn",
+    );
   }
   return result;
 }

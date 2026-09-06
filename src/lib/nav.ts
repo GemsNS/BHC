@@ -21,6 +21,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
     label: "Overview",
     items: [
       { href: "/admin/dashboard", label: "Command deck", short: "Deck", perm: "dashboard" },
+      { href: "/admin/live", label: "Live wire", short: "Live", perm: "dashboard" },
       { href: "/admin/assistant", label: "Mainframe", short: "AI", perm: "dashboard" },
       { href: "/admin/books", label: "Books & P&L", short: "Books", perm: "stats" },
       { href: "/admin/markets", label: "Markets", short: "Mkt", perm: "stats" },
@@ -38,6 +39,7 @@ export const ADMIN_NAV_SECTIONS: NavSection[] = [
         short: "Sales",
         perm: "leads",
       },
+      { href: "/admin/inbox", label: "Inbox", short: "Inbox", perm: "crm" },
       { href: "/admin/ads", label: "Job ads & outreach", short: "Ads", perm: "outreach" },
       { href: "/admin/canvass", label: "Canvassing", short: "Doors", perm: "canvass" },
       { href: "/admin/knocker", label: "Active Knocker", short: "Knock", perm: "zones" },

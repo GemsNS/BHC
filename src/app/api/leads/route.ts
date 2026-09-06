@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { onLeadCreated, onLeadStatusChanged } from "@/lib/workflows";
 import { dispatchWebhooks } from "@/lib/webhooks";
+import { live } from "@/lib/events";
 import { newId, nowIso, readStore, updateStoreAsync } from "@/lib/store";
 import type { Lead } from "@/lib/types";
 
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
   await updateStoreAsync(async (data) => {
     data.leads.unshift(lead);
     onLeadCreated(data, lead);
+    live.lead(`Lead created: ${lead.name}`, `${lead.source} · ${lead.jobType} · ${lead.city}`, { leadId: lead.id });
     await dispatchWebhooks(
       data,
       "lead.created",
@@ -88,6 +90,7 @@ export async function PATCH(request: Request) {
     lead.updatedAt = nowIso();
     updated = lead;
     onLeadStatusChanged(data, lead);
+    live.lead(`${lead.name}: ${previous} → ${status}`, undefined, { leadId: lead.id });
     await dispatchWebhooks(
       data,
       "lead.status_changed",

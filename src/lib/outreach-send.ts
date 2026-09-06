@@ -1,4 +1,5 @@
 import { draftFollowUpLocal } from "./ad-classify";
+import { live } from "./events";
 import { enqueueNotification } from "./notifications";
 import { toE164 } from "./sms";
 import { queueWebhook } from "./webhooks";
@@ -166,6 +167,26 @@ export async function processOutreachQueue(
       item.error = null;
       budget -= 1;
       result.sent += 1;
+      data.messages.unshift({
+        id: ctx.newId(),
+        channel: item.channel,
+        direction: "out",
+        from: "",
+        to: destination,
+        subject: item.channel === "email" ? item.subject : "",
+        body: item.message,
+        leadId: item.leadId,
+        jobId: item.jobId ?? null,
+        adId: item.adId ?? null,
+        provider: outcome.provider ?? null,
+        providerId: outcome.id ?? null,
+        status: "sent",
+        readAt: ctx.nowIso(),
+        recordingUrl: null,
+        transcription: null,
+        durationSec: null,
+        createdAt: ctx.nowIso(),
+      });
       logActivity(data, item, ctx, `[Outreach sent via ${outcome.provider ?? item.channel}] ${item.message}`);
       if (item.adId) {
         const ad = data.adListings.find((a) => a.id === item.adId);
@@ -185,10 +206,17 @@ export async function processOutreachQueue(
         ctx.newId,
         ctx.nowIso,
       );
+      live.outreach(
+        `${item.channel.toUpperCase()} sent to ${item.prospectName || destination}`,
+        `${item.kind ?? "reply"} · via ${outcome.provider ?? item.channel}${item.channel === "email" ? ` · ${item.subject.slice(0, 60)}` : ""}`,
+        { leadId: item.leadId ?? undefined, adId: item.adId ?? undefined, jobId: item.jobId ?? undefined },
+        "success",
+      );
     } else {
       item.status = "failed";
       item.error = outcome.error ?? "send failed";
       result.failed += 1;
+      live.error("outreach", `${item.channel.toUpperCase()} to ${destination} failed`, item.error);
     }
   }
 
@@ -365,6 +393,7 @@ export function handleInboundReply(data: AppData, reply: InboundReply, ctx: Ctx)
   if (isStop) {
     recordOptOut(data, { channel: reply.channel, address: reply.from, reason: body.slice(0, 120) || "STOP", source: reply.channel === "sms" ? "sms_inbound" : "email_inbound" }, ctx);
     outcome.optedOut = true;
+    live.reply(`${lead?.name ?? key} opted out (${reply.channel})`, body.slice(0, 80), { leadId: lead?.id });
     if (item?.adId) {
       const ad = data.adListings.find((a) => a.id === item.adId);
       if (ad && ad.status !== "won") ad.status = "lost";
@@ -376,9 +405,13 @@ export function handleInboundReply(data: AppData, reply: InboundReply, ctx: Ctx)
     return outcome;
   }
 
-  if (!outcome.matched) return outcome;
+  if (!outcome.matched) {
+    live.message(`Unmatched inbound ${reply.channel} from ${key}`, body.slice(0, 80), undefined, "warn");
+    return outcome;
+  }
 
   const stamp = ctx.nowIso();
+  live.reply(`${lead?.name ?? key} replied by ${reply.channel}`, body.slice(0, 100), { leadId: lead?.id, adId: item?.adId ?? undefined });
   if (item) {
     item.repliedAt = stamp;
     if (item.adId) markAdReplied(data, item.adId, ctx);

@@ -113,8 +113,8 @@ cmd({
     console.log(c.bold("\nBHC Console — commands"));
     const groups: Array<[string, string[]]> = [
       ["Overview", ["status", "health", "env", "digest"]],
-      ["Sales", ["leads", "lead", "jobs", "job", "invoices", "invoice", "tickets", "team"]],
-      ["Job ads & outreach", ["ads", "ad", "outreach", "optouts"]],
+      ["Sales", ["leads", "lead", "jobs", "job", "quote", "invoices", "invoice", "pay", "docs", "tickets", "team"]],
+      ["Conversations", ["inbox", "ads", "ad", "outreach", "optouts"]],
       ["Automation", ["auto", "hooks", "backup", "backups", "restore"]],
       ["AI", ["ai"]],
       ["Console", ["help", "clear", "exit"]],
@@ -823,6 +823,186 @@ cmd({
 });
 
 cmd({
+  name: "inbox",
+  aliases: ["messages"],
+  usage: "inbox | inbox <thread-key> | inbox send <sms|email> <to> <text…> | inbox draft <thread-key>",
+  help: "Two-way messages: threads, read a conversation, send, or have Claude draft the next reply",
+  run: async ([sub, ...rest], raw) => {
+    const { buildThreads, threadMessages, draftThreadReply, recordMessage, markThreadRead } = await import("../src/lib/messaging");
+    if (sub === "send") {
+      const [channel, to, ...words] = rest;
+      const text = words.join(" ");
+      if ((channel !== "sms" && channel !== "email") || !to || !text) return fail("usage: inbox send <sms|email> <to> <text…>");
+      const senders = serverSenders();
+      const sender = channel === "sms" ? senders.sms : senders.email;
+      if (!sender) return fail(`no ${channel} sender configured`);
+      let summary = "";
+      await updateStoreAsync(async (d) => {
+        const r = channel === "sms" ? await senders.sms!({ to, body: text }) : await senders.email!({ to, subject: "Message from BH Contracting", text });
+        recordMessage(d, { channel, direction: "out", from: "", to, subject: channel === "email" ? "Message from BH Contracting" : "", body: text, leadId: null, jobId: null, adId: null, provider: r.provider ?? null, providerId: r.id ?? null, status: r.ok ? "sent" : "failed", recordingUrl: null, transcription: null, durationSec: null }, { newId, nowIso });
+        summary = r.ok ? `sent via ${r.provider}` : `failed: ${r.error}`;
+      });
+      return ok(summary);
+    }
+    if (sub === "draft") {
+      const key = rest[0];
+      if (!key) return fail("usage: inbox draft <thread-key>");
+      const d = await readStore();
+      const r = await draftThreadReply(d, key, { instruction: rest.slice(1).join(" ") || undefined });
+      console.log(c.magenta(`[${r.by}]`) + "\n" + r.text + "\n");
+      return;
+    }
+    if (sub) {
+      let msgs: Awaited<ReturnType<typeof threadMessages>> = [];
+      await updateStore((d) => {
+        msgs = threadMessages(d, sub);
+        markThreadRead(d, sub, { newId, nowIso });
+      });
+      if (!msgs.length) return fail(`no thread "${sub}" — keys look like sms:+19025550142 or email:jane@example.com`);
+      for (const m of msgs) console.log(`  ${pad(when(m.createdAt), 16)} ${m.direction === "out" ? c.cyan("BHC →") : c.green("← them")} ${m.channel}${m.subject ? ` · ${m.subject}` : ""}\n    ${(m.transcription ?? m.body).replace(/\n/g, "\n    ")}`);
+      return;
+    }
+    void raw;
+    const d = await readStore();
+    const threads = buildThreads(d, 40);
+    if (!threads.length) return ok("inbox empty");
+    table([["thread key", "name", "unread", "last", "preview"]].concat(threads.map((t) => [t.key, t.name, t.unread ? String(t.unread) : "", when(t.lastAt), t.lastBody.slice(0, 50)])), [34, 22, 6, 16, 50]);
+  },
+});
+
+cmd({
+  name: "quote",
+  aliases: ["quotes"],
+  usage: "quote | quote <id> | quote new <job-id|lead-id> | quote send <id> | quote pdf <id>",
+  help: "Quotes: list, view, create for a job/lead, send for e-signature, generate PDF",
+  run: async ([sub, arg]) => {
+    const { createQuote, quoteTotals, quotePublicUrl } = await import("../src/lib/quotes");
+    const base = (process.env.APP_BASE_URL ?? "https://bhcontracting.ca").replace(/\/$/, "");
+    if (sub === "new") {
+      if (!arg) return fail("usage: quote new <job-id|lead-id>");
+      let number = "";
+      await updateStore((d) => {
+        const job = findById(d.jobs, arg);
+        const lead = job ? undefined : findLead(d, arg);
+        if (!job && !lead) return;
+        const q = createQuote(d, { jobId: job?.id ?? null, leadId: lead?.id ?? null, createdById: "emp-admin" }, { newId, nowIso });
+        number = q.number;
+      });
+      return number ? ok(`${number} created — edit lines in /admin/jobs/<id> (Quote tab), then: quote send <id>`) : fail("job or lead not found");
+    }
+    if (sub === "send" || sub === "pdf") {
+      if (!arg) return fail(`usage: quote ${sub} <id>`);
+      const { generateDocument } = await import("../src/lib/documents");
+      const { deliverDocument } = await import("../src/lib/deliver");
+      let summary = "";
+      await updateStoreAsync(async (d) => {
+        const q = findById(d.quotes, arg) ?? d.quotes.find((x) => x.number === arg);
+        if (!q) return;
+        const doc = await generateDocument(d, { kind: "quote", quoteId: q.id }, { newId, nowIso, createdById: "emp-admin" });
+        if (sub === "pdf") {
+          summary = `PDF: ${doc.fileUrl}`;
+          return;
+        }
+        const r = await deliverDocument(d, doc, { newId, nowIso });
+        summary = r.email === "sent" || r.sms === "sent" ? `sent (${r.email}/${r.sms}) · ${quotePublicUrl(q, base)}` : `not sent: ${r.errors.join("; ")}`;
+      });
+      return summary ? ok(summary) : fail("quote not found");
+    }
+    const d = await readStore();
+    if (sub) {
+      const q = findById(d.quotes, sub) ?? d.quotes.find((x) => x.number === sub);
+      if (!q) return fail("quote not found");
+      const t = quoteTotals(q);
+      console.log(c.bold(`\n${q.number} — ${q.title}`) + c.dim(`  ${q.id}`));
+      console.log(`  ${q.status} · ${q.customerName} · ${q.address} · valid until ${when(q.validUntil)}`);
+      for (const l of q.lines) console.log(`   ${pad(l.description, 44)} ${pad(`${l.quantity} ${l.unit}`, 10)} ${money(l.unitPrice).padStart(10)} ${money(l.quantity * l.unitPrice).padStart(11)}`);
+      console.log(`  subtotal ${money(t.subtotal)} · HST ${money(t.tax)} · total ${money(t.total)} · deposit ${money(t.deposit)}`);
+      console.log(`  customer link: ${quotePublicUrl(q, base)}${q.signedAt ? ` · signed by ${q.signerName} ${when(q.signedAt)}` : ""}\n`);
+      return;
+    }
+    if (!d.quotes.length) return warn("no quotes yet — quote new <job-id|lead-id>");
+    table([["id", "number", "status", "customer", "title", "total", "sent"]].concat(d.quotes.slice(0, 40).map((q) => [q.id.slice(0, 8), q.number, q.status, q.customerName, q.title, money(quoteTotals(q).total), when(q.sentAt)])), [8, 12, 9, 22, 30, 11, 16]);
+  },
+});
+
+cmd({
+  name: "docs",
+  aliases: ["documents"],
+  usage: "docs [job-id] | docs make <contract|invoice|receipt|job_report> <job-id|invoice-id> | docs send <doc-id>",
+  help: "Generated PDFs (quotes, contracts, invoices, receipts, job reports) and sending them to the customer",
+  run: async ([sub, a, b]) => {
+    if (sub === "make") {
+      const { generateDocument } = await import("../src/lib/documents");
+      const { deliverDocument, autosendKinds } = await import("../src/lib/deliver");
+      if (!a || !b) return fail("usage: docs make <contract|invoice|receipt|job_report> <job-id|invoice-id>");
+      let summary = "";
+      await updateStoreAsync(async (d) => {
+        const kind = a as "contract" | "invoice" | "receipt" | "job_report";
+        const input = kind === "invoice" || kind === "receipt" ? { kind, invoiceId: findById(d.invoices, b)?.id ?? b } : { kind, jobId: findById(d.jobs, b)?.id ?? b };
+        const doc = await generateDocument(d, input as Parameters<typeof generateDocument>[1], { newId, nowIso, createdById: "emp-admin" });
+        summary = `${doc.title} → ${doc.fileUrl}`;
+        if (autosendKinds().has(kind)) {
+          const r = await deliverDocument(d, doc, { newId, nowIso });
+          summary += ` · ${r.email}/${r.sms}`;
+        }
+      });
+      return ok(summary);
+    }
+    if (sub === "send") {
+      const { deliverDocument } = await import("../src/lib/deliver");
+      let summary = "";
+      await updateStoreAsync(async (d) => {
+        const doc = findById(d.documents, a ?? "");
+        if (!doc) return;
+        const r = await deliverDocument(d, doc, { newId, nowIso });
+        summary = `${doc.title}: email ${r.email} · sms ${r.sms}${r.errors.length ? ` · ${r.errors.join("; ")}` : ""}`;
+      });
+      return summary ? ok(summary) : fail("document not found");
+    }
+    const d = await readStore();
+    const rows = d.documents.filter((x) => !sub || x.jobId?.startsWith(sub)).slice(0, 40);
+    if (!rows.length) return warn("no documents");
+    table([["id", "kind", "number", "title", "sent"]].concat(rows.map((x) => [x.id.slice(0, 8), x.kind, x.number, x.title, x.sentAt ? `${when(x.sentAt)} ${x.sentVia}` : "—"])), [8, 11, 14, 46, 22]);
+  },
+});
+
+cmd({
+  name: "pay",
+  aliases: ["payments"],
+  usage: "pay | pay record <invoice-id> <amount> [etransfer|cash|cheque] [note] | pay link <invoice-id>",
+  help: "Payments: open balances, record a manual payment, get the customer pay link",
+  run: async ([sub, a, b, c2, ...rest]) => {
+    const { applyPayment, invoiceBalance, ensureInvoiceToken, invoicePayUrl } = await import("../src/lib/payments");
+    if (sub === "record") {
+      const amount = Number(b);
+      if (!a || !Number.isFinite(amount) || amount <= 0) return fail("usage: pay record <invoice-id> <amount> [method] [note]");
+      let summary = "";
+      await updateStore((d) => {
+        const inv = findById(d.invoices, a) ?? d.invoices.find((i) => i.number === a);
+        if (!inv) return;
+        const r = applyPayment(d, { invoiceId: inv.id, amount, method: (c2 as "etransfer") || "etransfer", note: rest.join(" "), provider: "manual" }, { newId, nowIso });
+        summary = `${money(r.payment.amount)} recorded on ${inv.number ?? inv.id.slice(0, 8)}${r.paidInFull ? " — PAID IN FULL" : ` — balance ${money(invoiceBalance(d, inv))}`}`;
+      });
+      return summary ? ok(summary) : fail("invoice not found");
+    }
+    if (sub === "link") {
+      let url = "";
+      await updateStore((d) => {
+        const inv = findById(d.invoices, a ?? "") ?? d.invoices.find((i) => i.number === a);
+        if (!inv) return;
+        ensureInvoiceToken(inv, newId);
+        url = invoicePayUrl(inv);
+      });
+      return url ? ok(url) : fail("invoice not found");
+    }
+    const d = await readStore();
+    const open = d.invoices.filter((i) => i.kind === "invoice" && i.status === "sent");
+    if (!open.length) return ok("no open invoices");
+    table([["id", "number", "customer", "balance", "due", "reminders"]].concat(open.map((i) => [i.id.slice(0, 8), i.number ?? "", i.customerName, money(invoiceBalance(d, i)), when(i.dueAt), String(i.remindersSent ?? 0)])), [8, 14, 24, 11, 16, 9]);
+  },
+});
+
+cmd({
   name: "backup",
   usage: "backup",
   help: "Snapshot data/store.json → data/backups/",
@@ -934,6 +1114,10 @@ async function main() {
         ad: ["approve", "send", "skip", "replied", "won", "lost", "redraft", "edit", "restore"],
         outreach: ["approve", "send", "cancel", "pending_approval", "approved", "sent", "failed"],
         optouts: ["add"],
+        inbox: ["send", "draft"],
+        quote: ["new", "send", "pdf"],
+        docs: ["make", "send"],
+        pay: ["record", "link"],
         auto: ["tick", "run", "on", "off", "log"],
         hooks: ["presets", "add", "test", "on", "off", "rm", "events", "backlog", "retry", "log"],
       };

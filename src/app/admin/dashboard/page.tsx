@@ -13,6 +13,7 @@ import {
 import { RadialHud } from "@/components/command-deck/RadialHud";
 import { CommandCanvas } from "@/components/command-deck/CommandCanvas";
 import { JarvisBar } from "@/components/JarvisBar";
+import { LiveWire } from "@/components/LiveWire";
 import { loadAppData } from "@/lib/client-data";
 import type { DeckView } from "@/lib/command-deck";
 import type { AppData } from "@/lib/types";
@@ -49,6 +50,7 @@ export default function DashboardPage() {
         </p>
         <PageFrame title="Live overview" subtitle="Classic list view" context="Intelligence layer">
           <MetricStrip items={metrics} />
+          <LiveWire compact />
           <div className="cc-ops-grid">
             <Panel title="Activity feed">
               <ActivityFeed items={feed} />
@@ -82,6 +84,7 @@ export default function DashboardPage() {
       </header>
       <CommandCanvas view={view} data={data} />
       <JarvisBar variant="hud" />
+      <LiveWire compact />
       <RadialHud active={view} onChange={setView} />
     </div>
   );

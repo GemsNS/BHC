@@ -1,5 +1,6 @@
 import { runAdIngest, type AdPipelineHooks } from "./ad-pipeline";
 import { catalogEntry } from "./automation-defaults";
+import { live } from "./events";
 import {
   audit,
   isAutomationDue,
@@ -40,6 +41,12 @@ export type TickOptions = {
   ads?: Pick<AdPipelineHooks, "fetcher" | "pollImap" | "ai" | "classifyLimit">;
   /** Real email/SMS senders. Omit to skip outreach_send. */
   senders?: Senders;
+  /** Server hook: move inline photos to disk. Omit to skip media_offload. */
+  offloadMedia?: (data: AppData) => Promise<{ moved: number; remaining: number }>;
+  /** Server hook: web lead discovery (Claude + web search). Omit to skip lead_discovery. */
+  discover?: (data: AppData) => Promise<{ summary: string; created: number; errors: string[] }>;
+  /** Server hook: weekly customer PDF reports. Omit to skip job_reports. */
+  jobReports?: (data: AppData) => Promise<{ generated: number; sent: number; summary: string }>;
 };
 
 const TICK_HISTORY_CAP = 60;
@@ -52,6 +59,7 @@ export async function runAutomationTick(
   const startedIso = new Date(started).toISOString();
   const results: string[] = [];
   const errors: string[] = [];
+  live.tick(`Engine tick started`, `${opts.force ? "forced · " : ""}${opts.source ?? "api"}`, opts.source);
   const counters: AutomationTickRecord["counters"] = {
     automationsRun: 0,
     notificationsCreated: 0,
@@ -128,6 +136,55 @@ export async function runAutomationTick(
         results.push(`[${auto.name}] ${r.summary}`);
         for (const e of r.errors) errors.push(`${auto.name}: ${e}`);
         if (r.created || r.qualified) audit(data, "ad_ingest", r.summary, opts.newId);
+        continue;
+      }
+
+      if (auto.action === "media_offload") {
+        if (!opts.offloadMedia) {
+          results.push(`[${auto.name}] skipped — runs on the Node host.`);
+          continue;
+        }
+        const r = await opts.offloadMedia(data);
+        auto.lastRunAt = startedIso;
+        counters.automationsRun += 1;
+        if (r.moved || r.remaining) {
+          const line = `Photo storage: ${r.moved} file(s) moved to disk${r.remaining ? `, ${r.remaining} left for next run` : ""}.`;
+          results.push(`[${auto.name}] ${line}`);
+          audit(data, "media_offload", line, opts.newId);
+          live.automation("Photo storage housekeeping", line);
+        }
+        continue;
+      }
+
+      if (auto.action === "job_reports") {
+        if (!opts.jobReports) {
+          results.push(`[${auto.name}] skipped — runs on the Node host.`);
+          continue;
+        }
+        // Only on the configured weekday (default Friday) unless forced
+        const weekday = Number(process.env.JOB_REPORT_WEEKDAY ?? "5");
+        if (!opts.force && new Date(started).getDay() !== weekday) continue;
+        const r = await opts.jobReports(data);
+        auto.lastRunAt = startedIso;
+        counters.automationsRun += 1;
+        if (r.generated) {
+          results.push(`[${auto.name}] ${r.summary}`);
+          audit(data, "job_reports", r.summary, opts.newId);
+        }
+        continue;
+      }
+
+      if (auto.action === "lead_discovery") {
+        if (!opts.discover) {
+          results.push(`[${auto.name}] skipped — needs the Node host + ANTHROPIC_API_KEY.`);
+          continue;
+        }
+        const r = await opts.discover(data);
+        auto.lastRunAt = startedIso;
+        counters.automationsRun += 1;
+        results.push(`[${auto.name}] ${r.summary}`);
+        for (const e of r.errors) errors.push(`${auto.name}: ${e}`);
+        if (r.created) audit(data, "lead_discovery", r.summary, opts.newId);
         continue;
       }
 
@@ -226,6 +283,16 @@ export async function runAutomationTick(
   if (data.automationRuns.length > TICK_HISTORY_CAP) {
     data.automationRuns.length = TICK_HISTORY_CAP;
   }
+  for (const line of results) {
+    if (/ skipped |: 0 [a-z]|Processed 0 |: 0 collection|: 0 alert|Fleet: 0|0 report\(s\)|0 item\(s\) at|0 overdue|0 reminder\(s\) sent|0 draft\(s\)|0 source\(s\) polled · 0 new/.test(line) && !/error/i.test(line)) continue;
+    live.automation(line.replace(/^\[[^\]]+\]\s*/, "").slice(0, 160), line.match(/^\[([^\]]+)\]/)?.[1]);
+  }
+  for (const e of errors) live.error("automation", e.slice(0, 160));
+  live.tick(
+    `Engine tick done in ${record.durationMs} ms`,
+    `${counters.automationsRun} automation(s) · ${counters.notificationsCreated} alert(s) · ${counters.tasksCreated} task(s) · webhooks ${counters.webhooksSent}/${counters.webhooksFailed}${errors.length ? ` · ${errors.length} error(s)` : ""}`,
+    opts.source,
+  );
 
   // Let integrations observe the tick (delivered on the next flush/tick)
   if (data.webhookEndpoints.some((e) => e.enabled && e.events.includes("automation.tick"))) {

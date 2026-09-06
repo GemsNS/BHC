@@ -1,9 +1,9 @@
 import { randomUUID } from "crypto";
-import { mkdir, readFile, writeFile, rename } from "fs/promises";
 import path from "path";
 import type { AppData } from "./types";
 import { buildSeedData } from "./seed";
 import { normalizeStore } from "./normalize";
+import { currentBackendKind, resolveBackend } from "./store-backend";
 
 export { normalizeStore };
 
@@ -11,58 +11,57 @@ const DATA_DIR = path.join(process.cwd(), "data");
 const STORE_PATH = path.join(DATA_DIR, "store.json");
 
 export async function readStore(): Promise<AppData> {
-  await mkdir(DATA_DIR, { recursive: true });
-  try {
-    const raw = await readFile(STORE_PATH, "utf8");
-    const parsed = JSON.parse(raw) as Partial<AppData>;
-    const normalized = normalizeStore(parsed);
-    const rawAdmin = (parsed.employees ?? []).find(
-      (e) => e.id === "emp-admin" || e.login?.toLowerCase() === "jordan",
-    );
-    const needsEmployeeMigration =
-      !!rawAdmin &&
-      (rawAdmin.login?.toLowerCase() === "jordan" ||
-        rawAdmin.email?.toLowerCase().startsWith("jordan@") ||
-        /@bighoss\.com$/i.test(rawAdmin.email ?? ""));
-    // Persist migrations when new collections were missing or identity renamed
-    if (
-      needsEmployeeMigration ||
-      !parsed.zones ||
-      !parsed.knocks ||
-      !parsed.knockTerritories ||
-      !parsed.knockTags ||
-      !parsed.knockCalendarEvents ||
-      !parsed.webhookEndpoints ||
-      !parsed.materials ||
-      !parsed.fuelLogs ||
-      !parsed.projections ||
-      !parsed.tools ||
-      !parsed.inventory ||
-      !parsed.jobProgress ||
-      !parsed.invoices ||
-      !parsed.shifts ||
-      !parsed.workflows ||
-      !parsed.companies ||
-      !parsed.assistantMemory ||
-      !parsed.automationRuns ||
-      !parsed.adListings
-    ) {
-      await writeStore(normalized);
-    }
-    return normalized;
-  } catch {
+  const backend = await resolveBackend();
+  const parsed = await backend.readAll();
+  if (!parsed) {
     // Normalize the fresh seed too so catalog automations / workflow templates exist from day one
     const seed = normalizeStore(buildSeedData());
-    await writeStore(seed);
+    await backend.writeAll(seed);
     return seed;
   }
+  const normalized = normalizeStore(parsed);
+  const rawAdmin = (parsed.employees ?? []).find(
+    (e) => e.id === "emp-admin" || e.login?.toLowerCase() === "jordan",
+  );
+  const needsEmployeeMigration =
+    !!rawAdmin &&
+    (rawAdmin.login?.toLowerCase() === "jordan" ||
+      rawAdmin.email?.toLowerCase().startsWith("jordan@") ||
+      /@bighoss\.com$/i.test(rawAdmin.email ?? ""));
+  // Persist migrations when new collections were missing or identity renamed
+  if (
+    needsEmployeeMigration ||
+    !parsed.zones ||
+    !parsed.knocks ||
+    !parsed.knockTerritories ||
+    !parsed.knockTags ||
+    !parsed.knockCalendarEvents ||
+    !parsed.webhookEndpoints ||
+    !parsed.materials ||
+    !parsed.fuelLogs ||
+    !parsed.projections ||
+    !parsed.tools ||
+    !parsed.inventory ||
+    !parsed.jobProgress ||
+    !parsed.invoices ||
+    !parsed.shifts ||
+    !parsed.workflows ||
+    !parsed.companies ||
+    !parsed.assistantMemory ||
+    !parsed.automationRuns ||
+    !parsed.adListings ||
+    !parsed.optOuts ||
+    !parsed.quotes ||
+    !parsed.messages
+  ) {
+    await backend.writeAll(normalized);
+  }
+  return normalized;
 }
 
 export async function writeStore(data: AppData): Promise<void> {
-  await mkdir(DATA_DIR, { recursive: true });
-  const tmp = `${STORE_PATH}.${randomUUID()}.tmp`;
-  await writeFile(tmp, JSON.stringify(data, null, 2), "utf8");
-  await rename(tmp, STORE_PATH);
+  const backend = await resolveBackend();
+  await backend.writeAll(data);
 }
 
 export async function updateStore(
@@ -87,8 +86,8 @@ export async function updateStoreAsync(
   return result;
 }
 
-export function storePaths(): { dataDir: string; storePath: string } {
-  return { dataDir: DATA_DIR, storePath: STORE_PATH };
+export function storePaths(): { dataDir: string; storePath: string; backend: "json" | "sqlite" } {
+  return { dataDir: DATA_DIR, storePath: STORE_PATH, backend: currentBackendKind() };
 }
 
 export function newId(): string {

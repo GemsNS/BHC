@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { Employee, Job, JobStatus } from "@/lib/types";
@@ -116,7 +117,7 @@ export default function JobsPage() {
               jobs.map((job) => (
                 <tr key={job.id} className="border-b border-[var(--line)] last:border-0">
                   <td className="px-4 py-3">
-                    <p className="font-medium">{job.title}</p>
+                    <Link href={`/admin/jobs/${job.id}`} className="font-medium hover:underline">{job.title}</Link>
                     <p className="text-xs text-[var(--muted)]">
                       {job.customerName} · {job.address}
                     </p>

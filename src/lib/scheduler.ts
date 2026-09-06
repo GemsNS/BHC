@@ -1,6 +1,6 @@
-import { imapConfigured, pollImapInbox } from "./ad-imap";
 import { runAutomationTick } from "./automation-engine";
 import { sendEmail } from "./mail";
+import { offloadInlineMedia } from "./media-store";
 import { sendSms, smsConfigStatus } from "./sms";
 import { backupDueToday, createBackup } from "./store-backup";
 import { newId, nowIso, readStore, writeStore } from "./store";
@@ -96,6 +96,13 @@ export async function runServerTick(opts: {
   force?: boolean;
   only?: string[];
 }): Promise<AutomationTickRecord> {
+  // Node-only modules (IMAP, web discovery, PDF reports) are loaded lazily so the
+  // instrumentation hook can be compiled for the edge runtime without them.
+  const [imap, discovery, reports] = await Promise.all([
+    import("./ad-imap"),
+    import("./lead-discovery"),
+    import("./job-reports"),
+  ]);
   const data = await readStore();
   const record = await runAutomationTick(data, {
     source: opts.source,
@@ -105,8 +112,11 @@ export async function runServerTick(opts: {
     nowIso,
     network: true,
     backup: serverBackupHook,
-    ads: { pollImap: imapConfigured() ? pollImapInbox : undefined },
+    ads: { pollImap: imap.imapConfigured() ? imap.pollImapInbox : undefined },
     senders: serverSenders(),
+    offloadMedia: (d) => offloadInlineMedia(d),
+    discover: discovery.discoveryConfigured() ? (d) => discovery.discoverLeadsOnline(d, { newId, nowIso }) : undefined,
+    jobReports: (d) => reports.runWeeklyJobReports(d, { newId, nowIso }),
   });
   await writeStore(data);
   return record;

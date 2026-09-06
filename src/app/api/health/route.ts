@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getAIStatus } from "@/lib/ai-provider";
 import { mailConfigStatus } from "@/lib/mail";
 import { schedulerInfo } from "@/lib/scheduler";
-import { readStore } from "@/lib/store";
+import { readStore, storePaths } from "@/lib/store";
+import { sessionSecretConfigured } from "@/lib/auth-session";
 import { storeHealth } from "@/lib/store-health";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +29,11 @@ export async function GET() {
   }
   const sched = schedulerInfo();
   const ai = getAIStatus();
+  const warnings: string[] = [];
+  if (!sessionSecretConfigured() && process.env.NODE_ENV === "production") warnings.push("SESSION_SECRET not set — sessions reset on every restart");
   const body = {
+    warnings,
+    store: { ok: storeOk, issues: storeIssues, backend: storePaths().backend },
     ok: storeOk,
     service: "bhc",
     version: process.env.npm_package_version ?? process.env.BHC_VERSION ?? null,
@@ -36,7 +41,7 @@ export async function GET() {
     uptimeSec: Math.round(process.uptime()),
     checkedAt: new Date().toISOString(),
     latencyMs: Date.now() - startedAt,
-    store: { ok: storeOk, issues: storeIssues },
+
     scheduler: {
       enabled: sched.enabled,
       started: sched.started,

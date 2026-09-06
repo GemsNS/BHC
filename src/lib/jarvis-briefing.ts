@@ -208,6 +208,18 @@ export function buildJarvisSnapshot(
     }
   }
 
+  const unreadMessages = data.messages.filter((m) => m.direction === "in" && !m.readAt).length;
+  if (unreadMessages > 0 && (context === "sales" || context === "overview" || context === "global")) {
+    metrics.push({
+      id: "inbox",
+      label: "Inbox",
+      value: String(unreadMessages),
+      tone: "action",
+      href: "/admin/inbox",
+      insightId: "inbox",
+    });
+  }
+
   if (unread > 0) {
     metrics.push({
       id: "alerts",
@@ -679,6 +691,44 @@ export function buildJarvisInsights(
         })),
       });
     }
+  }
+
+  const inboundUnread = data.messages.filter((m) => m.direction === "in" && !m.readAt);
+  if (inboundUnread.length > 0 && (context === "sales" || context === "overview" || context === "global")) {
+    const voicemails = inboundUnread.filter((m) => m.channel === "voice").length;
+    pushInsight(insights, {
+      id: "inbox",
+      category: "sales",
+      tone: "action",
+      title: "Inbox",
+      text: `${inboundUnread.length} unread message${inboundUnread.length > 1 ? "s" : ""}${voicemails ? ` including ${voicemails} voicemail${voicemails > 1 ? "s" : ""}` : ""} — customers are waiting on a reply.`,
+      priority: 96,
+      metric: { value: String(inboundUnread.length), label: "Unread" },
+      href: "/admin/inbox",
+      primaryAction: { label: "Open inbox", href: "/admin/inbox", kind: "primary" },
+      entities: inboundUnread.slice(0, 4).map((m) => ({
+        label: data.leads.find((l) => l.id === m.leadId)?.name ?? m.from,
+        meta: `${m.channel} · ${(m.transcription ?? m.body).slice(0, 60)}`,
+      })),
+    });
+  }
+
+  const unpaidSent = data.invoices.filter((i) => i.kind === "invoice" && i.status === "sent");
+  if (unpaidSent.length > 0 && (context === "delivery" || context === "overview" || context === "global")) {
+    const owing = unpaidSent.reduce((s, i) => s + i.lines.reduce((a, l) => a + l.quantity * l.unitPrice, 0) - (i.paidAmount ?? 0), 0);
+    const overdue = unpaidSent.filter((i) => i.dueAt && new Date(i.dueAt).getTime() < now).length;
+    pushInsight(insights, {
+      id: "receivables",
+      category: "ops",
+      tone: overdue ? "warn" : "neutral",
+      title: "Receivables",
+      text: `${formatCurrency(owing)} outstanding across ${unpaidSent.length} invoice${unpaidSent.length > 1 ? "s" : ""}${overdue ? ` · ${overdue} past due` : ""}. Reminders go out automatically.`,
+      priority: overdue ? 78 : 42,
+      metric: { value: formatCurrency(owing), label: "Owed" },
+      href: "/admin/invoices",
+      primaryAction: { label: "Invoices", href: "/admin/invoices", kind: "primary" },
+      entities: unpaidSent.slice(0, 4).map((i) => ({ label: `${i.number ?? "Invoice"} · ${i.customerName}`, meta: `${i.status}${i.dueAt ? ` · due ${new Date(i.dueAt).toLocaleDateString()}` : ""}` })),
+    });
   }
 
   if (urgentTickets.length > 0) {

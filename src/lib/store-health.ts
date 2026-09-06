@@ -61,6 +61,10 @@ const COLLECTIONS: Array<keyof AppData> = [
   "adSources",
   "adListings",
   "optOuts",
+  "quotes",
+  "documents",
+  "payments",
+  "messages",
 ];
 
 export function storeHealth(data: AppData): StoreHealthReport {

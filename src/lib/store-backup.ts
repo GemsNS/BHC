@@ -65,19 +65,27 @@ export async function latestBackupAt(dataDir?: string): Promise<string | null> {
 }
 
 export async function createBackup(opts: BackupOptions = {}): Promise<BackupInfo | null> {
-  const { dataDir, storePath } = storePaths();
+  const { dataDir, storePath, backend } = storePaths();
   const src = opts.storePath ?? storePath;
   const dir = backupDir(opts.dataDir ?? dataDir);
   await mkdir(dir, { recursive: true });
-  try {
-    await stat(src);
-  } catch {
-    return null; // nothing to back up yet
-  }
   const now = new Date();
   const name = `${opts.label ?? "store"}-${stampForFile(now)}.json`;
   const dest = path.join(dir, name);
-  await copyFile(src, dest);
+  if (backend === "sqlite" && !opts.storePath) {
+    // SQLite mode: snapshots are still plain JSON so they restore anywhere
+    const { readStore } = await import("./store");
+    const data = await readStore();
+    const { writeFile } = await import("fs/promises");
+    await writeFile(dest, JSON.stringify(data), "utf8");
+  } else {
+    try {
+      await stat(src);
+    } catch {
+      return null; // nothing to back up yet
+    }
+    await copyFile(src, dest);
+  }
   // copyFile may preserve the source mtime on some platforms — stamp the snapshot time explicitly
   await utimes(dest, now, now).catch(() => undefined);
   await pruneBackups(opts.dataDir ?? dataDir, keepCount(opts));

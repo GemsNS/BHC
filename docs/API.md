@@ -119,6 +119,35 @@ Auth for `/api/automation`: admin/manager session header, or `x-bhc-automation-s
 
 Full guide: `docs/OUTREACH.md`.
 
+## Job hub, quotes, documents, payments
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/jobs/[id]` | everything about one job: lead, quotes, invoices, payments, documents, progress, materials, shifts, messages, money (invoiced/paid/margin), checklist |
+| PATCH | `/api/jobs/[id]` | fields + `status` (fires workflows/webhooks), `ensurePortal` |
+| GET/POST | `/api/quotes` | `create` · `update` · `add_catalog` · `duplicate` · `generate_pdf` · `send` (PDF + email/SMS with `/q/<token>` link) · `sign` (staff) · `decline` |
+| GET/POST | `/api/documents` | `generate` `{kind: quote\|contract\|invoice\|receipt\|job_report, jobId\|quoteId\|invoiceId, send?}` · `send` `{id, channels?, to?, note?}`; PDFs stored under `/api/media/*.pdf` |
+| GET/POST | `/api/payments` | `record` (e-Transfer/cash/cheque) · `checkout` (Stripe URL) · `pay_link` |
+| POST | `/api/payments/webhook` | Stripe (`Stripe-Signature` verified) → invoice paid → receipt |
+| GET/POST | `/api/public/quote/[token]` | customer view (marks viewed) · `sign` / `decline`; `…/pdf` streams the PDF |
+| GET/POST | `/api/public/pay/[token]` | customer invoice view · POST creates Stripe Checkout |
+| GET/POST | `/api/public/portal/[token]` | customer job portal · POST sends a message to the crew; `…/media/[file]`, `…/doc/[id]` |
+| GET/POST | `/api/public/referral/[code]` | referral landing → new lead |
+
+## Inbox, voice, live wire, auth, media
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET/POST | `/api/messages` | threads / one thread · `send` (real SMS/email) · `draft` (Claude) · `read` |
+| POST | `/api/sms/inbound` | Twilio SMS webhook → thread, STOP, replies, new leads |
+| POST | `/api/voice/inbound` · `/api/voice/status` · `/api/voice/voicemail` | Twilio Voice: forward to `VOICE_FORWARD_TO`, missed-call text-back, voicemail + transcription + Claude summary |
+| GET | `/api/stream` | Server-Sent Events feed of `live.*` events (dashboard + `/admin/live`) |
+| POST | `/api/auth/login` | sets signed httpOnly `bhc_session` cookie; lockout after 5 failures (429) |
+| POST | `/api/auth/logout` | clears the cookie |
+| GET | `/api/media/[file]` | photos, signatures, PDFs from `data/media` (session required) |
+
+Auth: `src/middleware.ts` requires the session cookie on every `/api/*` route except the public allowlist (health, login, inbound webhooks, `/api/public/*`, presentations, calendar, seed, automation-with-secret). Legacy `x-bhc-user-id` header still accepted until `BHC_STRICT_AUTH=1`.
+
 ## Other CRM routes (existing)
 
 `/api/leads` `/api/jobs` `/api/crm` `/api/invoices` `/api/progress` `/api/shifts` `/api/zones` `/api/knocks` `/api/canvass` `/api/employees` `/api/inventory` `/api/tools` `/api/fleet` `/api/fuel` `/api/materials` `/api/damage` `/api/tickets` `/api/workflows` `/api/outreach` `/api/announcements` `/api/time-entries` `/api/dashboard` `/api/stats` `/api/markets` `/api/contact`

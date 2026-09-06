@@ -224,5 +224,9 @@ export function buildProductionSeed(): AppData {
     adSources: [],
     adListings: [],
     optOuts: [],
+    quotes: [],
+    documents: [],
+    payments: [],
+    messages: [],
   };
 }

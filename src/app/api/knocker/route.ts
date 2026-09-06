@@ -10,6 +10,7 @@ import { enqueueNotification } from "@/lib/notifications";
 import { newId, nowIso, readStore, updateStore, writeStore } from "@/lib/store";
 import type { KnockEvent, KnockProposal, KnockTerritory, Lead } from "@/lib/types";
 import { normalizeAddressKey } from "@/lib/knocker/geo";
+import { storeDataUrl } from "@/lib/media-store";
 
 const outcomeEnum = z.enum([
   "not_home",
@@ -387,6 +388,7 @@ export async function POST(request: Request) {
       })
       .parse(body);
     let signedId: string | null = null;
+    const signatureUrl = await storeDataUrl(parsed.signatureDataUrl, "sig");
     await updateStore((data) => {
       const p = data.knockProposals.find((x) => x.id === parsed.proposalId);
       if (!p) return;
@@ -395,7 +397,7 @@ export async function POST(request: Request) {
         signProposal(p, {
           signerName: parsed.signerName,
           signerEmail: parsed.signerEmail,
-          signatureDataUrl: parsed.signatureDataUrl,
+          signatureDataUrl: signatureUrl,
           nowIso: nowIso(),
         }),
       );

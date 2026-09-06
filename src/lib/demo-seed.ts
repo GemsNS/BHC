@@ -1126,5 +1126,9 @@ export function buildDemoSeedData(): AppData {
     adSources: [] as AppData["adSources"],
     adListings: [] as AppData["adListings"],
     optOuts: [] as AppData["optOuts"],
+    quotes: [] as AppData["quotes"],
+    documents: [] as AppData["documents"],
+    payments: [] as AppData["payments"],
+    messages: [] as AppData["messages"],
   };
 }

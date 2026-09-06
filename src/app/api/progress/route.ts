@@ -3,6 +3,8 @@ import { z } from "zod";
 import { newId, nowIso, readStore, updateStore } from "@/lib/store";
 import type { JobProgressEntry } from "@/lib/types";
 import { summarizeProgress } from "@/lib/ai-summarize";
+import { live } from "@/lib/events";
+import { storeDataUrls } from "@/lib/media-store";
 
 export async function GET(request: Request) {
   const data = await readStore();
@@ -33,7 +35,7 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
-    const images = (parsed.data.imageDataUrls || []).slice(0, 6);
+    const images = await storeDataUrls((parsed.data.imageDataUrls || []).slice(0, 6), "progress");
     let aiSummary: string | null = null;
     if (parsed.data.runAi) {
       const data = await readStore();
@@ -57,6 +59,8 @@ export async function POST(request: Request) {
     };
     await updateStore((d) => {
       d.jobProgress.unshift(entry);
+      const job = d.jobs.find((j) => j.id === entry.jobId);
+      live.job(`Site update: ${job?.title ?? entry.jobId}`, `${images.length} photo(s) · ${entry.notes.slice(0, 80)}`, { jobId: entry.jobId });
     });
     return NextResponse.json({ entry }, { status: 201 });
   }

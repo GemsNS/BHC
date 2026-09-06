@@ -160,5 +160,9 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     adSources: raw.adSources ?? [],
     adListings: raw.adListings ?? [],
     optOuts: raw.optOuts ?? [],
+    quotes: raw.quotes ?? [],
+    documents: raw.documents ?? [],
+    payments: raw.payments ?? [],
+    messages: raw.messages ?? [],
   };
 }

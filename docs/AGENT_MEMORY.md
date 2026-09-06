@@ -106,6 +106,25 @@ Persistent log of user preferences, decisions, and chat themes for future agents
 
 **Shopping list for the owner:** Anthropic API key; a `quotes@` GoDaddy mailbox (IMAP + SMTP); Kijiji saved-search alerts to that mailbox; Twilio account + 902 number with inbound webhook → `/api/sms/inbound`; optional Slack/Discord webhook URL; optional Zapier for `/api/ads/inbound`. Full detail `docs/OUTREACH.md`.
 
+### Platform + job hub + inbox (2026-09-06, Claude, "free reign" round)
+
+**User ask:** "lets build all that … tools to generate contracts, invoices, job reports and tie it all to the individual job … centralize every single system … everything automatically sent to the customer … build all 5 suggestions … work on the UI … live data stream of the system pinging out into the internet searching for info and leads and doing outreach live … compile a list of what ai models i need."
+
+**Shipped:**
+
+- **Live wire**: `src/lib/events.ts` ring buffer + JSONL sink, `/api/stream` SSE, `LiveWire` component on the dashboard (HUD + classic) and `/admin/live`. Every subsystem emits.
+- **Auth**: signed httpOnly cookie sessions, lockout, `src/middleware.ts` gate on `/api/*` with public allowlist; legacy header transitional (`BHC_STRICT_AUTH`).
+- **Storage**: `store-backend.ts` (json | sqlite via `node:sqlite`, `process.getBuiltinModule`), `media-store.ts` (photos/signatures/PDFs on disk, nightly `media_offload`).
+- **Job hub** `/admin/jobs/[id]`: checklist, quotes editor + catalog, e-sign at `/q/<token>` → job + deposit invoice + contract + PDFs, invoices with Stripe/e-Transfer, payments, documents, site updates, messages, timeline. Public `/pay/<token>`, `/portal/<token>`, `/r/<code>`.
+- **Documents** (`pdfkit`): quote, contract, invoice, receipt, job report; `deliver.ts` emails PDF + SMS link; `DOCS_AUTOSEND` policy; weekly `job_reports` automation.
+- **Payments**: Stripe Checkout + signed webhook, manual records, Interac e-Transfer auto-match from mailbox, `payment_reminders` 7/14/30d, receipts.
+- **Reviews/referrals**: `review_requests`, `referral_asks` automations; referral codes on leads.
+- **Inbox** `/admin/inbox` + `messaging.ts`: SMS/email/voice threads, Claude-drafted replies, unknown numbers → leads; Twilio Voice forward → voicemail transcription (Claude summary) → missed-call text-back.
+- **Internet lead discovery**: `lead-discovery.ts` — Claude Opus 5 + `web_search_20260209` every 3h → ad inbox.
+- Console: `inbox`, `quote`, `docs`, `pay`. JARVIS: inbox + receivables cards, inbox chip. `docs/SETUP_CHECKLIST.md` = the models/services/webhooks list.
+
+**Gotchas learned:** `src/middleware.ts` makes Next compile `instrumentation.ts` for Edge too → Node-only libs must be dynamically imported in `scheduler.ts` and Node core modules are stubbed for `nextRuntime === "edge"` in `next.config.ts`; `node:sqlite` must be loaded via `process.getBuiltinModule`. Claude 4.6+ models reject `temperature`.
+
 ---
 
 ## Chat themes (for continuity)

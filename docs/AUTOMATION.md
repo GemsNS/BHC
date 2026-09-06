@@ -12,7 +12,11 @@ Surfaces:
 | CLI | `npm run bhc -- automations tick\|status`, `store backup\|health`, `webhooks retry` |
 | Mainframe AI | tools `automation_status`, `toggle_automation`, `store_health`, `run_daily_automations`, `list_ads`, `outreach_status` |
 | JARVIS | "Automation" + "Job-ad outreach" chips and briefing cards on the dashboard |
-| Console | `npm run console` — interactive terminal for the whole CRM (`auto`, `hooks`, `ads`, `outreach`, `lead`, `job`, …; free text → Mainframe AI) |
+| Console | `npm run console` — interactive terminal for the whole CRM (`auto`, `hooks`, `ads`, `outreach`, `inbox`, `quote`, `docs`, `pay`, `lead`, `job`, …; free text → Mainframe AI) |
+| Live wire | `/admin/live` + dashboard strip — SSE feed of every scan, draft, send, reply, webhook, AI call (`src/lib/events.ts`) |
+| Job hub | `/admin/jobs/[id]` — quotes, e-sign, contracts, invoices, payments, reports, messages per job |
+| Inbox | `/admin/inbox` — SMS/email/voicemail threads, Claude-drafted replies, missed-call text-back |
+| Setup | `docs/SETUP_CHECKLIST.md` — models, services, keys, inbound + outbound webhooks |
 | Job-ad outreach | `docs/OUTREACH.md` |
 
 ## How a tick works
@@ -55,6 +59,12 @@ Defined in `src/lib/automation-defaults.ts`. `normalizeStore` adds any missing e
 | `auto-ad-ingest` | `ad_ingest` | every 15 min | on | Poll ad sources (RSS / alert mailbox), triage with AI, create leads + reply drafts; detect prospect email replies (server only) — see `docs/OUTREACH.md` |
 | `auto-outreach-send` | `outreach_send` | every 15 min | on | Email/SMS every **approved** reply; respects daily cap, SMS quiet hours, opt-outs (server only) |
 | `auto-outreach-followup` | `outreach_followup` | daily 9am | on | One follow-up draft after `OUTREACH_FOLLOWUP_DAYS`; auto-close ads unanswered for `OUTREACH_EXPIRE_DAYS` |
+| `auto-media-offload` | `media_offload` | daily 3am | on | Move inline photos/signatures from the store to `data/media` (server only) |
+| `auto-review-requests` | `review_requests` | daily 11am | on | 7 days after an invoice is paid → Google review link by SMS/email (`REVIEW_URL`) |
+| `auto-referral-asks` | `referral_asks` | daily 11am | on | 14 days after completion → tracked referral link `/r/<code>` |
+| `auto-payment-reminders` | `payment_reminders` | daily 10am | on | Sent invoices at 7/14/30 days → reminder with pay link |
+| `auto-job-reports` | `job_reports` | weekly (Fri 4pm, `JOB_REPORT_WEEKDAY`) | on | PDF progress report per active job from the week's site updates; sent when `DOCS_AUTOSEND` has `job_report` (server only) |
+| `auto-lead-discovery` | `lead_discovery` | every 3h | on | Claude + web search finds new "need a contractor" posts in HRM → ad inbox (needs `ANTHROPIC_API_KEY`; server only) |
 | `auto-prospects` | `prospect_hunt` | daily 10am | off | Queue outreach drafts (still `pending_approval`) |
 | `auto-outreach-digest` | `outreach_digest` | daily 4pm | off | Count of drafts awaiting approval |
 

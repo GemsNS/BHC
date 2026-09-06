@@ -154,6 +154,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem(SESSION_KEY);
     setUserIdState(null);
+    if (!isStaticDemo()) {
+      void fetch(withBasePath("/api/auth/logout"), { method: "POST" }).catch(() => undefined);
+    }
   }, []);
 
   const user = useMemo(

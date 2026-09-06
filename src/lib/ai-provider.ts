@@ -1,3 +1,5 @@
+import { live } from "./events";
+
 /**
  * Unified AI provider — Anthropic Claude (preferred for Mainframe), Gemini, OpenAI-compatible, or local fallback.
  */
@@ -126,13 +128,16 @@ export async function completeChat(input: {
   if (provider === "none") return null;
 
   if (provider === "anthropic") {
+    const model = input.tier === "fast" ? getAnthropicFastModel() : getAnthropicModel();
+    const t0 = Date.now();
     const text = await anthropicGenerateText({
       system: input.system,
       user: input.user,
       temperature: input.temperature ?? 0.3,
-      model: input.tier === "fast" ? getAnthropicFastModel() : getAnthropicModel(),
+      model,
       maxTokens: input.maxTokens,
     });
+    live.ai(`${model} ${text ? "answered" : "returned nothing"}`, `${input.tier ?? "main"} · ${Math.round((input.system.length + input.user.length) / 4)} tok in · ${Date.now() - t0} ms`);
     return text ? { text, provider: "anthropic" } : null;
   }
 

@@ -178,6 +178,7 @@ export type OutboundEmail = {
   text: string;
   html?: string;
   replyTo?: string;
+  attachments?: Array<{ filename: string; content: Buffer; contentType?: string }>;
 };
 
 export type OutboundEmailResult = {
@@ -211,6 +212,7 @@ export async function sendEmail(input: OutboundEmail): Promise<OutboundEmailResu
         subject: input.subject,
         text: input.text,
         html,
+        attachments: input.attachments?.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType })),
       });
       return { ok: true, provider: "smtp", id: info.messageId ?? null, error: null };
     } catch (err) {
@@ -234,6 +236,7 @@ export async function sendEmail(input: OutboundEmail): Promise<OutboundEmailResu
         subject: input.subject,
         text: input.text,
         html,
+        attachments: input.attachments?.map((a) => ({ filename: a.filename, content: a.content })),
       });
       if (error) return { ok: false, provider: "resend", id: null, error: error.message };
       return { ok: true, provider: "resend", id: data?.id ?? null, error: null };

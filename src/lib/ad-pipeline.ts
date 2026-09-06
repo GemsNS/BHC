@@ -1,5 +1,7 @@
 import { classifyAd, draftReply } from "./ad-classify";
 import { ingestRawAds, parseFeed, type RawAd } from "./ad-ingest";
+import { live } from "./events";
+import { applyPayment, detectEtransfer, matchEtransferToInvoice } from "./payments";
 import { handleInboundReply, sendPolicy, type SendPolicy } from "./outreach-send";
 import { queueWebhook } from "./webhooks";
 import { onLeadCreated } from "./workflows";
@@ -85,6 +87,19 @@ async function pollSource(
       // Anything that is not a listing alert may be a prospect replying to us
       for (const mail of r.others ?? []) {
         if (!mail.fromAddress) continue;
+        // Interac e-Transfer notifications → payments
+        const et = detectEtransfer({ subject: mail.subject, text: mail.text, fromAddress: mail.fromAddress });
+        if (et) {
+          const inv = matchEtransferToInvoice(data, et);
+          if (inv) {
+            applyPayment(data, { invoiceId: inv.id, amount: et.amount, method: "etransfer", provider: "interac", providerId: mail.messageId ?? `et:${mail.subject}:${et.amount}`, note: `e-Transfer from ${et.senderName || "unknown"} (auto-matched)` }, hooks);
+          } else {
+            data.activities.unshift({ id: hooks.newId(), type: "task", subject: `Match e-Transfer $${et.amount.toLocaleString()} from ${et.senderName || "unknown"}`, body: mail.subject, relatedType: "job", relatedId: "general", authorId: "emp-admin", dueAt: hooks.nowIso(), completedAt: null, createdAt: hooks.nowIso() });
+            live.payment(`e-Transfer $${et.amount.toLocaleString()} needs matching`, et.senderName || mail.subject);
+          }
+          continue;
+        }
+        // Prospect / customer replies (and STOP-style opt-outs)
         const outcome = handleInboundReply(
           data,
           { channel: "email", from: mail.fromAddress, body: mail.text, subject: mail.subject, messageId: mail.messageId },
@@ -92,6 +107,9 @@ async function pollSource(
         );
         if (outcome.optedOut) result.optOuts += 1;
         else if (outcome.matched) result.replies += 1;
+        if (outcome.matched || outcome.optedOut) {
+          data.messages.unshift({ id: hooks.newId(), channel: "email", direction: "in", from: mail.fromAddress, to: "", subject: mail.subject, body: mail.text.slice(0, 4000), leadId: outcome.leadId, jobId: null, adId: outcome.adId, provider: "imap", providerId: mail.messageId ?? null, status: "received", readAt: null, recordingUrl: null, transcription: null, durationSec: null, createdAt: hooks.nowIso() });
+        }
       }
     } else {
       return; // webhook / manual sources are push-only
@@ -102,11 +120,13 @@ async function pollSource(
     result.created += created.length;
     source.lastPolledAt = hooks.nowIso();
     source.lastError = null;
+    live.ad(`Polled ${source.name}`, `${raws.length} listing(s) seen · ${created.length} new`, undefined, created.length ? "success" : "info");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     source.lastPolledAt = hooks.nowIso();
     source.lastError = msg;
     result.errors.push(`${source.name}: ${msg}`);
+    live.error("ad", `Source failed: ${source.name}`, msg);
   }
 }
 
@@ -155,9 +175,11 @@ export async function qualifyListing(
 
   if (!opts.force && (!c.isJobRequest || c.score < minScore)) {
     ad.status = "skipped";
+    live.ad(`Skipped: ${ad.title.slice(0, 70)}`, `score ${c.score} · ${c.reasons[0] ?? c.summary}`, { adId: ad.id }, "info");
     return { qualified: false, lead: null, drafts: [], autoApproved: 0 };
   }
   ad.status = "qualified";
+  live.ad(`Qualified: ${ad.title.slice(0, 70)}`, `score ${c.score} · ${c.category}${ad.location ? ` · ${ad.location}` : ""} · by ${c.by}`, { adId: ad.id }, "success");
 
   let lead = ad.leadId ? data.leads.find((l) => l.id === ad.leadId) ?? null : null;
   if (!lead) {
@@ -165,6 +187,7 @@ export async function qualifyListing(
     data.leads.unshift(lead);
     ad.leadId = lead.id;
     onLeadCreated(data, lead, "emp-admin");
+    live.lead(`Lead created: ${lead.name}`, `${lead.source} · ${lead.jobType} · ${lead.city}`, { leadId: lead.id, adId: ad.id });
   }
 
   const draft = await draftReply(ad, { ai: hooks.ai !== false });
@@ -213,7 +236,15 @@ export async function qualifyListing(
       status: "pending_approval",
     });
   }
-  if (drafts.length) ad.status = "drafted";
+  if (drafts.length) {
+    ad.status = "drafted";
+    live.outreach(
+      `Reply drafted for ${ad.contactName || lead.name}`,
+      `${drafts.map((d) => d.channel).join(" + ")} · ${draft.by === "ai" ? "Claude" : "template"}${autoApproved ? ` · ${autoApproved} auto-approved` : " · awaiting approval"}`,
+      { adId: ad.id, leadId: lead.id },
+      "out",
+    );
+  }
 
   queueWebhook(
     data,
