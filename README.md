@@ -2,7 +2,7 @@
 
 Operations CRM + field PWA for **BH Contracting Co.**: role-based login, Active Knocker, jobs, fleet, AI Mainframe, and a public marketing site.
 
-**Successor / Claude transfer:** start at [`CLAUDE.md`](./CLAUDE.md) then [`docs/HANDOFF.md`](./docs/HANDOFF.md).
+**Successor / Claude / Cursor transfer:** start at [`CLAUDE.md`](./CLAUDE.md), then [`docs/CURSOR_BRIEFING.md`](./docs/CURSOR_BRIEFING.md) (master map of the automation platform), then [`docs/HANDOFF.md`](./docs/HANDOFF.md).
 
 ## Documentation index
 

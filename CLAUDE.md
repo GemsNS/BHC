@@ -95,7 +95,7 @@ npm run deploy:gh-pages
 
 ## Successor checklist
 
-1. Read `docs/ARCHITECTURE.md`, `docs/API.md`, `docs/DEPLOYMENT.md`, `docs/USAGE.md`, `docs/KNOCKER.md`, `docs/AI.md`, `docs/AUTOMATION.md`.
+1. Read `docs/CURSOR_BRIEFING.md` (master map of the automation build), then `docs/ARCHITECTURE.md`, `docs/API.md`, `docs/DEPLOYMENT.md`, `docs/USAGE.md`, `docs/KNOCKER.md`, `docs/AI.md`, `docs/AUTOMATION.md`, `docs/OUTREACH.md`, `docs/SETUP_CHECKLIST.md`.
 2. Run `npm run verify` (lint + typecheck + test + build). Node **22** is required for vitest 4.
 3. Do not rewrite persistence to a real DB unless asked — JSON store is intentional.
 4. Google Calendar **OAuth insert** is optional (`GOOGLE_CALENDAR_CLIENT_ID`). ICS + template URLs work without it.
