@@ -2,6 +2,8 @@
 
 Audience: a new engineer or Claude session taking over this repo with no prior chat history.
 
+**Start here:** [`CURSOR_BRIEFING.md`](./CURSOR_BRIEFING.md) (automation master map), then [`SYSTEM_OVERVIEW.md`](./SYSTEM_OVERVIEW.md) (full architecture).
+
 ## Product snapshot
 
 BH Contracting LTD. runs sales, canvassing, jobs, and field ops from one Next.js app. Staff authenticate with **login + password** (default PIN `0000` on first sign-in, then set password). Data lives in `data/store.json` (server) or `localStorage` key `bhc-crm-store-v10` (static GitHub Pages demo). Manage users in **Admin → Team**.

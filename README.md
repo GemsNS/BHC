@@ -1,8 +1,8 @@
-# BH Contracting Co. — All-in-One CRM
+# BH Contracting LTD. — All-in-One CRM
 
-Operations CRM + field PWA for **BH Contracting Co.**: role-based login, Active Knocker, jobs, fleet, AI Mainframe, and a public marketing site.
+Operations CRM + field PWA for **BH Contracting LTD.**: role-based login, Active Knocker, jobs, fleet, AI Mainframe, password-gated presentations, and a public marketing site.
 
-**Successor / Claude / Cursor transfer:** start at [`CLAUDE.md`](./CLAUDE.md), then [`docs/CURSOR_BRIEFING.md`](./docs/CURSOR_BRIEFING.md) (master map of the automation platform), then [`docs/HANDOFF.md`](./docs/HANDOFF.md).
+**Successor / Claude / Cursor transfer:** start at [`CLAUDE.md`](./CLAUDE.md), then [`docs/CURSOR_BRIEFING.md`](./docs/CURSOR_BRIEFING.md) (automation master map), then [`docs/SYSTEM_OVERVIEW.md`](./docs/SYSTEM_OVERVIEW.md) (full architecture), then [`docs/HANDOFF.md`](./docs/HANDOFF.md).
 
 ## Documentation index
 
