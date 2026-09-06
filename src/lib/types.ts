@@ -97,7 +97,28 @@ export type WorkflowTrigger =
   | "lead_created"
   | "lead_status_changed"
   | "shift_posted_pool"
+  | "job_created"
+  | "job_status_changed"
+  | "invoice_status_changed"
+  | "proposal_signed"
+  | "damage_reported"
+  | "ticket_created"
+  | "scheduled"
   | "manual";
+
+export const WORKFLOW_TRIGGERS: WorkflowTrigger[] = [
+  "lead_created",
+  "lead_status_changed",
+  "shift_posted_pool",
+  "job_created",
+  "job_status_changed",
+  "invoice_status_changed",
+  "proposal_signed",
+  "damage_reported",
+  "ticket_created",
+  "scheduled",
+  "manual",
+];
 
 export type WorkflowActionType =
   | "create_task"
@@ -107,7 +128,28 @@ export type WorkflowActionType =
   | "create_ticket"
   | "notify"
   | "find_prospects"
-  | "queue_outreach";
+  | "queue_outreach"
+  | "create_notification"
+  | "send_webhook"
+  | "create_job_from_lead"
+  | "create_invoice_draft"
+  | "update_lead_status";
+
+export const WORKFLOW_ACTION_TYPES: WorkflowActionType[] = [
+  "create_task",
+  "log_email",
+  "assign_lead",
+  "enroll_sequence",
+  "create_ticket",
+  "notify",
+  "find_prospects",
+  "queue_outreach",
+  "create_notification",
+  "send_webhook",
+  "create_job_from_lead",
+  "create_invoice_draft",
+  "update_lead_status",
+];
 
 export type SequenceStepType = "email" | "call" | "task";
 
@@ -216,6 +258,17 @@ export interface InvoiceDoc {
   aiSummary: string | null;
   createdAt: string;
   createdById: string;
+  /** Human number, e.g. INV-2026-0012 */
+  number?: string;
+  /** Public pay/view token → /pay/<token> */
+  token?: string;
+  dueAt?: string | null;
+  sentAt?: string | null;
+  paidAt?: string | null;
+  paidAmount?: number;
+  /** Hosted checkout URL once created (Stripe) */
+  payUrl?: string | null;
+  remindersSent?: number;
 }
 export interface Employee {
   id: string;
@@ -255,6 +308,9 @@ export interface Lead {
   leadScore: number;
   createdAt: string;
   updatedAt: string;
+  /** Referral tracking: who sent them, and their own code once they become a customer */
+  referredByCode?: string | null;
+  referralCode?: string | null;
 }
 
 export interface Company {
@@ -393,7 +449,8 @@ export interface OutreachQueueItem {
   prospectName: string;
   prospectEmail: string;
   prospectPhone: string;
-  channel: "email" | "sms" | "call";
+  /** `platform` = reply must be pasted into the ad site (no email/phone in the listing) */
+  channel: "email" | "sms" | "call" | "platform";
   subject: string;
   message: string;
   status: OutreachStatus;
@@ -401,6 +458,224 @@ export interface OutreachQueueItem {
   scheduledAt: string;
   sentAt: string | null;
   createdAt: string;
+  /** Job ad this reply answers (see AdListing) */
+  adId?: string | null;
+  /** Delivery provider + id once actually sent (smtp / resend / twilio) */
+  provider?: string | null;
+  providerMessageId?: string | null;
+  error?: string | null;
+  /** Set when this item is an automatic follow-up to an earlier outreach */
+  followUpOf?: string | null;
+  repliedAt?: string | null;
+  /** What kind of touch this is (defaults to ad_reply / prospect) */
+  kind?: OutreachKind;
+  jobId?: string | null;
+  invoiceId?: string | null;
+  quoteId?: string | null;
+}
+
+export type OutreachKind =
+  | "prospect"
+  | "ad_reply"
+  | "follow_up"
+  | "review"
+  | "referral"
+  | "payment_reminder"
+  | "quote"
+  | "document"
+  | "custom";
+
+/* ------------------------------------------------------------------ */
+/* Quotes, documents, payments, messages (job hub)                      */
+/* ------------------------------------------------------------------ */
+
+export type QuoteStatus = "draft" | "sent" | "viewed" | "signed" | "declined" | "expired";
+
+export interface QuoteLine {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  kind: "material" | "labour" | "service" | "other";
+}
+
+export interface Quote {
+  id: string;
+  /** Human number, e.g. Q-2026-0007 */
+  number: string;
+  jobId: string | null;
+  leadId: string | null;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  address: string;
+  title: string;
+  /** Scope of work paragraph(s) */
+  scope: string;
+  lines: QuoteLine[];
+  /** 0.15 = NS HST */
+  taxRate: number;
+  discount: number;
+  depositPercent: number;
+  validUntil: string | null;
+  status: QuoteStatus;
+  /** Public signing token → /q/<token> */
+  token: string;
+  sentAt: string | null;
+  viewedAt: string | null;
+  signedAt: string | null;
+  signerName: string | null;
+  signerEmail: string | null;
+  signatureDataUrl: string | null;
+  declinedReason: string | null;
+  notes: string;
+  terms: string;
+  pdfUrl: string | null;
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DocumentKind = "quote" | "contract" | "invoice" | "job_report" | "receipt";
+
+export interface JobDocument {
+  id: string;
+  kind: DocumentKind;
+  title: string;
+  number: string;
+  jobId: string | null;
+  leadId: string | null;
+  quoteId: string | null;
+  invoiceId: string | null;
+  /** /api/media/<file>.pdf */
+  fileUrl: string;
+  bytes: number;
+  sentAt: string | null;
+  sentTo: string | null;
+  sentVia: string | null;
+  createdById: string;
+  createdAt: string;
+}
+
+export type PaymentMethod = "stripe" | "etransfer" | "cash" | "cheque" | "other";
+
+export interface Payment {
+  id: string;
+  invoiceId: string | null;
+  jobId: string | null;
+  amount: number;
+  currency: string;
+  method: PaymentMethod;
+  provider: string | null;
+  providerId: string | null;
+  status: "pending" | "succeeded" | "failed" | "refunded";
+  receivedAt: string;
+  note: string;
+  createdAt: string;
+}
+
+export type MessageChannel = "sms" | "email" | "voice";
+
+export interface Message {
+  id: string;
+  channel: MessageChannel;
+  direction: "in" | "out";
+  from: string;
+  to: string;
+  subject: string;
+  body: string;
+  leadId: string | null;
+  jobId: string | null;
+  adId: string | null;
+  provider: string | null;
+  providerId: string | null;
+  status: "received" | "queued" | "sent" | "failed";
+  readAt: string | null;
+  /** Voice: recording + transcription */
+  recordingUrl: string | null;
+  transcription: string | null;
+  durationSec: number | null;
+  createdAt: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* Job-ad outreach (cold email / SMS replies to local "need a quote" ads) */
+/* ------------------------------------------------------------------ */
+
+export type AdSourceType = "rss" | "imap" | "webhook" | "manual";
+
+export interface AdSource {
+  id: string;
+  name: string;
+  type: AdSourceType;
+  /** RSS/Atom URL for `rss`; mailbox label for `imap`; ignored otherwise */
+  url: string;
+  enabled: boolean;
+  /** Only keep ads matching at least one keyword (empty = keep all) */
+  keywords: string[];
+  /** Drop ads matching any of these (competitor ads, "for sale", …) */
+  excludeKeywords: string[];
+  /** Human label for the service area this source covers */
+  region: string;
+  lastPolledAt: string | null;
+  lastError: string | null;
+  createdAt: string;
+}
+
+export type AdListingStatus =
+  | "new"
+  | "qualified"
+  | "drafted"
+  | "sent"
+  | "replied"
+  | "won"
+  | "lost"
+  | "skipped";
+
+export const AD_CATEGORIES = [
+  "siding",
+  "roofing",
+  "decks",
+  "windows_doors",
+  "soffit_fascia_gutters",
+  "fencing",
+  "exterior_painting",
+  "general_exterior",
+  "commercial_envelope",
+  "other",
+] as const;
+export type AdCategory = (typeof AD_CATEGORIES)[number];
+
+export interface AdListing {
+  id: string;
+  sourceId: string;
+  sourceName: string;
+  /** Stable id from the source (guid, message-id, listing id) for dedupe */
+  externalId: string;
+  url: string;
+  title: string;
+  body: string;
+  location: string;
+  postedAt: string | null;
+  fetchedAt: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  status: AdListingStatus;
+  /** 0–100 likelihood this is a real job request BHC can quote */
+  score: number;
+  category: AdCategory;
+  jobType: JobType | null;
+  /** One-line AI/heuristic summary of what the poster wants */
+  summary: string;
+  /** Why it scored the way it did (heuristic signals or AI reasons) */
+  reasons: string[];
+  classifiedBy: "ai" | "local" | null;
+  leadId: string | null;
+  outreachIds: string[];
+  repliedAt: string | null;
+  notes: string;
 }
 
 /** Admin AI assistant — lead hunt criteria fed by operator */
@@ -424,12 +699,58 @@ export interface AssistantDailyAutomation {
   enabled: boolean;
   /** Hour in local server time (0–23) when automation is due */
   runHour: number;
-  action:
-    | "pipeline_scan"
-    | "prospect_hunt"
-    | "outreach_digest"
-    | "process_sequences";
+  /** When set, runs every N minutes instead of once daily */
+  intervalMinutes?: number;
+  action: AutomationActionName;
   lastRunAt: string | null;
+}
+
+/** Every unattended job the automation engine knows how to run */
+export type AutomationActionName =
+  | "pipeline_scan"
+  | "prospect_hunt"
+  | "outreach_digest"
+  | "process_sequences"
+  | "task_reminders"
+  | "invoice_followup"
+  | "job_health"
+  | "inventory_reorder"
+  | "tool_overdue"
+  | "damage_escalation"
+  | "fleet_check"
+  | "webhook_retry"
+  | "store_backup"
+  | "daily_digest"
+  | "ad_ingest"
+  | "outreach_send"
+  | "outreach_followup"
+  | "media_offload"
+  | "review_requests"
+  | "referral_asks"
+  | "payment_reminders"
+  | "lead_discovery"
+  | "job_reports";
+
+/** One execution of the automation engine (scheduler tick, API, CLI, UI) */
+export interface AutomationTickRecord {
+  id: string;
+  source: "scheduler" | "api" | "cli" | "ui" | "test";
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+  /** Human-readable line per step that did something */
+  results: string[];
+  counters: {
+    automationsRun: number;
+    notificationsCreated: number;
+    tasksCreated: number;
+    sequenceSteps: number;
+    webhooksSent: number;
+    webhooksFailed: number;
+    workflowsRun: number;
+    backupCreated: boolean;
+  };
+  errors: string[];
 }
 
 export interface AssistantAuditEntry {
@@ -464,6 +785,12 @@ export interface Job {
   contractValue: number;
   notes: string;
   createdAt: string;
+  /** Customer portal magic link → /portal/<token> */
+  portalToken?: string | null;
+  quoteId?: string | null;
+  /** Human number, e.g. JOB-2026-0012 */
+  number?: string;
+  completedAt?: string | null;
 }
 
 export interface Vehicle {
@@ -608,7 +935,24 @@ export type WebhookEventName =
   | "todo.created"
   | "todo.completed"
   | "territory.created"
-  | "automation.ran";
+  | "automation.ran"
+  | "lead.created"
+  | "lead.status_changed"
+  | "job.created"
+  | "job.status_changed"
+  | "invoice.status_changed"
+  | "damage.reported"
+  | "ticket.created"
+  | "workflow.ran"
+  | "automation.tick"
+  | "ad.received"
+  | "ad.qualified"
+  | "outreach.sent"
+  | "outreach.replied"
+  | "outreach.opted_out";
+
+/** Payload shape: signed JSON (default), or a chat-ready message for Slack / Discord incoming webhooks */
+export type WebhookFormat = "json" | "slack" | "discord";
 
 export interface WebhookEndpoint {
   id: string;
@@ -617,6 +961,20 @@ export interface WebhookEndpoint {
   secret: string;
   events: WebhookEventName[];
   enabled: boolean;
+  createdAt: string;
+  format?: WebhookFormat;
+  /** Preset this endpoint was created from (ops-alerts, crm-sync, …) */
+  preset?: string | null;
+}
+
+/** Someone who asked us to stop (SMS "STOP", email "no thanks", manual) */
+export interface OptOutRecord {
+  id: string;
+  channel: "sms" | "email";
+  /** E.164 phone or lower-cased email */
+  address: string;
+  reason: string;
+  source: "sms_inbound" | "email_inbound" | "manual";
   createdAt: string;
 }
 
@@ -629,6 +987,10 @@ export interface WebhookDelivery {
   attempts: number;
   lastError: string | null;
   createdAt: string;
+  /** When the retry loop may try again (null = no retry scheduled) */
+  nextRetryAt?: string | null;
+  /** Set once delivered or permanently abandoned */
+  completedAt?: string | null;
 }
 
 export interface PushSubscriptionRecord {
@@ -648,6 +1010,8 @@ export interface InAppNotification {
   href: string | null;
   readAt: string | null;
   createdAt: string;
+  /** Automation idempotency key — prevents duplicate alerts across ticks */
+  dedupeKey?: string;
 }
 
 export interface GpsTrackingConfig {
@@ -828,6 +1192,18 @@ export interface AppData {
   assistantAudit: AssistantAuditEntry[];
   assistantMemory: AssistantMemoryEntry[];
   contracts: ContractRecord[];
+  /** Automation engine tick history (capped) */
+  automationRuns: AutomationTickRecord[];
+  /** Job-ad outreach: where ads come from and what we found */
+  adSources: AdSource[];
+  adListings: AdListing[];
+  /** Do-not-contact list enforced before every send */
+  optOuts: OptOutRecord[];
+  /** Job hub: quotes, generated PDFs, payments, two-way messages */
+  quotes: Quote[];
+  documents: JobDocument[];
+  payments: Payment[];
+  messages: Message[];
 }
 
 export const ROLE_LABELS: Record<EmployeeRole, string> = {

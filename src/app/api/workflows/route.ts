@@ -5,7 +5,13 @@ import {
   runSingleWorkflow,
 } from "@/lib/workflows";
 import { newId, nowIso, readStore, updateStore } from "@/lib/store";
-import type { WorkflowDefinition } from "@/lib/types";
+import {
+  WORKFLOW_ACTION_TYPES,
+  WORKFLOW_TRIGGERS,
+  type WorkflowActionType,
+  type WorkflowDefinition,
+  type WorkflowTrigger,
+} from "@/lib/types";
 
 export async function GET() {
   const data = await readStore();
@@ -21,25 +27,11 @@ const workflowSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   enabled: z.boolean().optional(),
-  trigger: z.enum([
-    "lead_created",
-    "lead_status_changed",
-    "shift_posted_pool",
-    "manual",
-  ]),
+  trigger: z.enum(WORKFLOW_TRIGGERS as [WorkflowTrigger, ...WorkflowTrigger[]]),
   triggerConfig: z.record(z.string(), z.string()).optional(),
   actions: z.array(
     z.object({
-      type: z.enum([
-        "create_task",
-        "log_email",
-        "assign_lead",
-        "enroll_sequence",
-        "create_ticket",
-        "notify",
-        "find_prospects",
-        "queue_outreach",
-      ]),
+      type: z.enum(WORKFLOW_ACTION_TYPES as [WorkflowActionType, ...WorkflowActionType[]]),
       config: z.record(
         z.string(),
         z.union([z.string(), z.number(), z.boolean(), z.null()]),

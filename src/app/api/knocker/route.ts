@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { bindPinsToTerritory, findDuplicateKnock, appendPinActivity } from "@/lib/knocker/ops";
 import { closePolygon, simplifyPath } from "@/lib/knocker/geo";
-import { onLeadCreated } from "@/lib/workflows";
+import { onLeadCreated, onProposalSigned } from "@/lib/workflows";
 import { dispatchWebhooks } from "@/lib/webhooks";
 import { computeProposalTotal, linesFromCatalog, signProposal } from "@/lib/proposals";
 import { defaultEndAt } from "@/lib/calendar";
@@ -10,6 +10,7 @@ import { enqueueNotification } from "@/lib/notifications";
 import { newId, nowIso, readStore, updateStore, writeStore } from "@/lib/store";
 import type { KnockEvent, KnockProposal, KnockTerritory, Lead } from "@/lib/types";
 import { normalizeAddressKey } from "@/lib/knocker/geo";
+import { storeDataUrl } from "@/lib/media-store";
 
 const outcomeEnum = z.enum([
   "not_home",
@@ -387,6 +388,7 @@ export async function POST(request: Request) {
       })
       .parse(body);
     let signedId: string | null = null;
+    const signatureUrl = await storeDataUrl(parsed.signatureDataUrl, "sig");
     await updateStore((data) => {
       const p = data.knockProposals.find((x) => x.id === parsed.proposalId);
       if (!p) return;
@@ -395,7 +397,7 @@ export async function POST(request: Request) {
         signProposal(p, {
           signerName: parsed.signerName,
           signerEmail: parsed.signerEmail,
-          signatureDataUrl: parsed.signatureDataUrl,
+          signatureDataUrl: signatureUrl,
           nowIso: nowIso(),
         }),
       );
@@ -403,6 +405,8 @@ export async function POST(request: Request) {
     });
     if (!signedId) return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     const data = await readStore();
+    const signed = data.knockProposals.find((p) => p.id === parsed.proposalId);
+    if (signed) onProposalSigned(data, signed);
     await dispatchWebhooks(data, "proposal.signed", { proposalId: parsed.proposalId }, newId, nowIso);
     await writeStore(data);
     const proposal = data.knockProposals.find((p) => p.id === parsed.proposalId);

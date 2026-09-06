@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { newId, nowIso, readStore, updateStore } from "@/lib/store";
+import { newId, nowIso, readStore, updateStoreAsync } from "@/lib/store";
 import type { Job } from "@/lib/types";
+import { dispatchWebhooks } from "@/lib/webhooks";
+import { onJobCreated, onJobStatusChanged } from "@/lib/workflows";
 
 const createSchema = z.object({
   title: z.string().min(1),
@@ -54,8 +56,16 @@ export async function POST(request: Request) {
     createdAt: nowIso(),
   };
 
-  await updateStore((data) => {
+  await updateStoreAsync(async (data) => {
     data.jobs.unshift(job);
+    onJobCreated(data, job, parsed.data.crewLeadId ?? undefined);
+    await dispatchWebhooks(
+      data,
+      "job.created",
+      { jobId: job.id, title: job.title, status: job.status, leadId: job.leadId },
+      newId,
+      nowIso,
+    );
   });
 
   return NextResponse.json({ job }, { status: 201 });
@@ -69,11 +79,22 @@ export async function PATCH(request: Request) {
     .parse(body.status);
 
   let updated: Job | null = null;
-  await updateStore((data) => {
+  await updateStoreAsync(async (data) => {
     const job = data.jobs.find((j) => j.id === id);
     if (!job) return;
+    const previous = job.status;
     job.status = status;
     updated = job;
+    if (previous !== status) {
+      onJobStatusChanged(data, job);
+      await dispatchWebhooks(
+        data,
+        "job.status_changed",
+        { jobId: job.id, title: job.title, from: previous, to: status },
+        newId,
+        nowIso,
+      );
+    }
   });
 
   if (!updated) {

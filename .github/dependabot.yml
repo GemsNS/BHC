@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      next:
+        patterns: ["next", "eslint-config-next", "react", "react-dom", "@types/react*"]
+      tooling:
+        patterns: ["vitest", "@vitejs/*", "eslint*", "typescript", "tsx", "jsdom", "@testing-library/*"]
+    ignore:
+      # Major bumps are reviewed manually — production app
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly

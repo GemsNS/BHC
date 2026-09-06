@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { onLeadCreated, onLeadStatusChanged } from "@/lib/workflows";
-import { newId, nowIso, readStore, updateStore } from "@/lib/store";
+import { dispatchWebhooks } from "@/lib/webhooks";
+import { live } from "@/lib/events";
+import { newId, nowIso, readStore, updateStoreAsync } from "@/lib/store";
 import type { Lead } from "@/lib/types";
 
 const createSchema = z.object({
@@ -56,9 +58,17 @@ export async function POST(request: Request) {
     updatedAt: stamp,
   };
 
-  await updateStore((data) => {
+  await updateStoreAsync(async (data) => {
     data.leads.unshift(lead);
     onLeadCreated(data, lead);
+    live.lead(`Lead created: ${lead.name}`, `${lead.source} · ${lead.jobType} · ${lead.city}`, { leadId: lead.id });
+    await dispatchWebhooks(
+      data,
+      "lead.created",
+      { leadId: lead.id, name: lead.name, source: lead.source, jobType: lead.jobType },
+      newId,
+      nowIso,
+    );
   });
 
   return NextResponse.json({ lead }, { status: 201 });
@@ -72,13 +82,22 @@ export async function PATCH(request: Request) {
     .parse(body.status);
 
   let updated: Lead | null = null;
-  await updateStore((data) => {
+  await updateStoreAsync(async (data) => {
     const lead = data.leads.find((l) => l.id === id);
     if (!lead) return;
+    const previous = lead.status;
     lead.status = status;
     lead.updatedAt = nowIso();
     updated = lead;
     onLeadStatusChanged(data, lead);
+    live.lead(`${lead.name}: ${previous} → ${status}`, undefined, { leadId: lead.id });
+    await dispatchWebhooks(
+      data,
+      "lead.status_changed",
+      { leadId: lead.id, name: lead.name, from: previous, to: status },
+      newId,
+      nowIso,
+    );
   });
 
   if (!updated) {

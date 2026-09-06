@@ -183,6 +183,43 @@ export function buildJarvisSnapshot(
     }
   }
 
+  if (context === "sales" || context === "overview" || context === "global") {
+    const adReplies = data.outreachQueue.filter((o) => o.adId && o.status === "pending_approval").length;
+    const newAds = data.adListings.filter((a) => a.status === "new").length;
+    const repliedAds = data.adListings.filter((a) => a.status === "replied").length;
+    if (repliedAds > 0) {
+      metrics.push({
+        id: "ad-replies-in",
+        label: "Prospects replied",
+        value: String(repliedAds),
+        tone: "success",
+        href: "/admin/ads",
+        insightId: "ads",
+      });
+    } else if (adReplies > 0 || newAds > 0) {
+      metrics.push({
+        id: "ad-replies",
+        label: adReplies > 0 ? "Replies to approve" : "New job ads",
+        value: String(adReplies > 0 ? adReplies : newAds),
+        tone: "action",
+        href: "/admin/ads",
+        insightId: "ads",
+      });
+    }
+  }
+
+  const unreadMessages = data.messages.filter((m) => m.direction === "in" && !m.readAt).length;
+  if (unreadMessages > 0 && (context === "sales" || context === "overview" || context === "global")) {
+    metrics.push({
+      id: "inbox",
+      label: "Inbox",
+      value: String(unreadMessages),
+      tone: "action",
+      href: "/admin/inbox",
+      insightId: "inbox",
+    });
+  }
+
   if (unread > 0) {
     metrics.push({
       id: "alerts",
@@ -208,11 +245,53 @@ export function buildJarvisSnapshot(
     });
   }
 
+  const automationSignal = automationHealthSignal(data, now);
+  if (automationSignal && (context === "overview" || context === "global")) {
+    metrics.push({
+      id: "automation",
+      label: "Automation",
+      value: automationSignal.value,
+      tone: automationSignal.tone,
+      href: "/admin/automation",
+      insightId: "automation",
+    });
+  }
+
   return {
     context,
     metrics: metrics.slice(0, 5),
     insightCount: 0,
   };
+}
+
+type AutomationSignal = { value: string; tone: JarvisTone; text: string };
+
+/**
+ * Compact health read on the automation engine: stale ticks, webhook backlog,
+ * or recent errors. Returns null when everything is quiet and healthy.
+ */
+export function automationHealthSignal(data: AppData, now = Date.now()): AutomationSignal | null {
+  const last = data.automationRuns[0];
+  const backlog = data.webhookDeliveries.filter(
+    (d) => d.status !== "ok" && d.attempts < 5 && (d.status === "pending" || d.nextRetryAt),
+  ).length;
+  const errors = data.automationRuns.slice(0, 3).reduce((s, r) => s + r.errors.length, 0);
+  const enabled = data.assistantAutomations.filter((a) => a.enabled).length;
+  if (!enabled) return null;
+  if (!last) {
+    return { value: "idle", tone: "neutral", text: "Automation engine has not ticked yet on this host." };
+  }
+  const ageMin = Math.round((now - new Date(last.finishedAt).getTime()) / 60_000);
+  if (errors > 0) {
+    return { value: `${errors} err`, tone: "warn", text: `${errors} automation error(s) in the last ticks.` };
+  }
+  if (backlog > 0) {
+    return { value: `${backlog} retry`, tone: "warn", text: `${backlog} webhook deliver(ies) waiting for retry.` };
+  }
+  if (ageMin > 180) {
+    return { value: `${Math.round(ageMin / 60)}h ago`, tone: "warn", text: `Last automation tick was ${Math.round(ageMin / 60)}h ago — scheduler may be stopped.` };
+  }
+  return { value: `${enabled} live`, tone: "success", text: `${enabled} automations armed · last tick ${ageMin} min ago.` };
 }
 
 /** Context-aware briefing cards — expand for breakdown + actions */
@@ -569,6 +648,89 @@ export function buildJarvisInsights(
     }
   }
 
+  if (context === "sales" || context === "overview" || context === "global") {
+    const ads = data.adListings;
+    const newAds = ads.filter((a) => a.status === "new");
+    const drafted = ads.filter((a) => a.status === "drafted" || a.status === "qualified");
+    const replied = ads.filter((a) => a.status === "replied");
+    const sentAds = ads.filter((a) => a.status === "sent");
+    const adDraftsPending = data.outreachQueue.filter((o) => o.adId && o.status === "pending_approval");
+    const sentToday = data.outreachQueue.filter((o) => o.adId && o.sentAt && isToday(o.sentAt)).length;
+    const wonAds = ads.filter((a) => a.status === "won").length;
+    if (ads.length > 0) {
+      const tone: JarvisTone = replied.length ? "success" : adDraftsPending.length || newAds.length ? "action" : "neutral";
+      const text = replied.length
+        ? `${replied.length} prospect${replied.length > 1 ? "s" : ""} answered your ad replies — book the site visit.`
+        : adDraftsPending.length
+          ? `${adDraftsPending.length} drafted repl${adDraftsPending.length > 1 ? "ies" : "y"} to job ads waiting for approval.`
+          : newAds.length
+            ? `${newAds.length} new ad${newAds.length > 1 ? "s" : ""} pulled in, not yet triaged.`
+            : `${sentAds.length} repl${sentAds.length === 1 ? "y" : "ies"} out, waiting on posters. ${wonAds} won from ads so far.`;
+      pushInsight(insights, {
+        id: "ads",
+        category: "sales",
+        tone,
+        title: "Job-ad outreach",
+        text,
+        priority: replied.length ? 97 : adDraftsPending.length ? 93 : 50,
+        metric: { value: String(replied.length || adDraftsPending.length || sentAds.length), label: replied.length ? "Replied" : adDraftsPending.length ? "To approve" : "Awaiting" },
+        href: "/admin/ads",
+        primaryAction: { label: replied.length ? "Open conversations" : "Review replies", href: "/admin/ads", kind: "primary" },
+        secondaryActions: [{ label: "Check sources now", href: "/admin/ads" }],
+        details: [
+          { label: "New / triaging", value: String(newAds.length) },
+          { label: "Drafted", value: String(drafted.length) },
+          { label: "Sent today", value: String(sentToday) },
+          { label: "Awaiting reply", value: String(sentAds.length) },
+          { label: "Replied", value: String(replied.length) },
+          { label: "Won", value: String(wonAds) },
+        ],
+        entities: (replied.length ? replied : drafted.length ? drafted : newAds).slice(0, 4).map((a) => ({
+          label: a.title.slice(0, 60),
+          meta: `${a.sourceName} · ${a.location || "?"} · score ${a.score}`,
+        })),
+      });
+    }
+  }
+
+  const inboundUnread = data.messages.filter((m) => m.direction === "in" && !m.readAt);
+  if (inboundUnread.length > 0 && (context === "sales" || context === "overview" || context === "global")) {
+    const voicemails = inboundUnread.filter((m) => m.channel === "voice").length;
+    pushInsight(insights, {
+      id: "inbox",
+      category: "sales",
+      tone: "action",
+      title: "Inbox",
+      text: `${inboundUnread.length} unread message${inboundUnread.length > 1 ? "s" : ""}${voicemails ? ` including ${voicemails} voicemail${voicemails > 1 ? "s" : ""}` : ""} — customers are waiting on a reply.`,
+      priority: 96,
+      metric: { value: String(inboundUnread.length), label: "Unread" },
+      href: "/admin/inbox",
+      primaryAction: { label: "Open inbox", href: "/admin/inbox", kind: "primary" },
+      entities: inboundUnread.slice(0, 4).map((m) => ({
+        label: data.leads.find((l) => l.id === m.leadId)?.name ?? m.from,
+        meta: `${m.channel} · ${(m.transcription ?? m.body).slice(0, 60)}`,
+      })),
+    });
+  }
+
+  const unpaidSent = data.invoices.filter((i) => i.kind === "invoice" && i.status === "sent");
+  if (unpaidSent.length > 0 && (context === "delivery" || context === "overview" || context === "global")) {
+    const owing = unpaidSent.reduce((s, i) => s + i.lines.reduce((a, l) => a + l.quantity * l.unitPrice, 0) - (i.paidAmount ?? 0), 0);
+    const overdue = unpaidSent.filter((i) => i.dueAt && new Date(i.dueAt).getTime() < now).length;
+    pushInsight(insights, {
+      id: "receivables",
+      category: "ops",
+      tone: overdue ? "warn" : "neutral",
+      title: "Receivables",
+      text: `${formatCurrency(owing)} outstanding across ${unpaidSent.length} invoice${unpaidSent.length > 1 ? "s" : ""}${overdue ? ` · ${overdue} past due` : ""}. Reminders go out automatically.`,
+      priority: overdue ? 78 : 42,
+      metric: { value: formatCurrency(owing), label: "Owed" },
+      href: "/admin/invoices",
+      primaryAction: { label: "Invoices", href: "/admin/invoices", kind: "primary" },
+      entities: unpaidSent.slice(0, 4).map((i) => ({ label: `${i.number ?? "Invoice"} · ${i.customerName}`, meta: `${i.status}${i.dueAt ? ` · due ${new Date(i.dueAt).toLocaleDateString()}` : ""}` })),
+    });
+  }
+
   if (urgentTickets.length > 0) {
     pushInsight(insights, {
       id: "tickets-urgent",
@@ -688,6 +850,30 @@ export function buildJarvisInsights(
         label: n.title,
         meta: n.body.slice(0, 60),
       })),
+    });
+  }
+
+  const automationSignal = automationHealthSignal(data, now);
+  if (automationSignal && (context === "overview" || context === "global")) {
+    const lastTick = data.automationRuns[0];
+    pushInsight(insights, {
+      id: "automation",
+      category: "ai",
+      tone: automationSignal.tone,
+      title: "Automation engine",
+      text: automationSignal.text,
+      priority: automationSignal.tone === "warn" ? 80 : 30,
+      href: "/admin/automation",
+      primaryAction: { label: "Automation hub", href: "/admin/automation", kind: "primary" },
+      details: lastTick
+        ? [
+            { label: "Last tick", value: `${new Date(lastTick.finishedAt).toLocaleString()} · ${lastTick.source}` },
+            { label: "Alerts created", value: String(lastTick.counters.notificationsCreated) },
+            { label: "Tasks created", value: String(lastTick.counters.tasksCreated) },
+            { label: "Webhooks", value: `${lastTick.counters.webhooksSent} sent · ${lastTick.counters.webhooksFailed} failed` },
+          ]
+        : [],
+      entities: (lastTick?.results ?? []).slice(0, 4).map((r) => ({ label: r.slice(0, 90) })),
     });
   }
 

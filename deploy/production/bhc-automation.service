@@ -1,0 +1,21 @@
+# /etc/systemd/system/bhc-automation.service — one automation tick (paired with bhc-automation.timer)
+#
+# Optional alternative to the in-process scheduler. If you use this, set BHC_SCHEDULER=0
+# in /opt/bhc/.env so ticks are not run twice.
+#
+#   sudo cp deploy/production/bhc-automation.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now bhc-automation.timer
+#   systemctl list-timers bhc-automation.timer
+
+[Unit]
+Description=BHC automation engine tick
+After=bhc.service
+
+[Service]
+Type=oneshot
+User=bhc
+Group=bhc
+WorkingDirectory=/opt/bhc
+EnvironmentFile=-/opt/bhc/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/npx --yes tsx scripts/bhc-cli.ts automations tick

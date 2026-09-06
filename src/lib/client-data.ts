@@ -7,8 +7,9 @@ import { sessionHeaders } from "./session-headers";
 import type { AppData } from "./types";
 
 /** Bump when seed credentials/schema must replace stale browser demos */
-const STORAGE_KEY = "bhc-crm-store-v9";
+const STORAGE_KEY = "bhc-crm-store-v10";
 const LEGACY_STORAGE_KEYS = [
+  "bhc-crm-store-v9",
   "bhc-crm-store-v8",
   "bhc-crm-store-v7",
   "bhc-crm-store-v6",
@@ -120,6 +121,16 @@ export async function mutateAppData(
 ): Promise<AppData> {
   const data = await loadAppData();
   mutator(data);
+  await saveAppData(data);
+  return data;
+}
+
+/** Async variant — the mutator may await (e.g. automation engine tick in the browser demo). */
+export async function mutateAppDataAsync(
+  mutator: (data: AppData) => Promise<void>,
+): Promise<AppData> {
+  const data = await loadAppData();
+  await mutator(data);
   await saveAppData(data);
   return data;
 }

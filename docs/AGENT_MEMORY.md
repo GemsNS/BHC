@@ -1,7 +1,7 @@
 # Agent memory — BHC project context
 
 Persistent log of user preferences, decisions, and chat themes for future agents and engineers.  
-**Last updated:** 2026-08-24
+**Last updated:** 2026-09-05
 
 ## How to use this file
 
@@ -74,6 +74,56 @@ Persistent log of user preferences, decisions, and chat themes for future agents
 - Metric chips and pipeline graph nodes expand the matching briefing card; action buttons in the panel still navigate.
 
 **Key files:** `src/lib/jarvis-briefing.ts`, `src/components/JarvisBar.tsx`, `src/components/JarvisDetailPanel.tsx`, `src/app/admin/dashboard/page.tsx`, `src/app/globals.css` (JARVIS + HUD blocks).
+
+### Automation supercharge (2026-09-05, Claude)
+
+**User ask:** "supercharge this project and set it up to automate as many tasks as possible on top of the current system." Production is live at bhcontracting.ca; the user runs the deploy themselves.
+
+**Shipped:**
+
+- Automation engine (`src/lib/automation-engine.ts`) + in-process scheduler started from `src/instrumentation.ts` (every 15 min, `BHC_SCHEDULER=0` to disable). 14-entry catalog: reminders, invoice follow-up, job health, inventory reorder, tool overdue, damage escalation, fleet check, daily digest, sequences, webhook retry, nightly backup, pipeline scan (+ prospect hunt / outreach digest off by default). Idempotent via `dedupeKey` + open-task lookups.
+- Workflow engine: 7 new triggers (job created/status, invoice status, proposal signed, damage, ticket, scheduled) and 5 new actions (notification, webhook, job from lead, invoice draft, lead status). Four templates ship **paused**.
+- Webhooks: pending queue, exponential backoff retry (max 5), `X-BHC-Delivery` / `X-BHC-Attempt`, 9 new events.
+- `/admin/automation` hub (Administration nav), `/api/automation`, public `/api/health`, JARVIS "Automation" chip + card, Mainframe tools `automation_status` / `toggle_automation` / `store_health`.
+- Backups (`data/backups/`, rotating) + store integrity report; CLI `automations tick|status`, `store health|backup|backups|restore`, `webhooks backlog|retry`.
+- CI/CD: `.github/workflows/ci.yml` (lint/typecheck/test/build), `deploy-production.yml` (SSH deploy after CI, gated on secrets), `nightly.yml`, `gh-pages.yml` (manual), Dependabot. Host script `deploy/production/deploy.sh` with pre-deploy snapshot, health gate, auto-rollback; workstation `npm run release`.
+- Store key bumped to **v10** (`automationRuns` collection).
+
+**Decisions:** additive-only migrations; anything that creates business records ships disabled; nothing sends customer email. Node 22 is required to run vitest 4 locally (Node 21 fails on `util.styleText`).
+
+### Job-ad outreach + console (2026-09-06, Claude)
+
+**User ask (verbatim theme):** "one of the main automations i want setup is cold emailing/cold texting responding to ads for possible jobs in the area and whatever model i need to buy or setup"; then "create an intuitive command line interface console… configure any webhooks we would need… i will get the necessary api keys"; then "review the entire project and improve… including the jarvis panel… tell me what models and webhooks i need to configure".
+
+**Shipped:**
+
+- Ad pipeline: RSS + alert-mailbox (IMAP via `imapflow`/`mailparser`) + inbound webhook + manual paste → dedupe → Claude Haiku triage (rules fallback) → lead + Claude Opus reply drafts (email/SMS/platform) → approval-gated send (SMTP/Resend, Twilio) → one follow-up → auto-close. Replies via Twilio inbound webhook and mailbox polling; STOP/"no thanks" → `optOuts` enforced before every send.
+- `/admin/ads` page, `/api/ads`, `/api/ads/inbound`, `/api/sms/inbound`, `/api/outreach` real send, `/api/webhooks` presets + formats (slack/discord/json) + test.
+- `npm run console` — REPL for everything (leads/jobs/invoices/ads/outreach/auto/hooks/backups, free text → Mainframe).
+- JARVIS: "Job-ad outreach" chip + card; Mainframe tools `list_ads`, `outreach_status`.
+- Autonomy: lead → contacted on send; ads auto-close after 21 days; daily digest email (`DIGEST_EMAIL_TO`).
+- Model defaults moved to `claude-opus-5` (main) + `claude-haiku-4-5` (triage); `temperature` omitted on 4.6+ models.
+
+**Shopping list for the owner:** Anthropic API key; a `quotes@` GoDaddy mailbox (IMAP + SMTP); Kijiji saved-search alerts to that mailbox; Twilio account + 902 number with inbound webhook → `/api/sms/inbound`; optional Slack/Discord webhook URL; optional Zapier for `/api/ads/inbound`. Full detail `docs/OUTREACH.md`.
+
+### Platform + job hub + inbox (2026-09-06, Claude, "free reign" round)
+
+**User ask:** "lets build all that … tools to generate contracts, invoices, job reports and tie it all to the individual job … centralize every single system … everything automatically sent to the customer … build all 5 suggestions … work on the UI … live data stream of the system pinging out into the internet searching for info and leads and doing outreach live … compile a list of what ai models i need."
+
+**Shipped:**
+
+- **Live wire**: `src/lib/events.ts` ring buffer + JSONL sink, `/api/stream` SSE, `LiveWire` component on the dashboard (HUD + classic) and `/admin/live`. Every subsystem emits.
+- **Auth**: signed httpOnly cookie sessions, lockout, `src/middleware.ts` gate on `/api/*` with public allowlist; legacy header transitional (`BHC_STRICT_AUTH`).
+- **Storage**: `store-backend.ts` (json | sqlite via `node:sqlite`, `process.getBuiltinModule`), `media-store.ts` (photos/signatures/PDFs on disk, nightly `media_offload`).
+- **Job hub** `/admin/jobs/[id]`: checklist, quotes editor + catalog, e-sign at `/q/<token>` → job + deposit invoice + contract + PDFs, invoices with Stripe/e-Transfer, payments, documents, site updates, messages, timeline. Public `/pay/<token>`, `/portal/<token>`, `/r/<code>`.
+- **Documents** (`pdfkit`): quote, contract, invoice, receipt, job report; `deliver.ts` emails PDF + SMS link; `DOCS_AUTOSEND` policy; weekly `job_reports` automation.
+- **Payments**: Stripe Checkout + signed webhook, manual records, Interac e-Transfer auto-match from mailbox, `payment_reminders` 7/14/30d, receipts.
+- **Reviews/referrals**: `review_requests`, `referral_asks` automations; referral codes on leads.
+- **Inbox** `/admin/inbox` + `messaging.ts`: SMS/email/voice threads, Claude-drafted replies, unknown numbers → leads; Twilio Voice forward → voicemail transcription (Claude summary) → missed-call text-back.
+- **Internet lead discovery**: `lead-discovery.ts` — Claude Opus 5 + `web_search_20260209` every 3h → ad inbox.
+- Console: `inbox`, `quote`, `docs`, `pay`. JARVIS: inbox + receivables cards, inbox chip. `docs/SETUP_CHECKLIST.md` = the models/services/webhooks list.
+
+**Gotchas learned:** `src/middleware.ts` makes Next compile `instrumentation.ts` for Edge too → Node-only libs must be dynamically imported in `scheduler.ts` and Node core modules are stubbed for `nextRuntime === "edge"` in `next.config.ts`; `node:sqlite` must be loaded via `process.getBuiltinModule`. Claude 4.6+ models reject `temperature`.
 
 ---
 

@@ -5,6 +5,8 @@ import {
 import { DEFAULT_STAFF_PIN } from "./auth-credentials";
 import { huntLeadsFromCriteria } from "./mainframe-prospects";
 import { runDailyAutomations } from "./mainframe-automations";
+import { automationStatus, describeSchedule } from "./automation-engine";
+import { storeHealth } from "./store-health";
 import { findProspectsForLead, scoreLead } from "./lead-automation";
 import type {
   AppData,
@@ -89,6 +91,11 @@ export const MAINFRAME_TOOL_NAMES = [
   "delete_memory",
   "import_data",
   "lookup_hrm",
+  "automation_status",
+  "toggle_automation",
+  "store_health",
+  "list_ads",
+  "outreach_status",
 ] as const;
 
 export type MainframeToolName = (typeof MAINFRAME_TOOL_NAMES)[number];
@@ -149,9 +156,103 @@ export function executeMainframeTool(
         summary:
           "lookup_hrm requires server async — use from AI chat on Node host (not local parser).",
       };
+    case "automation_status":
+      return toolAutomationStatus(data);
+    case "toggle_automation":
+      return toolToggleAutomation(data, args);
+    case "store_health":
+      return toolStoreHealth(data);
+    case "list_ads":
+      return toolListAds(data, args);
+    case "outreach_status":
+      return toolOutreachStatus(data);
     default:
       return { ok: false, summary: `Unknown tool: ${tool}` };
   }
+}
+
+function toolListAds(data: AppData, args: Record<string, unknown>): ToolExecution {
+  const status = typeof args.status === "string" ? args.status : undefined;
+  const rows = data.adListings
+    .filter((a) => (status ? a.status === status : a.status === "new" || a.status === "drafted" || a.status === "qualified"))
+    .slice(0, 15);
+  if (!rows.length) {
+    return { ok: true, summary: status ? `No ads with status ${status}.` : "No job ads need attention right now." };
+  }
+  const lines = rows.map((a) => {
+    const drafts = data.outreachQueue.filter((o) => o.adId === a.id);
+    return `• [${a.status}] ${a.title.slice(0, 70)} — score ${a.score}, ${a.category}${a.location ? `, ${a.location}` : ""}${drafts.length ? ` · ${drafts.length} draft(s) (${drafts.map((d) => `${d.channel}:${d.status}`).join(", ")})` : ""}`;
+  });
+  return {
+    ok: true,
+    summary: `${rows.length} job ad(s):\n${lines.join("\n")}\nOpen /admin/ads to approve or edit replies.`,
+    data: { count: rows.length, ids: rows.map((r) => r.id) },
+  };
+}
+
+function toolOutreachStatus(data: AppData): ToolExecution {
+  const q = data.outreachQueue;
+  const byStatus = (s: string) => q.filter((o) => o.status === s).length;
+  const adBacked = q.filter((o) => o.adId).length;
+  const todayKey = new Date().toDateString();
+  const sentToday = q.filter((o) => o.sentAt && new Date(o.sentAt).toDateString() === todayKey).length;
+  return {
+    ok: true,
+    summary: `Outreach: ${byStatus("pending_approval")} awaiting approval, ${byStatus("approved")} approved (send on next tick), ${byStatus("sent")} sent (${sentToday} today), ${byStatus("failed")} failed. ${adBacked} item(s) came from job ads; ${data.adListings.filter((a) => a.status === "replied" || a.status === "won").length} ad conversation(s) got a reply.`,
+    data: { pending: byStatus("pending_approval"), approved: byStatus("approved"), sent: byStatus("sent"), failed: byStatus("failed"), sentToday },
+  };
+}
+
+function toolAutomationStatus(data: AppData): ToolExecution {
+  const status = automationStatus(data);
+  const lines = status.automations.map(
+    (a) =>
+      `${a.enabled ? "●" : "○"} ${a.name} — ${a.schedule}${a.due ? " [due]" : ""}${a.lastRunAt ? ` (last ${a.lastRunAt.slice(0, 16).replace("T", " ")})` : ""}`,
+  );
+  const last = status.lastTick
+    ? `Last tick ${status.lastTick.finishedAt.slice(0, 16).replace("T", " ")} via ${status.lastTick.source}: ${status.lastTick.results.length} result(s), ${status.lastTick.errors.length} error(s).`
+    : "No automation tick recorded yet.";
+  return {
+    ok: true,
+    summary: `${last}\n${status.dueCount} automation(s) due now · ${status.webhookBacklog} webhook(s) awaiting retry · ${status.unreadNotifications} unread alert(s).\n${lines.join("\n")}`,
+    data: {
+      dueCount: status.dueCount,
+      webhookBacklog: status.webhookBacklog,
+      unread: status.unreadNotifications,
+      automations: status.automations,
+    },
+  };
+}
+
+function toolToggleAutomation(data: AppData, args: Record<string, unknown>): ToolExecution {
+  const query = String(args.id ?? args.name ?? args.query ?? "").trim().toLowerCase();
+  if (!query) return { ok: false, summary: "Provide the automation id or name." };
+  const auto = data.assistantAutomations.find(
+    (a) =>
+      a.id.toLowerCase() === query ||
+      a.action.toLowerCase() === query ||
+      a.name.toLowerCase().includes(query),
+  );
+  if (!auto) return { ok: false, summary: `No automation matches "${query}".` };
+  const enabled = args.enabled == null ? !auto.enabled : Boolean(args.enabled);
+  auto.enabled = enabled;
+  return {
+    ok: true,
+    summary: `${auto.name} is now ${enabled ? "enabled" : "disabled"} (${describeSchedule(auto)}).`,
+    data: { id: auto.id, enabled },
+  };
+}
+
+function toolStoreHealth(data: AppData): ToolExecution {
+  const h = storeHealth(data);
+  const issues = h.issues.length
+    ? h.issues.map((i) => `- [${i.level}] ${i.message}`).join("\n")
+    : "- no issues";
+  return {
+    ok: h.ok,
+    summary: `Store health: ${h.ok ? "OK" : "ERRORS"} · ${h.approxMB} MB · ${data.leads.length} leads, ${data.jobs.length} jobs, ${data.invoices.length} invoices, ${h.photoDataUrls} inline photos.\n${issues}`,
+    data: { ok: h.ok, approxMB: h.approxMB, issues: h.issues },
+  };
 }
 
 function toolGetSummary(data: AppData): ToolExecution {

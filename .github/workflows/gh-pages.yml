@@ -1,0 +1,40 @@
+name: Deploy GitHub Pages demo
+
+# Publishes the static localStorage demo to the gh-pages branch.
+# Manual by default; enable the push trigger below if you want every main push to refresh the demo.
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages
+  cancel-in-progress: true
+
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Build static export
+        run: npm run build:gh-pages
+      - name: Publish ./out → gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
+          publish_branch: gh-pages
+          force_orphan: true
+          enable_jekyll: false

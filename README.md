@@ -2,7 +2,7 @@
 
 Operations CRM + field PWA for **BH Contracting Co.**: role-based login, Active Knocker, jobs, fleet, AI Mainframe, and a public marketing site.
 
-**Successor / Claude transfer:** start at [`CLAUDE.md`](./CLAUDE.md) then [`docs/HANDOFF.md`](./docs/HANDOFF.md).
+**Successor / Claude / Cursor transfer:** start at [`CLAUDE.md`](./CLAUDE.md), then [`docs/CURSOR_BRIEFING.md`](./docs/CURSOR_BRIEFING.md) (master map of the automation platform), then [`docs/HANDOFF.md`](./docs/HANDOFF.md).
 
 ## Documentation index
 
@@ -51,7 +51,13 @@ Open [http://localhost:3000](http://localhost:3000) → **login**.
 | --- | --- |
 | `npm run dev` | Dev server `0.0.0.0:3000` |
 | `npm run lint` / `npm test` / `npm run build` | Quality checks |
-| `npm run bhc -- <cmd>` | CLI — AI, store, automations |
+| `npm run verify` | Lint + typecheck + test + build (what CI runs) |
+| `npm run release` | Verify → push `main` → CI deploys production (`docs/DEPLOYMENT.md`) |
+| `npm run console` | Interactive console for the whole CRM (leads, jobs, quotes, docs, payments, inbox, ads, outreach, automations, webhooks; free text → Mainframe AI) |
+| `docs/SETUP_CHECKLIST.md` | What to buy and configure: AI models, mailbox, Twilio, Stripe, review link, inbound + outbound webhooks |
+| `npm run bhc -- <cmd>` | CLI — AI, store, automations, webhooks, backups, ads |
+| `npm run automation:tick` / `automation:status` | Run / inspect the automation engine (`docs/AUTOMATION.md`) |
+| `npm run store:backup` / `store:health` | Snapshot / integrity report for `data/store.json` |
 | `npm run build:gh-pages` | Static demo → `./out` |
 | `npm run deploy:gh-pages` | Publish `gh-pages` |
 
@@ -77,4 +83,4 @@ https://gemsns.github.io/BHC/ — localStorage demo (no server APIs). Full AI/we
 
 ## Data
 
-JSON store `data/store.json` (gitignored). Reset: `POST /api/seed`. Browser demos use `bhc-crm-store-v8`.
+JSON store `data/store.json` (gitignored). Reset: `POST /api/seed`. Browser demos use `bhc-crm-store-v10`.

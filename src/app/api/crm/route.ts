@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { newId, nowIso, readStore, updateStore } from "@/lib/store";
+import { newId, nowIso, readStore, updateStore, updateStoreAsync } from "@/lib/store";
 import type { CrmActivity, Deal, ServiceTicket } from "@/lib/types";
+import { dispatchWebhooks } from "@/lib/webhooks";
+import { onTicketCreated } from "@/lib/workflows";
 
 export async function GET(request: Request) {
   const data = await readStore();
@@ -87,8 +89,16 @@ export async function POST(request: Request) {
       createdAt: stamp,
       updatedAt: stamp,
     };
-    await updateStore((data) => {
+    await updateStoreAsync(async (data) => {
       data.tickets.unshift(ticket);
+      onTicketCreated(data, ticket, body.assigneeId ?? undefined);
+      await dispatchWebhooks(
+        data,
+        "ticket.created",
+        { ticketId: ticket.id, subject: ticket.subject, priority: ticket.priority },
+        newId,
+        nowIso,
+      );
     });
     return NextResponse.json({ ticket }, { status: 201 });
   }
