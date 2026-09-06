@@ -1,45 +1,45 @@
-# GrokBot prompt — deploy, rotate session secret, free setup, handback report
+# GrokBot prompt — deploy, rotate session secret, free account setup, handback
 
-Copy everything below the line into GrokBot. Do **not** reseed. Staff accounts already exist.
+Copy everything below the line into GrokBot.
+
+**Owner notes for GrokBot:**
+- Staff accounts already exist — do **not** reseed / reset PINs.
+- GoDaddy SMTP/IMAP credentials are **already in `/opt/bhc/.env`** — verify only.
+- You may open the browser and **hand control to the owner** to finish free signups (Discord, UptimeRobot, Google AI Studio, Kijiji, Google Business review link, Stripe test-mode, Twilio trial). Do that instead of leaving free items in the handback.
 
 ---
 
 ## PROMPT (paste into GrokBot)
 
 ```
-You are GrokBot operating on the BH Contracting (BHC) production host.
+You are GrokBot on the BH Contracting (BHC) production host.
 
 ## Mission
-1. Deploy current origin/main to production.
-2. Rotate SESSION_SECRET only (invalidate all staff cookies). Do NOT reseed. Do NOT wipe CRM data. Do NOT reset staff PINs/passwords.
-3. Configure every FREE account / webhook / env you can without charging the owner.
-4. For anything that requires a paid account, paid phone number, paid AI key, or human login you cannot complete, write a handback report at:
+1. Deploy origin/main to production.
+2. Rotate SESSION_SECRET only → invalidate all staff cookies. Do NOT reseed. Do NOT wipe CRM. Do NOT reset staff passwords/PINs.
+3. Set up every FREE account/webhook you can. When a free signup needs a human, open the browser / auth flow and HAND CONTROL TO THE OWNER to finish login/2FA, then continue configuring keys/webhooks yourself.
+4. GoDaddy mailbox credentials are ALREADY in /opt/bhc/.env — verify them; do not ask the owner for them.
+5. Only hand back items that are truly paid or cannot be completed even with owner interactive control. Write:
    /opt/bhc/docs/GROKBOT_HANDBACK_REPORT.md
-   (also copy a short summary to stdout at the end).
 
 ## Hard rules
 - App dir: /opt/bhc
 - Domain: https://bhcontracting.ca
 - Systemd unit: bhc
-- NEVER run: store reseed, store restore (unless deploy auto-rollback), seed wipe, drop database, rm data/store.json
-- NEVER force-push git
-- NEVER commit .env or secrets into git
-- NEVER invent Stripe/Twilio/Anthropic keys — only write placeholders if missing, and list them in the handback report
-- Prefer free tiers. If a service has no usable free path, stop and document it.
-- After SESSION_SECRET rotation, staff keep existing passwords; they only need to log in again.
+- NEVER: store reseed, seed wipe, drop DB, rm data/store.json, force-push, commit .env
+- NEVER invent Anthropic/Twilio/Stripe live keys
+- Prefer free tiers and trials. Hand control to owner for interactive free signups.
+- After SESSION_SECRET rotate: staff keep EXISTING passwords; they only re-login.
 
 ## Phase A — Deploy + rotate session (required)
-
-Run on the host:
 
 ```bash
 set -euo pipefail
 cd /opt/bhc
 
-# Snapshot .env before edits
 cp -a .env ".env.bak.$(date -u +%Y%m%dT%H%M%SZ)"
 
-# Rotate SESSION_SECRET (this invalidates every bhc_session cookie)
+# Rotate SESSION_SECRET (invalidates every session cookie)
 NEW_SESSION="$(openssl rand -hex 32)"
 if grep -q '^SESSION_SECRET=' .env; then
   sed -i "s/^SESSION_SECRET=.*/SESSION_SECRET=${NEW_SESSION}/" .env
@@ -47,159 +47,160 @@ else
   printf '\nSESSION_SECRET=%s\n' "$NEW_SESSION" >> .env
 fi
 
-# Ensure AUTOMATION_SECRET exists (do not rotate if already set — cron/CI may depend on it)
+# Ensure AUTOMATION_SECRET exists; do NOT rotate if already set
 if ! grep -q '^AUTOMATION_SECRET=.\+' .env; then
   printf 'AUTOMATION_SECRET=%s\n' "$(openssl rand -hex 32)" >> .env
 fi
 
-# Pull + install + deploy
 git fetch origin
 git checkout main
 git pull origin main
 npm ci
 bash deploy/production/deploy.sh
 
-# Health checks
 curl -fsS http://127.0.0.1:3000/api/health | tee /tmp/bhc-health-local.json
 curl -fsS https://bhcontracting.ca/api/health | tee /tmp/bhc-health-public.json || true
 
-# Print env status (secrets redacted by the console if supported)
+# Confirm GoDaddy-related env is present (redact values when printing)
+echo "=== mailbox env keys present? ==="
+grep -E '^(SMTP_|ADS_IMAP_|OUTREACH_REPLY_EMAIL|ETRANSFER_EMAIL)=' .env | cut -d= -f1 || true
+
 npm run console <<'EOF' || npm run bhc -- store health || true
 env
 EOF
 ```
 
-If health fails, stop. Do not continue to Phase B. Capture deploy log from data/deploy/deploy.log (or data/backups path used by deploy.sh) into the handback report.
+If health fails → STOP. Capture deploy logs into the handback report. Do not continue Phase B.
 
-Confirm in the report:
-- git SHA deployed
-- SESSION_SECRET rotated: yes
-- reseed run: NO
-- /api/health status
-- staff told: log in again with existing passwords
+Report must state: SHA deployed, SESSION_SECRET rotated YES, reseed NO, staff re-login with existing passwords.
 
-## Phase B — Free setups you MAY complete without owner payment
+## Phase B — Free setups (DO THESE; hand control to owner when login required)
 
-Only do these if you have credentials/access, or the step is fully free and scriptable.
+For each free signup: open the provider site, ask the owner to take control for account creation / 2FA / CAPTCHA, then take control back, copy keys/URLs into /opt/bhc/.env, restart bhc, and verify.
 
-### B1. Discord ops alerts (FREE)
-If a Discord webhook URL is available in the environment, chat memory, or owner messages as DISCORD_WEBHOOK_URL:
+### B1. GoDaddy mailbox — ALREADY CONFIGURED
+- Credentials are in .env. Do not request them.
+- Verify SMTP send and IMAP read if the app/console has a test command.
+- If verify fails, debug with existing .env values; only handback if credentials are wrong/expired.
+
+### B2. Discord ops alerts (FREE)
+1. Hand control to owner → create free Discord server (or use existing) → Channel → Integrations → Webhooks → New Webhook → copy URL.
+2. Take control back and configure:
 ```bash
 cd /opt/bhc
+# put URL in .env as DISCORD_WEBHOOK_URL=...
 npm run console <<EOF
 hooks add ops-alerts-discord ${DISCORD_WEBHOOK_URL}
 hooks test
 EOF
 ```
-If no URL is available, add to handback: owner must create a free Discord server → Channel → Integrations → Webhooks → copy URL.
 
-### B2. Uptime monitor target (FREE — document only unless API token given)
-Public health URL to monitor every 5 minutes:
-  https://bhcontracting.ca/api/health
-Expect HTTP 200. If UPTIMEROBOT_API_KEY is present, create a monitor; otherwise handback with exact click-path for UptimeRobot free tier.
+### B3. UptimeRobot free monitor (FREE)
+1. Hand control to owner → https://uptimerobot.com → free account.
+2. Create HTTP(s) monitor:
+   - URL: https://bhcontracting.ca/api/health
+   - Interval: 5 minutes
+   - Expect: 200
+3. Optionally add alert contact (owner email/Discord).
+4. Record monitor ID/URL in the report as COMPLETED.
 
-### B3. Google review URL (FREE)
-If REVIEW_URL / REVIEW_URL is already known, set it in .env and restart:
+### B4. Google AI Studio — Gemini free key (FREE quota)
+1. Hand control to owner → https://aistudio.google.com/apikey → create API key (free tier).
+2. Write GEMINI_API_KEY into /opt/bhc/.env, restart bhc.
+3. Note: Gemini is fallback/cheap path; Anthropic remains preferred for Mainframe drafts when paid key is added later.
+
+### B5. Google Business review link (FREE)
+1. Hand control to owner → Google Business Profile → Get more reviews → copy short link.
+2. Set REVIEW_URL in .env and restart bhc.
+
+### B6. Kijiji saved-search email alerts (FREE)
+1. Hand control to owner → log into Kijiji.
+2. Create saved searches for HRM “need contractor / siding / deck / exterior” style ads.
+3. Point email alerts at the GoDaddy mailbox already in .env (ADS_IMAP_USER / OUTREACH_REPLY_EMAIL).
+4. Confirm alert senders include kijiji.ca in ADS_IMAP_ALERT_SENDERS if that env exists.
+
+### B7. Stripe account in TEST mode (FREE to create; no live charges)
+1. Hand control to owner → https://dashboard.stripe.com/register
+2. Get TEST secret key (sk_test_…) and create TEST webhook:
+   - URL: https://bhcontracting.ca/api/payments/webhook
+   - Events: checkout.session.completed, checkout.session.async_payment_succeeded
+3. Put STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET in .env (clearly note TEST mode in report).
+4. LIVE keys + real payouts stay in handback until owner is ready (still free account, but real money).
+
+### B8. Twilio trial (FREE trial credit; trial number)
+1. Hand control to owner → https://www.twilio.com/try-twilio
+2. Create trial account, get ACCOUNT_SID + AUTH_TOKEN, get a trial number (or note CA number requires paid upgrade).
+3. Point webhooks:
+   - Messaging POST https://bhcontracting.ca/api/sms/inbound
+   - Voice POST https://bhcontracting.ca/api/voice/inbound
+4. Set TWILIO_* and VOICE_FORWARD_TO (owner cell) in .env.
+5. If Canadian 902 local number is unavailable on trial → document as paid upgrade in handback; keep trial number working for sandbox if possible.
+
+### B9. Do NOT enable customer autosend yet
+Leave OUTREACH_AUTOSEND / DOCS_AUTOSEND empty until SMTP + Twilio tests succeed.
+
+### B10. Do NOT set BHC_STRICT_AUTH=1 yet
+Wait until owner confirms all staff re-logged in after cookie rotation. List as follow-up.
+
+### B11. Restart + verify after env changes
 ```bash
-# only if owner provided the Google Business “Get more reviews” link
-grep -q '^REVIEW_URL=' .env && sed -i "s|^REVIEW_URL=.*|REVIEW_URL=${REVIEW_URL}|" .env || echo "REVIEW_URL=${REVIEW_URL}" >> .env
 sudo systemctl restart bhc
+curl -fsS https://bhcontracting.ca/api/health
+cd /opt/bhc && npm run console   # env
 ```
-Otherwise handback: how to copy the link from Google Business Profile.
 
-### B4. Gemini free-tier AI fallback (FREE quota — only if owner provides a Google AI Studio key)
-Do NOT create a Google account for them.
-If GEMINI_API_KEY is provided in chat/env:
-```bash
-# append/update GEMINI_API_KEY in /opt/bhc/.env
-sudo systemctl restart bhc
-```
-Note in report: Gemini is fallback only; Anthropic is preferred for Mainframe drafts (paid usage).
+## Phase C — Handback ONLY if truly unpaid-impossible or owner declines interactive signup
 
-### B5. Existing GoDaddy mailbox (FREE if already owned)
-If SMTP_* and ADS_IMAP_* credentials already exist in .env, verify with console env / a safe test.
-Do NOT invent mailbox passwords. If missing, handback with GoDaddy Workspace IMAP/SMTP settings:
-- IMAP: imap.secureserver.net:993 SSL
-- SMTP: smtpout.secureserver.net:465 SSL
-- Needed: SMTP_HOST/USER/PASS, ADS_IMAP_HOST/USER/PASS, OUTREACH_REPLY_EMAIL, ETRANSFER_EMAIL
+| Item | When to handback | Est. cost | Env / webhook |
+|------|------------------|-----------|---------------|
+| Anthropic Claude API | No free production path for Mainframe quality drafts/discovery | ~$15–40/mo with discovery; $5–10 without | ANTHROPIC_API_KEY |
+| Twilio paid 902 number | Trial cannot get local CA number / SMS to unverified numbers blocked | ~$5–15/mo | TWILIO_* webhooks already documented |
+| Stripe LIVE mode | Owner not ready for real card charges | 2.9% + 30¢ / payment | sk_live_ + live webhook secret |
+| GoDaddy mailbox | ONLY if existing .env creds fail verify | already paid/owned | SMTP_* / ADS_IMAP_* |
 
-### B6. Kijiji saved-search alerts (FREE)
-Cannot automate login to Kijiji for the owner unless credentials are explicitly provided.
-Handback steps: create saved searches for HRM contractor-need keywords → email alerts to the CRM mailbox.
+If owner hands you an Anthropic key during the session, install it — do not buy it yourself.
 
-### B7. Do NOT enable autosend yet
-Leave OUTREACH_AUTOSEND and DOCS_AUTOSEND unset/empty so nothing emails/SMS customers until providers are real.
-
-### B8. Do NOT set BHC_STRICT_AUTH=1 yet
-Leave legacy header fallback until the owner confirms all staff have re-logged in after the cookie rotation. Mention it as a follow-up in the report.
-
-## Phase C — Paid / human-only (DO NOT buy — handback report)
-
-For each item below, write status: NOT CONFIGURED + exact owner actions + estimated cost.
-
-1. Anthropic API key (Claude) — console.anthropic.com — ~$15–40 CAD/mo with discovery; $5–10 without
-   Env: ANTHROPIC_API_KEY
-   Optional: ANTHROPIC_MODEL, ANTHROPIC_FAST_MODEL, DISCOVERY_*
-
-2. Twilio + one Canadian 902 number — ~$5–15 CAD/mo
-   Env: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER, VOICE_FORWARD_TO
-   Webhooks to set in Twilio console:
-   - Messaging webhook POST https://bhcontracting.ca/api/sms/inbound
-   - Voice webhook POST https://bhcontracting.ca/api/voice/inbound
-
-3. Stripe account + webhook — no monthly fee; 2.9% + 30¢ per card payment
-   Env: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
-   Webhook: https://bhcontracting.ca/api/payments/webhook
-   Events: checkout.session.completed, checkout.session.async_payment_succeeded
-
-4. GoDaddy mailbox (if not already available) — ~$0–8/mo
-   SMTP + IMAP for quotes/alerts/e-Transfer matching
-
-5. Optional later autosend flags (after keys work):
-   OUTREACH_AUTOSEND=email,sms
-   DOCS_AUTOSEND=quote,receipt,job_report
-   OUTREACH_AUTOSEND_TOUCHES=1
-
-## Phase D — Write the handback report
-
-Create /opt/bhc/docs/GROKBOT_HANDBACK_REPORT.md with this structure:
+## Phase D — Write /opt/bhc/docs/GROKBOT_HANDBACK_REPORT.md
 
 # GrokBot handback report — BHC production
 - Date (UTC)
 - Host
 - Deployed git SHA
-- Deploy health: local + public
-- SESSION_SECRET rotated: yes/no
+- Health: local + public
+- SESSION_SECRET rotated: YES
 - AUTOMATION_SECRET present: yes/no
-- Reseed run: NO (explicit)
-- Staff action required: log in again with EXISTING passwords (cookies invalidated)
+- Reseed: NO
+- Staff action: re-login with EXISTING passwords
 
-## Completed free setup
-- bullet list of what you actually configured
+## Completed (including free accounts created with owner control)
+- bullets
 
-## Blocked / needs owner (paid or human login)
-| Item | Why blocked | Exact steps for owner | Est. cost | Env / webhook |
-|------|-------------|-----------------------|-----------|---------------|
+## GoDaddy mailbox
+- verified: yes/no (+ error if any)
 
-## Verify commands for owner
+## Still needs owner money / decision
+| Item | Why | Exact next click-path | Est. cost | Env |
+
+## Safe follow-ups after staff re-login
+- BHC_STRICT_AUTH=1
+- OUTREACH_AUTOSEND / DOCS_AUTOSEND once Twilio+SMTP proven
+- Stripe LIVE keys when ready for real payments
+- Anthropic key for Mainframe quality
+
+## Verify
 ```bash
 curl -fsS https://bhcontracting.ca/api/health
-cd /opt/bhc && npm run console   # then: env
+cd /opt/bhc && npm run console
 ```
 
-## Do not do yet
-- reseed
-- BHC_STRICT_AUTH=1 (until all staff re-login confirmed)
-- OUTREACH_AUTOSEND / DOCS_AUTOSEND (until Twilio/SMTP/Stripe proven)
-
-End by printing the report path and a 10-line summary.
+Print the report path + a 10-line summary when done.
 ```
 
 ---
 
-## Owner one-liner after GrokBot finishes
+## After GrokBot finishes (you)
 
-1. Open `https://bhcontracting.ca/login` and sign in with your **existing** password.
-2. Tell staff to do the same once.
-3. Read `/opt/bhc/docs/GROKBOT_HANDBACK_REPORT.md` for anything still to buy.
+1. Log in at https://bhcontracting.ca/login with your **existing** password; tell staff the same.
+2. Read `/opt/bhc/docs/GROKBOT_HANDBACK_REPORT.md`.
+3. Buy Anthropic when ready; upgrade Twilio to a 902 number if trial is limiting; switch Stripe to live when you want real cards.
 4. Full catalog: `docs/SETUP_CHECKLIST.md`.
