@@ -169,57 +169,36 @@ const wallLightY = (x, y, z, outward = -1) => {
 }
 
 const createTerrain = (W, D, upperFloorZ) => {
-  // Continuous sloping grade + left-side driveway apron.
-  // Site photos show a gravel driveway sloping down the side — not stairs.
+  // Site-only correction: a continuous driveway descends along the left wall.
+  // Keep the ramp outside a clear strip so it cannot cover the side windows or man door.
   const parts = []
   const apron = 2.4
-  const base = -0.55
   const yFront = -apron
   const yBack = D + apron
   const zFront = upperFloorZ + 0.12
   const zBack = 0.08
 
-  // Main site pad: solid prism with a continuous top slope along Y (front → back).
-  const pad = colorize(
-    PALETTE.terrain,
-    polyhedron({
-      points: [
-        [-apron, yFront, base],
-        [W + apron, yFront, base],
-        [W + apron, yBack, base],
-        [-apron, yBack, base],
-        [-apron, yFront, zFront],
-        [W + apron, yFront, zFront],
-        [W + apron, yBack, zBack],
-        [-apron, yBack, zBack]
-      ],
-      faces: [
-        [0, 1, 2, 3],
-        [4, 7, 6, 5],
-        [0, 4, 5, 1],
-        [1, 5, 6, 2],
-        [2, 6, 7, 3],
-        [3, 7, 4, 0]
-      ],
-      orientation: 'outward'
-    })
-  )
-  parts.push(pad)
+  // Upper and lower aprons remain level at the two established thresholds.
+  parts.push(box([W + 2 * apron, apron, 0.22], [W / 2, yFront + apron / 2, zFront - 0.11], PALETTE.terrain))
+  parts.push(box([W + 2 * apron, apron, 0.22], [W / 2, D + apron / 2, zBack - 0.11], PALETTE.terrain))
 
-  // Explicit left-side driveway strip (sloping gravel run along the sidewall).
-  const driveW = 3.2
+  // The sloped drive stops 0.45 m short of the side finish plane.
+  const wallClear = 0.45
+  const driveW = 3.5
+  const xWall = -wallClear
+  const xOuter = xWall - driveW
   const drive = colorize(
     hexToRgb('#5A5852'),
     polyhedron({
       points: [
-        [-apron - 0.15, yFront + 0.4, zFront + 0.02],
-        [-apron - 0.15 + driveW, yFront + 0.4, zFront + 0.02],
-        [-apron - 0.15 + driveW, yBack - 0.2, zBack + 0.02],
-        [-apron - 0.15, yBack - 0.2, zBack + 0.02],
-        [-apron - 0.15, yFront + 0.4, zFront - 0.12],
-        [-apron - 0.15 + driveW, yFront + 0.4, zFront - 0.12],
-        [-apron - 0.15 + driveW, yBack - 0.2, zBack - 0.12],
-        [-apron - 0.15, yBack - 0.2, zBack - 0.12]
+        [xOuter, yFront + 0.35, zFront + 0.02],
+        [xWall, yFront + 0.35, zFront + 0.02],
+        [xWall, yBack - 0.20, zBack + 0.02],
+        [xOuter, yBack - 0.20, zBack + 0.02],
+        [xOuter, yFront + 0.35, zFront - 0.14],
+        [xWall, yFront + 0.35, zFront - 0.14],
+        [xWall, yBack - 0.20, zBack - 0.14],
+        [xOuter, yBack - 0.20, zBack - 0.14]
       ],
       faces: [
         [0, 1, 2, 3],
@@ -233,6 +212,9 @@ const createTerrain = (W, D, upperFloorZ) => {
     })
   )
   parts.push(drive)
+
+  // Level landing at the existing side man door near the garage corner; no stairs.
+  parts.push(box([wallClear + 0.75, 1.55, 0.16], [-0.16, D - 0.70, zBack - 0.08], PALETTE.terrain))
 
   return parts
 }

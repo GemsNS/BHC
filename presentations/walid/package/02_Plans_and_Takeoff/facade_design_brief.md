@@ -5,6 +5,11 @@
 **Design basis:** Issued-for-permit geometry, supplied construction photographs, and two user-provided façade reference boards  
 **Status:** Façade design brief for project review
 
+
+**Geometry lock:** Permit dimensions and door/window openings are fixed. The site grade is a continuous downhill driveway approximation offset 0.45 m from the side finish plane with a low landing at the downhill man door (survey/field confirmation required).
+
+**Application systems:** Cedar Datum, Full Battens, Split Storey, and Framed Bays — differences are limited to siding orientation, material boundaries, opening frames, transition flashing, and fascia treatment on the official elevation plate.
+
 ## Design Intent
 
 The exterior concept uses a **dark charcoal vertical profile as the primary field**, with **warm cedar-tone wood-look siding as a controlled accent**. Black window, door, fascia, and trim components unify the two finishes. The concept is intentionally simple enough to install as repeated panel fields while giving the entrance and shop-door elevations a stronger architectural identity.

@@ -36,6 +36,7 @@ Subject to the confirmations and exclusions in Schedule A, the Contractor shall 
 3. Installation of **two exterior doors** at the agreed locations, including setting, plumbing, levelling, shimming, mechanical fastening, and ordinary perimeter air sealing, subject to the supplied-door and rough-opening conditions in Schedule A.
 4. Routine protection of the Contractor’s active work area, daily housekeeping, and removal of the Contractor’s packaging and installation debris to the designated on-site disposal location.
 5. Coordination with the Customer regarding opening dimensions, sequencing, access, approved layout, and substrate readiness.
+6. Crew fuel/travel allowance for a projected **3-week** installation plus **1-week** schedule pushback (**20** included round trips) between **9A Regency Drive, Dartmouth, NS** and the Project site (and back), as priced in Section 3.
 
 The Contractor shall perform the work in a good and workmanlike manner, in accordance with the applicable contract documents and the approved manufacturers’ written installation instructions.
 
@@ -47,11 +48,14 @@ The preliminary fixed contract price is calculated from the pricing information 
 | --- | ---: | ---: | ---: |
 | Siding/cladding installation | 30 squares | $400.00 per square | $12,000.00 |
 | Exterior door installation | 2 doors | $500.00 per door | $1,000.00 |
-| **Contract price before HST** |  |  | **$13,000.00** |
+| Crew fuel/travel (20 round trips; 3+1 weeks) | 1,396.0 km | $0.72 per km (CRA rate) | $1,005.12 |
+| **Contract price before HST** |  |  | **$14,005.12** |
 | HST |  | **Confirm applicable treatment** | **$________________** |
 | **Total including HST** |  |  | **$________________** |
 
-The **$13,000.00 price and its tax treatment must be confirmed by both Parties before signature**. The price is based on approximately 30 squares and two doors. Unless Schedule A expressly states otherwise, quantities materially above 30 squares, added doors/openings, redesign, concealed conditions, substrate correction, remobilization, winter conditions, extraordinary access, and work outside normal installation scope are changes to the contract.
+The crew fuel/travel line covers daily crew commuting for a projected **3-week** job plus **1-week** pushback (**20 workdays × 69.8 km** round trip = **1,396.0 km**) between **9A Regency Drive, Dartmouth, NS** and the Project at **9 Alicia Scott Ave., Mount Uniacke, NS**, priced at the CRA reasonable automobile rate of **$0.72/km**. Trips beyond the included **20** round trips, if required, shall be billed by written change order at the same rate unless the Parties agree otherwise.
+
+The **$14,005.12 price and its tax treatment must be confirmed by both Parties before signature**. The price is based on approximately 30 squares, two doors, and the included fuel/travel allowance above. Unless Schedule A expressly states otherwise, quantities materially above 30 squares, added doors/openings, redesign, concealed conditions, substrate correction, remobilization beyond the included 20 trips, winter conditions, extraordinary access, and work outside normal installation scope are changes to the contract.
 
 ## 4. Measurement and Quantity Adjustment
 
@@ -65,12 +69,12 @@ The Customer shall pay approved invoices according to the following gross progre
 
 | Milestone | Gross amount before holdback and HST |
 | --- | ---: |
-| Mobilization, approved layout, and commencement of installation | $3,250.00 |
+| Mobilization, approved layout, commencement, and included multi-week fuel/travel | $4,255.12 |
 | Approximately 50% of siding/cladding scope installed | $6,500.00 |
 | Substantial performance of siding and two-door scope | $3,250.00 |
-| **Total contract price before HST** | **$13,000.00** |
+| **Total contract price before HST** | **$14,005.12** |
 
-The payer shall retain **10% of the value of work, services, and materials actually supplied** for the statutory period. Under section 13 of the Nova Scotia *Builders’ Lien Act*, the holdback is generally retained for **60 days after substantial performance**, subject to the Act’s conditions, lien notices, remaining work, and release rules.[1] On the $13,000.00 pre-HST price, the full contract holdback would be **$1,300.00** if the entire price is lienable and no adjustment applies.
+The payer shall retain **10% of the value of work, services, and materials actually supplied** for the statutory period. Under section 13 of the Nova Scotia *Builders’ Lien Act*, the holdback is generally retained for **60 days after substantial performance**, subject to the Act’s conditions, lien notices, remaining work, and release rules.[1] On the $14,005.12 pre-HST price, the full contract holdback would be **$1,400.51** if the entire price is lienable and no adjustment applies.
 
 Unless an invoice states otherwise, undisputed non-holdback amounts are due within **seven calendar days** after receipt. The Customer shall notify the Contractor in writing of any disputed amount within three business days, stating the specific reason and the amount withheld. The undisputed balance remains payable when due. Holdback release is subject to the Act and does not waive genuine warranty or deficiency claims.
 
@@ -198,6 +202,7 @@ The Parties must select **Included**, **Customer-supplied**, or **Excluded** for
 | Roofing | ☐ | ☐ | ☐ |  |
 | Scaffolding | ☐ | ☐ | ☐ |  |
 | Boom/scissor lift and fuel | ☐ | ☐ | ☐ |  |
+| Crew vehicle fuel/travel (Dartmouth ↔ site RT) | ☒ | ☐ | ☐ | $1,005.12 included (20 RTs / 3+1 wks); 9A Regency Drive ↔ Mount Uniacke @ $0.72/km |
 | Fall-protection anchor provisions | ☐ | ☐ | ☐ | By constructor/engineer unless checked Included |
 | Waste bin and tipping fees | ☐ | ☐ | ☐ |  |
 | Supply of two exterior doors | ☐ | ☐ | ☐ | Manufacturer/model: __________________ |

@@ -63,12 +63,12 @@ The side-wall quantity is sensitive to the actual grade line. Measure every visi
 
 ## Contract Review Checklist
 
-The main contract uses the provisional calculation of **30 squares × $400 + two doors × $500 = $13,000 before HST**. Before signature, the Parties should complete every blank and responsibility selection in Schedules A and B, especially the following items.
+The main contract uses the provisional calculation of **30 squares × $400 + two doors × $500 + crew fuel/travel (20 RTs / 3+1 wks) = $14,005.12 before HST**. Before signature, the Parties should complete every blank and responsibility selection in Schedules A and B, especially the following items.
 
 | Confirmation required | Why it matters |
 | --- | --- |
 | Legal/registered addresses and signatory titles | Identifies who is legally bound. |
-| HST number and whether the $13,000 price is before or after HST | Prevents a tax and total-price dispute. |
+| HST number and whether the $14,005.12 price is before or after HST | Prevents a tax and total-price dispute. |
 | Whether BH Contracting supplies siding, cedar-tone product, trim, membrane, insulation, strapping, fasteners, sealant, lifts, scaffold, and disposal | These items materially change cost and responsibility. |
 | Exact identity, specification, and supply responsibility for the two doors | The provisional $500-per-door line is written as installation unless changed. |
 | Final field-measured quantity and façade layout | Controls the $400-per-square adjustment mechanism. |
@@ -86,3 +86,8 @@ Openings are represented as coordination assemblies on the exterior shell. The g
 [1]: https://openjscad.xyz/ "JSCAD — browser-based parametric CAD and supported formats"
 [2]: https://github.com/jscad/OpenJSCAD.org/blob/master/packages/cli/README.md "JSCAD command-line interface usage"
 [3]: https://canlii.ca/t/52zbh "Nova Scotia Builders’ Lien Act, RSNS 1989, c 277, section 13"
+
+
+## Façade application systems
+
+Design options in `05_Design_Options/` compare Cedar Datum, Full Battens, Split Storey, and Framed Bays on the locked permit geometry (official elevation pixels).

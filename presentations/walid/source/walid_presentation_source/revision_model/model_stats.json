@@ -1,0 +1,23 @@
+{
+  "source": "walid_warehouse.obj",
+  "glb": "walid_warehouse.glb",
+  "geometry_count": 6,
+  "triangle_count": 5640,
+  "vertex_count": 3474,
+  "watertight_geometry_count": 5,
+  "bounds_min_m": [
+    -3.95,
+    -0.14,
+    -14.78
+  ],
+  "bounds_max_m": [
+    17.82,
+    9.26,
+    2.4
+  ],
+  "extents_m": [
+    21.77,
+    9.4,
+    17.18
+  ]
+}
