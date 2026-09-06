@@ -1,6 +1,39 @@
 # Production reset — Halifax HRM
 
-## Reset CRM to clean production seed
+## Reseed and keep the team (recommended)
+
+Wipes every lead, job, quote, invoice, payment, ad, message, document record, automation history and webhook, and replaces them with the clean seed — but **keeps every staff account** (same login, name, role, email, phone, rate, active flag). Each account goes back to the bootstrap PIN **`0000`** and must set a new password on next sign-in. The do-not-contact (opt-out) list is kept too, because it is a legal record. A backup `data/backups/pre-reseed-*.json` is written first.
+
+On the host:
+
+```bash
+cd /opt/bhc
+npm run bhc -- store reseed --yes          # keeps staff, resets them to PIN 0000
+sudo systemctl restart bhc                 # optional — clears any in-memory caches
+```
+
+Or interactively: `npm run console` → `reseed` → type `RESEED`.
+
+Or over HTTP (needs `SEED_SECRET` in `.env`):
+
+```bash
+curl -X POST https://bhcontracting.ca/api/seed \
+  -H "x-seed-secret: $SEED_SECRET" -H "content-type: application/json" \
+  -d '{"keepStaff": true}'
+```
+
+Options:
+
+| Flag / field | Effect |
+|--------------|--------|
+| `--fresh-staff` / `keepStaff: false` | replace staff with the default role accounts (`admin`, `manager`, `sales`, `knocker`, `field`, `office`, `driver`) instead |
+| `--drop-optouts` / `keepOptOuts: false` | also drop the do-not-contact list |
+
+After a reseed every user signs in with their **existing login + PIN `0000`** and is prompted to set a new password. Photos and PDFs already on disk under `data/media` are left in place but no longer referenced; they can be deleted by hand.
+
+To undo: `npm run bhc -- store restore pre-reseed-<timestamp>.json`.
+
+## Reset CRM to clean production seed (default role accounts)
 
 On a **Node host** (not GitHub Pages static demo):
 

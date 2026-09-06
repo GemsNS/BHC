@@ -20,6 +20,7 @@
     "automation:status": "tsx scripts/bhc-cli.ts automations status",
     "store:backup": "tsx scripts/bhc-cli.ts store backup",
     "store:health": "tsx scripts/bhc-cli.ts store health",
+    "store:reseed": "tsx scripts/bhc-cli.ts store reseed",
     "release": "bash scripts/release.sh",
     "build:gh-pages": "bash scripts/build-gh-pages.sh",
     "deploy:gh-pages": "bash scripts/deploy-gh-pages.sh"

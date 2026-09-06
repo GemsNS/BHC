@@ -70,6 +70,9 @@ Commands:
   store backup [--label x]      Snapshot data/store.json → data/backups/
   store backups                 List snapshots
   store restore <file.json>     Restore a snapshot (safety copy taken first)
+  store reseed --yes            Wipe CRM data to a clean seed; KEEP staff accounts on PIN 0000
+    --fresh-staff               Replace staff with the default role accounts instead
+    --drop-optouts              Also drop the do-not-contact list (kept by default)
 
   automations list              List automations + due status
   automations status            Engine status: last tick, backlog, due
@@ -290,6 +293,28 @@ async function cmdStoreBackups() {
   }
 }
 
+async function cmdStoreReseed() {
+  const keepStaff = !flag("fresh-staff");
+  const keepOptOuts = !flag("drop-optouts");
+  if (!flag("yes")) {
+    console.error(
+      `This replaces ALL CRM data (leads, jobs, invoices, ads, messages, documents, automations, webhooks) with a clean seed.\n` +
+        (keepStaff ? "Staff accounts are KEPT, each reset to PIN 0000 + must-set-password.\n" : "Staff accounts are replaced by the default role accounts (admin, sales, …) on PIN 0000.\n") +
+        (keepOptOuts ? "The do-not-contact (opt-out) list is kept.\n" : "The opt-out list is DROPPED.\n") +
+        `A backup is written to data/backups/pre-reseed-*.json first.\n\nRe-run with --yes to proceed.`,
+    );
+    process.exit(2);
+  }
+  const { reseedStore } = await import("../src/lib/reseed");
+  const current = await readStore();
+  const backup = await createBackup({ label: "pre-reseed" });
+  const { data, staff, keptOptOuts } = reseedStore(current, { keepStaff, keepOptOuts });
+  await writeStore(data);
+  console.log(`Reseeded. Backup: ${backup?.name ?? "(none — no store existed)"}`);
+  console.log(`${staff} staff account(s) on PIN 0000 (must set password on next sign-in)${keptOptOuts ? ` · ${keptOptOuts} opt-out(s) kept` : ""}`);
+  for (const e of data.employees) console.log(`  ${e.active ? "●" : "○"} ${e.login.padEnd(14)} ${e.role.padEnd(8)} ${e.name}`);
+}
+
 async function cmdStoreRestore(name: string) {
   if (!name) {
     console.error("Usage: bhc store restore <file.json>");
@@ -474,6 +499,7 @@ async function main() {
     if (sub === "backup") return cmdStoreBackup();
     if (sub === "backups") return cmdStoreBackups();
     if (sub === "restore") return cmdStoreRestore(args[2] ?? "");
+    if (sub === "reseed") return cmdStoreReseed();
     console.error(`Unknown store subcommand: ${sub ?? "(none)"}`);
     process.exit(1);
   }

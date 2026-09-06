@@ -82,6 +82,7 @@ npm run deploy:gh-pages
 - `BHC_STORE=sqlite` switches persistence to `data/store.sqlite` (Node ≥ 22.13); same `readStore/writeStore` API.
 - Every meaningful action emits a `live.*` event; the dashboard and `/admin/live` stream them over SSE. Keep emitting from new features.
 - Collections added this round: `quotes`, `documents`, `payments`, `messages` (+ `optOuts`, `adSources`, `adListings`, `automationRuns`). Store key **v10**.
+- **Reseed keeping staff:** `npm run bhc -- store reseed --yes` (or console `reseed`, or `POST /api/seed {"keepStaff":true}`) wipes CRM data to the seed but keeps every staff account reset to PIN `0000` + must-set-password, keeps opt-outs, and backs up first. See `docs/PRODUCTION.md`.
 
 ## Demo accounts
 

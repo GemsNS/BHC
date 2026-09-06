@@ -115,7 +115,7 @@ cmd({
       ["Overview", ["status", "health", "env", "digest"]],
       ["Sales", ["leads", "lead", "jobs", "job", "quote", "invoices", "invoice", "pay", "docs", "tickets", "team"]],
       ["Conversations", ["inbox", "ads", "ad", "outreach", "optouts"]],
-      ["Automation", ["auto", "hooks", "backup", "backups", "restore"]],
+      ["Automation", ["auto", "hooks", "backup", "backups", "restore", "reseed"]],
       ["AI", ["ai"]],
       ["Console", ["help", "clear", "exit"]],
     ];
@@ -1021,6 +1021,28 @@ cmd({
     for (const b of list) console.log(`  ${when(b.createdAt)}  ${String(Math.round(b.bytes / 1024)).padStart(6)} KB  ${b.name}`);
   },
 });
+cmd({
+  name: "reseed",
+  usage: "reseed [--fresh-staff] [--drop-optouts]",
+  help: "Wipe all CRM data to a clean seed. Staff accounts are kept and reset to PIN 0000 (backup taken first)",
+  run: async (args) => {
+    const keepStaff = !args.includes("--fresh-staff");
+    const keepOptOuts = !args.includes("--drop-optouts");
+    console.log(c.amber("This replaces ALL leads, jobs, invoices, ads, messages, documents, automations and webhooks with a clean seed."));
+    console.log(keepStaff ? "Staff accounts are kept — each goes back to PIN 0000 and must set a password on next sign-in." : c.red("Staff accounts will be replaced by the default role accounts."));
+    console.log(keepOptOuts ? "Opt-out list is kept." : c.red("Opt-out list will be dropped."));
+    const yes = await ask(c.amber("Type RESEED to continue: "));
+    if (yes !== "RESEED") return warn("cancelled");
+    const { reseedStore } = await import("../src/lib/reseed");
+    const current = await readStore();
+    const b = await createBackup({ label: "pre-reseed" });
+    const r = reseedStore(current, { keepStaff, keepOptOuts });
+    await updateStore(() => r.data);
+    ok(`reseeded · backup ${b?.name ?? "none"} · ${r.staff} staff on PIN 0000${r.keptOptOuts ? ` · ${r.keptOptOuts} opt-out(s) kept` : ""}`);
+    for (const e of r.data.employees) console.log(`  ${on(e.active)} ${pad(e.login, 14)} ${pad(e.role, 8)} ${e.name}`);
+  },
+});
+
 cmd({
   name: "restore",
   usage: "restore <file.json>",
