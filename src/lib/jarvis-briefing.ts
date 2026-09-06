@@ -183,6 +183,31 @@ export function buildJarvisSnapshot(
     }
   }
 
+  if (context === "sales" || context === "overview" || context === "global") {
+    const adReplies = data.outreachQueue.filter((o) => o.adId && o.status === "pending_approval").length;
+    const newAds = data.adListings.filter((a) => a.status === "new").length;
+    const repliedAds = data.adListings.filter((a) => a.status === "replied").length;
+    if (repliedAds > 0) {
+      metrics.push({
+        id: "ad-replies-in",
+        label: "Prospects replied",
+        value: String(repliedAds),
+        tone: "success",
+        href: "/admin/ads",
+        insightId: "ads",
+      });
+    } else if (adReplies > 0 || newAds > 0) {
+      metrics.push({
+        id: "ad-replies",
+        label: adReplies > 0 ? "Replies to approve" : "New job ads",
+        value: String(adReplies > 0 ? adReplies : newAds),
+        tone: "action",
+        href: "/admin/ads",
+        insightId: "ads",
+      });
+    }
+  }
+
   if (unread > 0) {
     metrics.push({
       id: "alerts",
@@ -606,6 +631,51 @@ export function buildJarvisInsights(
         details: activeJobs.slice(0, 3).map((j) => ({
           label: j.title,
           value: `${labelize(j.status)} · ${j.customerName}`,
+        })),
+      });
+    }
+  }
+
+  if (context === "sales" || context === "overview" || context === "global") {
+    const ads = data.adListings;
+    const newAds = ads.filter((a) => a.status === "new");
+    const drafted = ads.filter((a) => a.status === "drafted" || a.status === "qualified");
+    const replied = ads.filter((a) => a.status === "replied");
+    const sentAds = ads.filter((a) => a.status === "sent");
+    const adDraftsPending = data.outreachQueue.filter((o) => o.adId && o.status === "pending_approval");
+    const sentToday = data.outreachQueue.filter((o) => o.adId && o.sentAt && isToday(o.sentAt)).length;
+    const wonAds = ads.filter((a) => a.status === "won").length;
+    if (ads.length > 0) {
+      const tone: JarvisTone = replied.length ? "success" : adDraftsPending.length || newAds.length ? "action" : "neutral";
+      const text = replied.length
+        ? `${replied.length} prospect${replied.length > 1 ? "s" : ""} answered your ad replies — book the site visit.`
+        : adDraftsPending.length
+          ? `${adDraftsPending.length} drafted repl${adDraftsPending.length > 1 ? "ies" : "y"} to job ads waiting for approval.`
+          : newAds.length
+            ? `${newAds.length} new ad${newAds.length > 1 ? "s" : ""} pulled in, not yet triaged.`
+            : `${sentAds.length} repl${sentAds.length === 1 ? "y" : "ies"} out, waiting on posters. ${wonAds} won from ads so far.`;
+      pushInsight(insights, {
+        id: "ads",
+        category: "sales",
+        tone,
+        title: "Job-ad outreach",
+        text,
+        priority: replied.length ? 97 : adDraftsPending.length ? 93 : 50,
+        metric: { value: String(replied.length || adDraftsPending.length || sentAds.length), label: replied.length ? "Replied" : adDraftsPending.length ? "To approve" : "Awaiting" },
+        href: "/admin/ads",
+        primaryAction: { label: replied.length ? "Open conversations" : "Review replies", href: "/admin/ads", kind: "primary" },
+        secondaryActions: [{ label: "Check sources now", href: "/admin/ads" }],
+        details: [
+          { label: "New / triaging", value: String(newAds.length) },
+          { label: "Drafted", value: String(drafted.length) },
+          { label: "Sent today", value: String(sentToday) },
+          { label: "Awaiting reply", value: String(sentAds.length) },
+          { label: "Replied", value: String(replied.length) },
+          { label: "Won", value: String(wonAds) },
+        ],
+        entities: (replied.length ? replied : drafted.length ? drafted : newAds).slice(0, 4).map((a) => ({
+          label: a.title.slice(0, 60),
+          meta: `${a.sourceName} · ${a.location || "?"} · score ${a.score}`,
         })),
       });
     }

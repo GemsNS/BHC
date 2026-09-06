@@ -49,6 +49,16 @@ const toneMap: Record<string, string> = {
   cancelled: "bg-stone-500/30 text-stone-300",
   closed: "bg-stone-500/30 text-stone-300",
   enabled: "bg-emerald-500/20 text-emerald-200",
+  due: "bg-amber-500/20 text-amber-200",
+  healthy: "bg-emerald-500/20 text-emerald-200",
+  qualified_ad: "bg-teal-500/20 text-teal-200",
+  drafted: "bg-sky-500/20 text-sky-200",
+  replied: "bg-emerald-500/20 text-emerald-200",
+  skipped: "bg-stone-500/30 text-stone-300",
+  failed: "bg-rose-500/20 text-rose-200",
+  platform: "bg-violet-500/20 text-violet-200",
+  sms: "bg-indigo-500/20 text-indigo-200",
+  email: "bg-sky-500/20 text-sky-200",
   disabled: "bg-stone-500/30 text-stone-300",
 };
 

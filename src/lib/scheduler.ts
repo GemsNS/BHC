@@ -1,7 +1,11 @@
+import { imapConfigured, pollImapInbox } from "./ad-imap";
 import { runAutomationTick } from "./automation-engine";
+import { sendEmail } from "./mail";
+import { sendSms, smsConfigStatus } from "./sms";
 import { backupDueToday, createBackup } from "./store-backup";
 import { newId, nowIso, readStore, writeStore } from "./store";
 import type { AutomationTickRecord } from "./types";
+import type { Senders } from "./outreach-send";
 
 /**
  * In-process scheduler for the Node host. Started once from
@@ -62,6 +66,27 @@ export async function serverBackupHook(force: boolean): Promise<string | null> {
   return info?.name ?? null;
 }
 
+/** Real senders for the outreach queue — only those that are configured. */
+export function serverSenders(): Senders {
+  const senders: Senders = {};
+  const mailOk = Boolean(
+    (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) || process.env.RESEND_API_KEY,
+  );
+  if (mailOk) {
+    senders.email = async (msg) => {
+      const r = await sendEmail({ to: msg.to, subject: msg.subject, text: msg.text });
+      return { ok: r.ok, provider: r.provider, id: r.id, error: r.error };
+    };
+  }
+  if (smsConfigStatus().configured) {
+    senders.sms = async (msg) => {
+      const r = await sendSms({ to: msg.to, body: msg.body });
+      return { ok: r.ok, provider: r.provider, id: r.id, error: r.error };
+    };
+  }
+  return senders;
+}
+
 /**
  * Run a full server tick: read store → engine → write store.
  * Shared by the scheduler, the API route, and the CLI.
@@ -80,6 +105,8 @@ export async function runServerTick(opts: {
     nowIso,
     network: true,
     backup: serverBackupHook,
+    ads: { pollImap: imapConfigured() ? pollImapInbox : undefined },
+    senders: serverSenders(),
   });
   await writeStore(data);
   return record;

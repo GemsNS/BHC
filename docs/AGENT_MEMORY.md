@@ -91,6 +91,21 @@ Persistent log of user preferences, decisions, and chat themes for future agents
 
 **Decisions:** additive-only migrations; anything that creates business records ships disabled; nothing sends customer email. Node 22 is required to run vitest 4 locally (Node 21 fails on `util.styleText`).
 
+### Job-ad outreach + console (2026-09-06, Claude)
+
+**User ask (verbatim theme):** "one of the main automations i want setup is cold emailing/cold texting responding to ads for possible jobs in the area and whatever model i need to buy or setup"; then "create an intuitive command line interface console… configure any webhooks we would need… i will get the necessary api keys"; then "review the entire project and improve… including the jarvis panel… tell me what models and webhooks i need to configure".
+
+**Shipped:**
+
+- Ad pipeline: RSS + alert-mailbox (IMAP via `imapflow`/`mailparser`) + inbound webhook + manual paste → dedupe → Claude Haiku triage (rules fallback) → lead + Claude Opus reply drafts (email/SMS/platform) → approval-gated send (SMTP/Resend, Twilio) → one follow-up → auto-close. Replies via Twilio inbound webhook and mailbox polling; STOP/"no thanks" → `optOuts` enforced before every send.
+- `/admin/ads` page, `/api/ads`, `/api/ads/inbound`, `/api/sms/inbound`, `/api/outreach` real send, `/api/webhooks` presets + formats (slack/discord/json) + test.
+- `npm run console` — REPL for everything (leads/jobs/invoices/ads/outreach/auto/hooks/backups, free text → Mainframe).
+- JARVIS: "Job-ad outreach" chip + card; Mainframe tools `list_ads`, `outreach_status`.
+- Autonomy: lead → contacted on send; ads auto-close after 21 days; daily digest email (`DIGEST_EMAIL_TO`).
+- Model defaults moved to `claude-opus-5` (main) + `claude-haiku-4-5` (triage); `temperature` omitted on 4.6+ models.
+
+**Shopping list for the owner:** Anthropic API key; a `quotes@` GoDaddy mailbox (IMAP + SMTP); Kijiji saved-search alerts to that mailbox; Twilio account + 902 number with inbound webhook → `/api/sms/inbound`; optional Slack/Discord webhook URL; optional Zapier for `/api/ads/inbound`. Full detail `docs/OUTREACH.md`.
+
 ---
 
 ## Chat themes (for continuity)

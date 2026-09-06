@@ -50,6 +50,8 @@ npm run deploy:gh-pages
 | Webhooks (signed, queued, retried) | `src/lib/webhooks.ts`, `/api/webhooks` |
 | **Automation engine** | `src/lib/automation-engine.ts`, `automation-checks.ts`, `automation-defaults.ts`, `scheduler.ts`, `src/instrumentation.ts`, `/admin/automation`, `/api/automation`, `docs/AUTOMATION.md` |
 | Event workflows | `src/lib/workflows.ts` (11 triggers, 13 actions) |
+| **Job-ad outreach (cold email/SMS)** | `src/lib/ad-ingest.ts`, `ad-imap.ts`, `ad-classify.ts`, `ad-pipeline.ts`, `outreach-send.ts`, `sms.ts`, `/admin/ads`, `/api/ads`, `/api/sms/inbound`, `docs/OUTREACH.md` |
+| Console (interactive CLI) | `scripts/bhc-console.ts` → `npm run console` |
 | Backups / health | `src/lib/store-backup.ts`, `store-health.ts`, `GET /api/health` |
 | Deploy | `deploy/production/deploy.sh` (host), `scripts/release.sh` (workstation), `.github/workflows/*` |
 | GPS | `src/lib/gps-tracker.ts` |
@@ -63,7 +65,9 @@ npm run deploy:gh-pages
 - The Node host runs an **in-process scheduler** (`BHC_SCHEDULER`, default on, every 15 min) that ticks the automation engine: reminders, invoice/job/inventory/tool/damage/fleet checks, sequence steps, webhook retries, nightly backup, daily digest. All checks are idempotent (`dedupeKey` on notifications, open-task lookup).
 - Workflow **templates ship paused** (lead won → job, job completed → invoice, critical damage → alert, proposal signed → task). Enable in Sales → Automation.
 - `npm run verify` = lint + typecheck + test + build (same as CI). `npm run release` pushes `main` after verify; `deploy/production/deploy.sh` runs on the host with pre-deploy store snapshot, health check, and automatic rollback.
-- New collection `automationRuns`; store key **v10**.
+- New collections `automationRuns`, `adSources`, `adListings`, `optOuts`; store key **v10**.
+- **Job-ad outreach is the owner's top automation priority** (`docs/OUTREACH.md`): ads → AI triage → lead → drafted reply → approval-gated email/SMS → follow-up → reply detection. Sending is opt-in via `OUTREACH_AUTOSEND`; opt-outs are enforced before every send. AI: `claude-opus-5` for drafting, `claude-haiku-4-5` for triage (`ANTHROPIC_FAST_MODEL`).
+- Webhooks have `format` (json/slack/discord) and presets; inbound: `/api/sms/inbound` (Twilio), `/api/ads/inbound`.
 
 ## Demo accounts
 

@@ -115,6 +115,8 @@ function toolDescription(name: MainframeToolName): string {
     automation_status: "Show automation engine status: scheduler ticks, due automations, webhook backlog",
     toggle_automation: "Enable or disable an automation by id or name",
     store_health: "Integrity report for the CRM store (size, counts, dangling references)",
+    list_ads: "List job ads pulled from Kijiji/feeds/mailbox that need attention (optionally filter by status)",
+    outreach_status: "Cold email/SMS outreach queue: pending approval, approved, sent today, failed",
   };
   return map[name] ?? `${name.replace(/_/g, " ")} — CRM operation`;
 }
@@ -266,7 +268,15 @@ function toolParameters(name: MainframeToolName): Record<string, unknown> {
       };
     case "automation_status":
     case "store_health":
+    case "outreach_status":
       return { type: "object", properties: {} };
+    case "list_ads":
+      return {
+        type: "object",
+        properties: {
+          status: { type: "string", enum: ["new", "qualified", "drafted", "sent", "replied", "won", "lost", "skipped"] },
+        },
+      };
     case "toggle_automation":
       return {
         type: "object",
@@ -358,6 +368,13 @@ function parseLocalIntent(text: string): Array<{ tool: MainframeToolName; args: 
   }
   if (/store health|data health|integrity check/i.test(t)) {
     runs.push({ tool: "store_health", args: {} });
+  }
+  if (/\b(show|list|any|new|pending|check|review)\b.*\b(job )?ads?\b|\b(job )?ads?\b.*\b(list|show|new|pending|attention|waiting)\b|kijiji|marketplace/i.test(t)) {
+    const st = lower.match(/\b(new|drafted|sent|replied|won|lost|skipped)\b/);
+    runs.push({ tool: "list_ads", args: st && st[1] !== "new" ? { status: st[1] } : {} });
+  }
+  if (/outreach (status|queue)|cold (email|text)|how many .*(sent|pending)/i.test(t)) {
+    runs.push({ tool: "outreach_status", args: {} });
   }
   {
     const m = t.match(/(enable|disable|turn (?:on|off)|pause|resume) (?:the )?(.+?) automation/i);

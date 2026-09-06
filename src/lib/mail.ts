@@ -167,3 +167,85 @@ export async function sendContactEmail(
     code: "not_configured",
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Generic outbound email (job-ad outreach, follow-ups)                 */
+/* ------------------------------------------------------------------ */
+
+export type OutboundEmail = {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+  replyTo?: string;
+};
+
+export type OutboundEmailResult = {
+  ok: boolean;
+  provider: "smtp" | "resend" | "none";
+  id: string | null;
+  error: string | null;
+};
+
+function textToHtml(text: string): string {
+  return `<div style="font-family:system-ui,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.5;color:#222">${escapeHtml(text).replace(/\n/g, "<br/>")}</div>`;
+}
+
+/** Send one email through GoDaddy SMTP (preferred) or Resend. Never throws. */
+export async function sendEmail(input: OutboundEmail): Promise<OutboundEmailResult> {
+  const html = input.html ?? textToHtml(input.text);
+  const replyTo = input.replyTo ?? process.env.OUTREACH_REPLY_EMAIL?.trim() ?? contactToEmail();
+
+  if (smtpConfigured()) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST!.trim(),
+        port: Number(process.env.SMTP_PORT?.trim() || "465"),
+        secure: process.env.SMTP_SECURE?.trim() !== "false",
+        auth: { user: process.env.SMTP_USER!.trim(), pass: process.env.SMTP_PASS!.trim() },
+      });
+      const info = await transporter.sendMail({
+        from: smtpFromEmail(),
+        to: input.to,
+        replyTo,
+        subject: input.subject,
+        text: input.text,
+        html,
+      });
+      return { ok: true, provider: "smtp", id: info.messageId ?? null, error: null };
+    } catch (err) {
+      return {
+        ok: false,
+        provider: "smtp",
+        id: null,
+        error: err instanceof Error ? err.message : "SMTP send failed",
+      };
+    }
+  }
+
+  const resendKey = process.env.RESEND_API_KEY?.trim();
+  if (resendKey) {
+    try {
+      const resend = new Resend(resendKey);
+      const { data, error } = await resend.emails.send({
+        from: resendFromEmail(),
+        to: [input.to],
+        replyTo,
+        subject: input.subject,
+        text: input.text,
+        html,
+      });
+      if (error) return { ok: false, provider: "resend", id: null, error: error.message };
+      return { ok: true, provider: "resend", id: data?.id ?? null, error: null };
+    } catch (err) {
+      return {
+        ok: false,
+        provider: "resend",
+        id: null,
+        error: err instanceof Error ? err.message : "Resend send failed",
+      };
+    }
+  }
+
+  return { ok: false, provider: "none", id: null, error: "Email not configured (SMTP_* or RESEND_API_KEY)." };
+}

@@ -53,7 +53,8 @@ Open [http://localhost:3000](http://localhost:3000) → **login**.
 | `npm run lint` / `npm test` / `npm run build` | Quality checks |
 | `npm run verify` | Lint + typecheck + test + build (what CI runs) |
 | `npm run release` | Verify → push `main` → CI deploys production (`docs/DEPLOYMENT.md`) |
-| `npm run bhc -- <cmd>` | CLI — AI, store, automations, webhooks, backups |
+| `npm run console` | Interactive console for the whole CRM (leads, jobs, ads, outreach, automations, webhooks; free text → Mainframe AI) |
+| `npm run bhc -- <cmd>` | CLI — AI, store, automations, webhooks, backups, ads |
 | `npm run automation:tick` / `automation:status` | Run / inspect the automation engine (`docs/AUTOMATION.md`) |
 | `npm run store:backup` / `store:health` | Snapshot / integrity report for `data/store.json` |
 | `npm run build:gh-pages` | Static demo → `./out` |

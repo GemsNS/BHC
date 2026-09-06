@@ -1,4 +1,4 @@
-import type { AppData, WebhookDelivery, WebhookEventName } from "./types";
+import type { AppData, WebhookDelivery, WebhookEndpoint, WebhookEventName, WebhookFormat } from "./types";
 
 function toHex(buffer: ArrayBuffer): string {
   return [...new Uint8Array(buffer)].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -37,6 +37,69 @@ export type WebhookSendOutcome = {
   error: string | null;
 };
 
+/* --------------------------- human-readable text --------------------------- */
+
+const EVENT_TITLES: Record<WebhookEventName, string> = {
+  "pin.created": "New door knocked",
+  "pin.updated": "Door pin updated",
+  "proposal.created": "Proposal created",
+  "proposal.signed": "Proposal signed",
+  "todo.created": "Knocker task created",
+  "todo.completed": "Knocker task completed",
+  "territory.created": "Territory drawn",
+  "automation.ran": "Automation ran",
+  "lead.created": "New lead",
+  "lead.status_changed": "Lead status changed",
+  "job.created": "New job",
+  "job.status_changed": "Job status changed",
+  "invoice.status_changed": "Invoice status changed",
+  "damage.reported": "Damage reported",
+  "ticket.created": "Support ticket opened",
+  "workflow.ran": "Workflow ran",
+  "automation.tick": "Automation tick",
+  "ad.received": "Job ads received",
+  "ad.qualified": "Job ad qualified → lead + draft reply",
+  "outreach.sent": "Outreach sent",
+  "outreach.replied": "Prospect replied",
+  "outreach.opted_out": "Prospect opted out",
+};
+
+function val(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "object") return JSON.stringify(v).slice(0, 200);
+  return String(v);
+}
+
+/** One-paragraph summary for chat webhooks. */
+export function describeWebhookEvent(event: WebhookEventName, payload: Record<string, unknown>): string {
+  const title = EVENT_TITLES[event] ?? event;
+  const skip = new Set(["ids", "results", "counters", "errors", "workflowId", "runId", "tickId"]);
+  const fields = Object.entries(payload)
+    .filter(([k, v]) => !skip.has(k) && v != null && v !== "")
+    .slice(0, 8)
+    .map(([k, v]) => `${k}: ${val(v)}`);
+  let extra = "";
+  if (event === "automation.tick") {
+    const c = payload.counters as Record<string, number | boolean> | undefined;
+    const errs = (payload.errors as string[] | undefined) ?? [];
+    if (c) extra = ` · ${c.automationsRun} automation(s), ${c.notificationsCreated} alert(s), ${c.tasksCreated} task(s), webhooks ${c.webhooksSent}/${c.webhooksFailed}`;
+    if (errs.length) extra += ` · ERRORS: ${errs.join("; ").slice(0, 300)}`;
+  }
+  return `${title}${fields.length ? ` — ${fields.join(" · ")}` : ""}${extra}`;
+}
+
+export function buildWebhookBody(
+  format: WebhookFormat | undefined,
+  event: WebhookEventName,
+  payload: Record<string, unknown>,
+  occurredAt: string,
+): string {
+  const text = describeWebhookEvent(event, payload);
+  if (format === "slack") return JSON.stringify({ text: `*BHC* · ${text}` });
+  if (format === "discord") return JSON.stringify({ content: `**BHC** · ${text}`.slice(0, 1900) });
+  return JSON.stringify({ event, occurredAt, data: payload, text });
+}
+
 async function sendOnce(
   url: string,
   secret: string,
@@ -46,8 +109,9 @@ async function sendOnce(
   deliveryId: string,
   attempt: number,
   fetcher: Fetcher,
+  format?: WebhookFormat,
 ): Promise<WebhookSendOutcome> {
-  const body = JSON.stringify({ event, occurredAt, data: payload });
+  const body = buildWebhookBody(format, event, payload, occurredAt);
   const signature = await signWebhookPayload(secret, body);
   try {
     const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
@@ -208,6 +272,7 @@ export async function deliverPendingWebhooks(
       delivery.id,
       delivery.attempts + 1,
       fetcher,
+      endpoint.format,
     );
     applyOutcome(delivery, outcome, nowMs, nowIso);
     if (outcome.ok) result.sent += 1;
@@ -222,6 +287,88 @@ export function webhookBacklog(data: AppData): WebhookDelivery[] {
   return data.webhookDeliveries.filter(
     (d) => d.status !== "ok" && d.attempts < WEBHOOK_MAX_ATTEMPTS && (d.status === "pending" || d.nextRetryAt),
   );
+}
+
+/* -------------------------------- presets -------------------------------- */
+
+export type WebhookPreset = {
+  id: string;
+  name: string;
+  description: string;
+  format: WebhookFormat;
+  events: WebhookEventName[];
+  /** Hint for the URL field */
+  urlHint: string;
+};
+
+export const WEBHOOK_PRESETS: WebhookPreset[] = [
+  {
+    id: "ops-alerts-slack",
+    name: "Ops alerts → Slack",
+    description: "Human-readable pings for the things a manager wants to know about the moment they happen.",
+    format: "slack",
+    urlHint: "https://hooks.slack.com/services/T…/B…/…",
+    events: ["ad.qualified", "outreach.sent", "outreach.replied", "outreach.opted_out", "proposal.signed", "damage.reported", "lead.created", "job.status_changed", "automation.tick"],
+  },
+  {
+    id: "ops-alerts-discord",
+    name: "Ops alerts → Discord",
+    description: "Same alerts as the Slack preset, formatted for a Discord channel webhook.",
+    format: "discord",
+    urlHint: "https://discord.com/api/webhooks/…",
+    events: ["ad.qualified", "outreach.sent", "outreach.replied", "outreach.opted_out", "proposal.signed", "damage.reported", "lead.created", "job.status_changed", "automation.tick"],
+  },
+  {
+    id: "crm-sync",
+    name: "CRM sync → Zapier / Make / n8n",
+    description: "Signed JSON for every record change so you can mirror leads, jobs and invoices into sheets, QuickBooks, Google Contacts, etc.",
+    format: "json",
+    urlHint: "https://hooks.zapier.com/hooks/catch/… or https://hook.us1.make.com/…",
+    events: ["lead.created", "lead.status_changed", "job.created", "job.status_changed", "invoice.status_changed", "proposal.signed", "ticket.created", "ad.qualified", "outreach.sent", "outreach.replied"],
+  },
+  {
+    id: "field-events",
+    name: "Field events (Knocker)",
+    description: "Door-knocking activity for a live wallboard or a Zap.",
+    format: "json",
+    urlHint: "https://…",
+    events: ["pin.created", "pin.updated", "todo.created", "todo.completed", "territory.created", "proposal.created", "proposal.signed"],
+  },
+  {
+    id: "engine-health",
+    name: "Engine health monitor",
+    description: "Only the automation tick summary — point at a monitoring inbox / Better Stack / Healthchecks.io.",
+    format: "json",
+    urlHint: "https://hc-ping.com/… or any URL that accepts POST",
+    events: ["automation.tick"],
+  },
+];
+
+/** 32 hex chars from the platform CSPRNG (browser + Node). */
+export function randomWebhookSecret(): string {
+  const bytes = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(bytes);
+  return toHex(bytes.buffer);
+}
+
+export function endpointFromPreset(
+  preset: WebhookPreset,
+  url: string,
+  newId: () => string,
+  nowIso: () => string,
+  name?: string,
+): WebhookEndpoint {
+  return {
+    id: newId(),
+    name: name ?? preset.name,
+    url,
+    secret: randomWebhookSecret(),
+    events: [...preset.events],
+    enabled: true,
+    createdAt: nowIso(),
+    format: preset.format,
+    preset: preset.id,
+  };
 }
 
 export const ALL_WEBHOOK_EVENTS: WebhookEventName[] = [
@@ -242,4 +389,9 @@ export const ALL_WEBHOOK_EVENTS: WebhookEventName[] = [
   "ticket.created",
   "workflow.ran",
   "automation.tick",
+  "ad.received",
+  "ad.qualified",
+  "outreach.sent",
+  "outreach.replied",
+  "outreach.opted_out",
 ];

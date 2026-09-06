@@ -10,8 +10,10 @@ Surfaces:
 | Event workflows | `/admin/sales?tab=automation` |
 | API | `GET/POST /api/automation`, `GET /api/health` |
 | CLI | `npm run bhc -- automations tick\|status`, `store backup\|health`, `webhooks retry` |
-| Mainframe AI | tools `automation_status`, `toggle_automation`, `store_health`, `run_daily_automations` |
-| JARVIS | "Automation" metric chip + briefing card on the dashboard |
+| Mainframe AI | tools `automation_status`, `toggle_automation`, `store_health`, `run_daily_automations`, `list_ads`, `outreach_status` |
+| JARVIS | "Automation" + "Job-ad outreach" chips and briefing cards on the dashboard |
+| Console | `npm run console` — interactive terminal for the whole CRM (`auto`, `hooks`, `ads`, `outreach`, `lead`, `job`, …; free text → Mainframe AI) |
+| Job-ad outreach | `docs/OUTREACH.md` |
 
 ## How a tick works
 
@@ -50,6 +52,9 @@ Defined in `src/lib/automation-defaults.ts`. `normalizeStore` adds any missing e
 | `auto-digest` | `daily_digest` | daily 7am | on | One summary alert: leads, jobs, shifts, invoices, tasks, stock |
 | `auto-webhook-retry` | `webhook_retry` | every 15 min | on | Deliver pending + retry failed webhooks (server only) |
 | `auto-backup` | `store_backup` | daily 2am | on | Snapshot `data/store.json` → `data/backups/` (server only) |
+| `auto-ad-ingest` | `ad_ingest` | every 15 min | on | Poll ad sources (RSS / alert mailbox), triage with AI, create leads + reply drafts; detect prospect email replies (server only) — see `docs/OUTREACH.md` |
+| `auto-outreach-send` | `outreach_send` | every 15 min | on | Email/SMS every **approved** reply; respects daily cap, SMS quiet hours, opt-outs (server only) |
+| `auto-outreach-followup` | `outreach_followup` | daily 9am | on | One follow-up draft after `OUTREACH_FOLLOWUP_DAYS`; auto-close ads unanswered for `OUTREACH_EXPIRE_DAYS` |
 | `auto-prospects` | `prospect_hunt` | daily 10am | off | Queue outreach drafts (still `pending_approval`) |
 | `auto-outreach-digest` | `outreach_digest` | daily 4pm | off | Count of drafts awaiting approval |
 
@@ -82,7 +87,29 @@ Enable in Sales → Automation. They are safe to re-run: `create_job_from_lead` 
 
 `src/lib/webhooks.ts`. Every outbound POST is signed (`X-BHC-Signature: sha256=<hmac>`) and now carries `X-BHC-Delivery` and `X-BHC-Attempt`. Failures schedule `nextRetryAt` with exponential backoff (5 → 10 → 20 → 40 min) up to **5 attempts**, then the delivery is abandoned with `completedAt` set. `queueWebhook` lets synchronous code (workflow actions, browser demo) enqueue without sending; the engine flushes the queue.
 
-New events: `lead.created`, `lead.status_changed`, `job.created`, `job.status_changed`, `invoice.status_changed`, `damage.reported`, `ticket.created`, `workflow.ran`, `automation.tick`.
+New events: `lead.created`, `lead.status_changed`, `job.created`, `job.status_changed`, `invoice.status_changed`, `damage.reported`, `ticket.created`, `workflow.ran`, `automation.tick`, `ad.received`, `ad.qualified`, `outreach.sent`, `outreach.replied`, `outreach.opted_out`.
+
+**Formats:** each endpoint has a `format` — `json` (signed envelope `{event, occurredAt, data, text}`), `slack` (`{text}` for an Incoming Webhook), or `discord` (`{content}`). Slack/Discord URLs are auto-detected.
+
+**Presets** (`WEBHOOK_PRESETS` in `webhooks.ts`; create with `POST /api/webhooks {preset, url}` or console `hooks add <preset> <url>`):
+
+| Preset | Format | Events |
+|--------|--------|--------|
+| `ops-alerts-slack` / `ops-alerts-discord` | chat | ad.qualified, outreach.sent/replied/opted_out, proposal.signed, damage.reported, lead.created, job.status_changed, automation.tick |
+| `crm-sync` (Zapier / Make / n8n) | json | lead.*, job.*, invoice.status_changed, proposal.signed, ticket.created, ad.qualified, outreach.sent/replied |
+| `field-events` | json | pin.*, todo.*, territory.created, proposal.* |
+| `engine-health` | json | automation.tick only |
+
+Test any endpoint: `POST /api/webhooks {action:"test", id}` or console `hooks test <id>`.
+
+**Inbound webhooks the CRM exposes** (you configure these at the provider):
+
+| URL | Provider | Purpose |
+|-----|----------|---------|
+| `POST /api/sms/inbound` | Twilio → number → *A message comes in* | prospect SMS replies + STOP opt-outs |
+| `POST /api/ads/inbound` | Zapier / Make / Cloudflare Email Worker (header `x-bhc-inbound-secret`) | push ads or forwarded alert emails |
+| `POST /api/automation` | cron / GitHub Actions (header `x-bhc-automation-secret`) | trigger a tick remotely |
+| `GET /api/health` | uptime monitor | liveness |
 
 ## Scheduler (Node host)
 

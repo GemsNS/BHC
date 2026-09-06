@@ -11,6 +11,7 @@ import {
 } from "./automation-checks";
 import { catalogEntry } from "./automation-defaults";
 import { huntLeadsFromCriteria } from "./mainframe-prospects";
+import { queueFollowUps } from "./outreach-send";
 import type { AppData, AssistantDailyAutomation } from "./types";
 import { processSequenceSteps } from "./workflows";
 
@@ -153,8 +154,16 @@ export function runAutomationDetailed(
     case "daily_digest":
       outcome = fromCheck(data, automation.action, runDailyDigest(data, ctx), newId);
       break;
+    case "outreach_followup": {
+      const r = queueFollowUps(data, ctx);
+      audit(data, automation.action, r.summary, newId);
+      outcome = { summary: r.summary, notifications: 0, tasks: 0, sequenceSteps: 0, deferred: false };
+      break;
+    }
     case "webhook_retry":
     case "store_backup":
+    case "ad_ingest":
+    case "outreach_send":
       outcome = {
         summary: `${automation.name}: requires the server automation engine (npm run bhc -- automations tick, or the built-in scheduler).`,
         notifications: 0,

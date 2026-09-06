@@ -104,6 +104,11 @@ Generic Node hosts (Fly, Railway, Cloud Run): `npm ci && npm run build && npm st
 | `AUTOMATION_SECRET` | `POST /api/automation` from cron/CI | header `x-bhc-automation-secret` |
 | `BHC_BACKUP_KEEP` | Nightly store backups | default 14 snapshots |
 | `AUTOMATION_*` thresholds | Ops checks | invoice due days, job silent days, tool max days, … |
+| `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` / `ANTHROPIC_FAST_MODEL` | Mainframe AI + ad triage | defaults `claude-opus-5` / `claude-haiku-4-5` |
+| `ADS_IMAP_*`, `ADS_INBOUND_SECRET`, `ADS_MIN_SCORE` | Job-ad intake | `docs/OUTREACH.md` |
+| `OUTREACH_AUTOSEND`, `OUTREACH_DAILY_CAP`, `OUTREACH_QUIET_HOURS`, `OUTREACH_*` signature | Cold email/SMS sending | approval-first by default |
+| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER` | SMS out + `/api/sms/inbound` | Canadian 902 number |
+| `DIGEST_EMAIL_TO` | Daily digest email | optional |
 
 ## PWA / mobile
 

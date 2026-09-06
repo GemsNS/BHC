@@ -157,5 +157,8 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     assistantMemory: raw.assistantMemory ?? seed.assistantMemory,
     contracts: raw.contracts ?? seed.contracts,
     automationRuns: raw.automationRuns ?? [],
+    adSources: raw.adSources ?? [],
+    adListings: raw.adListings ?? [],
+    optOuts: raw.optOuts ?? [],
   };
 }

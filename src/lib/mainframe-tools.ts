@@ -94,6 +94,8 @@ export const MAINFRAME_TOOL_NAMES = [
   "automation_status",
   "toggle_automation",
   "store_health",
+  "list_ads",
+  "outreach_status",
 ] as const;
 
 export type MainframeToolName = (typeof MAINFRAME_TOOL_NAMES)[number];
@@ -160,9 +162,45 @@ export function executeMainframeTool(
       return toolToggleAutomation(data, args);
     case "store_health":
       return toolStoreHealth(data);
+    case "list_ads":
+      return toolListAds(data, args);
+    case "outreach_status":
+      return toolOutreachStatus(data);
     default:
       return { ok: false, summary: `Unknown tool: ${tool}` };
   }
+}
+
+function toolListAds(data: AppData, args: Record<string, unknown>): ToolExecution {
+  const status = typeof args.status === "string" ? args.status : undefined;
+  const rows = data.adListings
+    .filter((a) => (status ? a.status === status : a.status === "new" || a.status === "drafted" || a.status === "qualified"))
+    .slice(0, 15);
+  if (!rows.length) {
+    return { ok: true, summary: status ? `No ads with status ${status}.` : "No job ads need attention right now." };
+  }
+  const lines = rows.map((a) => {
+    const drafts = data.outreachQueue.filter((o) => o.adId === a.id);
+    return `• [${a.status}] ${a.title.slice(0, 70)} — score ${a.score}, ${a.category}${a.location ? `, ${a.location}` : ""}${drafts.length ? ` · ${drafts.length} draft(s) (${drafts.map((d) => `${d.channel}:${d.status}`).join(", ")})` : ""}`;
+  });
+  return {
+    ok: true,
+    summary: `${rows.length} job ad(s):\n${lines.join("\n")}\nOpen /admin/ads to approve or edit replies.`,
+    data: { count: rows.length, ids: rows.map((r) => r.id) },
+  };
+}
+
+function toolOutreachStatus(data: AppData): ToolExecution {
+  const q = data.outreachQueue;
+  const byStatus = (s: string) => q.filter((o) => o.status === s).length;
+  const adBacked = q.filter((o) => o.adId).length;
+  const todayKey = new Date().toDateString();
+  const sentToday = q.filter((o) => o.sentAt && new Date(o.sentAt).toDateString() === todayKey).length;
+  return {
+    ok: true,
+    summary: `Outreach: ${byStatus("pending_approval")} awaiting approval, ${byStatus("approved")} approved (send on next tick), ${byStatus("sent")} sent (${sentToday} today), ${byStatus("failed")} failed. ${adBacked} item(s) came from job ads; ${data.adListings.filter((a) => a.status === "replied" || a.status === "won").length} ad conversation(s) got a reply.`,
+    data: { pending: byStatus("pending_approval"), approved: byStatus("approved"), sent: byStatus("sent"), failed: byStatus("failed"), sentToday },
+  };
 }
 
 function toolAutomationStatus(data: AppData): ToolExecution {

@@ -435,7 +435,8 @@ export interface OutreachQueueItem {
   prospectName: string;
   prospectEmail: string;
   prospectPhone: string;
-  channel: "email" | "sms" | "call";
+  /** `platform` = reply must be pasted into the ad site (no email/phone in the listing) */
+  channel: "email" | "sms" | "call" | "platform";
   subject: string;
   message: string;
   status: OutreachStatus;
@@ -443,6 +444,94 @@ export interface OutreachQueueItem {
   scheduledAt: string;
   sentAt: string | null;
   createdAt: string;
+  /** Job ad this reply answers (see AdListing) */
+  adId?: string | null;
+  /** Delivery provider + id once actually sent (smtp / resend / twilio) */
+  provider?: string | null;
+  providerMessageId?: string | null;
+  error?: string | null;
+  /** Set when this item is an automatic follow-up to an earlier outreach */
+  followUpOf?: string | null;
+  repliedAt?: string | null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Job-ad outreach (cold email / SMS replies to local "need a quote" ads) */
+/* ------------------------------------------------------------------ */
+
+export type AdSourceType = "rss" | "imap" | "webhook" | "manual";
+
+export interface AdSource {
+  id: string;
+  name: string;
+  type: AdSourceType;
+  /** RSS/Atom URL for `rss`; mailbox label for `imap`; ignored otherwise */
+  url: string;
+  enabled: boolean;
+  /** Only keep ads matching at least one keyword (empty = keep all) */
+  keywords: string[];
+  /** Drop ads matching any of these (competitor ads, "for sale", …) */
+  excludeKeywords: string[];
+  /** Human label for the service area this source covers */
+  region: string;
+  lastPolledAt: string | null;
+  lastError: string | null;
+  createdAt: string;
+}
+
+export type AdListingStatus =
+  | "new"
+  | "qualified"
+  | "drafted"
+  | "sent"
+  | "replied"
+  | "won"
+  | "lost"
+  | "skipped";
+
+export const AD_CATEGORIES = [
+  "siding",
+  "roofing",
+  "decks",
+  "windows_doors",
+  "soffit_fascia_gutters",
+  "fencing",
+  "exterior_painting",
+  "general_exterior",
+  "commercial_envelope",
+  "other",
+] as const;
+export type AdCategory = (typeof AD_CATEGORIES)[number];
+
+export interface AdListing {
+  id: string;
+  sourceId: string;
+  sourceName: string;
+  /** Stable id from the source (guid, message-id, listing id) for dedupe */
+  externalId: string;
+  url: string;
+  title: string;
+  body: string;
+  location: string;
+  postedAt: string | null;
+  fetchedAt: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  status: AdListingStatus;
+  /** 0–100 likelihood this is a real job request BHC can quote */
+  score: number;
+  category: AdCategory;
+  jobType: JobType | null;
+  /** One-line AI/heuristic summary of what the poster wants */
+  summary: string;
+  /** Why it scored the way it did (heuristic signals or AI reasons) */
+  reasons: string[];
+  classifiedBy: "ai" | "local" | null;
+  leadId: string | null;
+  outreachIds: string[];
+  repliedAt: string | null;
+  notes: string;
 }
 
 /** Admin AI assistant — lead hunt criteria fed by operator */
@@ -487,7 +576,10 @@ export type AutomationActionName =
   | "fleet_check"
   | "webhook_retry"
   | "store_backup"
-  | "daily_digest";
+  | "daily_digest"
+  | "ad_ingest"
+  | "outreach_send"
+  | "outreach_followup";
 
 /** One execution of the automation engine (scheduler tick, API, CLI, UI) */
 export interface AutomationTickRecord {
@@ -696,7 +788,15 @@ export type WebhookEventName =
   | "damage.reported"
   | "ticket.created"
   | "workflow.ran"
-  | "automation.tick";
+  | "automation.tick"
+  | "ad.received"
+  | "ad.qualified"
+  | "outreach.sent"
+  | "outreach.replied"
+  | "outreach.opted_out";
+
+/** Payload shape: signed JSON (default), or a chat-ready message for Slack / Discord incoming webhooks */
+export type WebhookFormat = "json" | "slack" | "discord";
 
 export interface WebhookEndpoint {
   id: string;
@@ -705,6 +805,20 @@ export interface WebhookEndpoint {
   secret: string;
   events: WebhookEventName[];
   enabled: boolean;
+  createdAt: string;
+  format?: WebhookFormat;
+  /** Preset this endpoint was created from (ops-alerts, crm-sync, …) */
+  preset?: string | null;
+}
+
+/** Someone who asked us to stop (SMS "STOP", email "no thanks", manual) */
+export interface OptOutRecord {
+  id: string;
+  channel: "sms" | "email";
+  /** E.164 phone or lower-cased email */
+  address: string;
+  reason: string;
+  source: "sms_inbound" | "email_inbound" | "manual";
   createdAt: string;
 }
 
@@ -924,6 +1038,11 @@ export interface AppData {
   contracts: ContractRecord[];
   /** Automation engine tick history (capped) */
   automationRuns: AutomationTickRecord[];
+  /** Job-ad outreach: where ads come from and what we found */
+  adSources: AdSource[];
+  adListings: AdListing[];
+  /** Do-not-contact list enforced before every send */
+  optOuts: OptOutRecord[];
 }
 
 export const ROLE_LABELS: Record<EmployeeRole, string> = {

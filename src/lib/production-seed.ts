@@ -221,5 +221,8 @@ export function buildProductionSeed(): AppData {
     assistantMemory,
     contracts: [],
     automationRuns: [],
+    adSources: [],
+    adListings: [],
+    optOuts: [],
   };
 }

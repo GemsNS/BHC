@@ -18,7 +18,14 @@ import { automationStatus } from "../src/lib/automation-engine";
 import { runMainframeTurn, type ChatMessage } from "../src/lib/mainframe-agent";
 import { automationsDue, runAutomation, runDailyAutomations } from "../src/lib/mainframe-automations";
 import { executeMainframeTool } from "../src/lib/mainframe-tools";
-import { runServerTick } from "../src/lib/scheduler";
+import { imapConfigured, imapSummary, pollImapInbox } from "../src/lib/ad-imap";
+import { ensureBuiltinSource, ingestRawAds } from "../src/lib/ad-ingest";
+import { qualifyListing, runAdIngest } from "../src/lib/ad-pipeline";
+import { companyProfile } from "../src/lib/ad-classify";
+import { mailConfigStatus, sendEmail } from "../src/lib/mail";
+import { processOutreachQueue, sendPolicy } from "../src/lib/outreach-send";
+import { runServerTick, serverSenders } from "../src/lib/scheduler";
+import { sendSms, smsConfigStatus } from "../src/lib/sms";
 import { createBackup, listBackups, restoreBackup } from "../src/lib/store-backup";
 import { storeHealth } from "../src/lib/store-health";
 import { newId, nowIso, readStore, updateStoreAsync, writeStore } from "../src/lib/store";
@@ -75,6 +82,15 @@ Commands:
 
   webhooks backlog              Deliveries waiting for retry
   webhooks retry                Retry the backlog now
+
+  ads status                    Job-ad outreach: connections, sources, inbox counts
+  ads ingest                    Poll sources, triage new ads, create leads + drafts
+  ads add "<title>" [options]   Add one ad by hand and triage it
+    --body "<text>" --url <u> --email <e> --phone <p> --name <n> --location <l>
+  ads list [--all]              Ads needing attention (or everything)
+  ads send                      Send approved replies now (email/SMS)
+  ads test-email <to>           Send a test email through SMTP/Resend
+  ads test-sms <to>             Send a test SMS through Twilio
 
 Environment:
   ANTHROPIC_API_KEY             Preferred AI provider (Claude)
@@ -309,6 +325,132 @@ async function cmdWebhooksRetry() {
   console.log(`Webhooks: ${result.sent} delivered, ${result.failed} will retry, ${result.abandoned} abandoned.`);
 }
 
+async function cmdAdsStatus() {
+  const data = await readStore();
+  const ai = getAIStatus();
+  const mail = mailConfigStatus();
+  const sms = smsConfigStatus();
+  const imap = imapSummary();
+  const policy = sendPolicy();
+  const on = (b: boolean) => (b ? "●" : "○");
+  console.log("Connections:");
+  console.log(`  ${on(ai.configured)} AI        ${ai.configured ? `${ai.provider} · ${ai.model}` : "not configured (rules-only triage) — set ANTHROPIC_API_KEY"}`);
+  console.log(`  ${on(mail.configured)} Email     ${mail.configured ? `${mail.provider} · from ${mail.from}` : "not configured — SMTP_* or RESEND_API_KEY"}`);
+  console.log(`  ${on(sms.configured)} SMS       ${sms.configured ? `twilio · ${sms.from}` : "not configured — TWILIO_*"}`);
+  console.log(`  ${on(imap.configured)} Mailbox   ${imap.configured ? `${imap.user} · ${imap.host} · ${imap.folder}` : "not configured — ADS_IMAP_*"}`);
+  console.log(`  ${on(Boolean(process.env.ADS_INBOUND_SECRET))} Webhook   POST /api/ads/inbound ${process.env.ADS_INBOUND_SECRET ? "enabled" : "(set ADS_INBOUND_SECRET)"}`);
+  console.log(
+    `\nPolicy: auto-send ${policy.autosend.size ? [...policy.autosend].join("+") + ` (score ≥ ${policy.autosendMinScore})` : "OFF (approve each reply)"} · cap ${policy.dailyCap}/day · SMS quiet ${policy.quietStart}-${policy.quietEnd}h · follow-up after ${policy.followUpDays}d`,
+  );
+  const c = companyProfile();
+  console.log(`Signature: ${c.signer} · ${c.name} · ${c.phone || "(no OUTREACH_REPLY_PHONE)"} · ${c.email}`);
+  console.log(`\nSources (${data.adSources.length}):`);
+  for (const s of data.adSources) {
+    console.log(`  ${on(s.enabled)} ${s.type.padEnd(7)} ${s.name}${s.url ? `  ${s.url}` : ""}  last ${s.lastPolledAt ?? "never"}${s.lastError ? `  ! ${s.lastError}` : ""}`);
+  }
+  const by = (st: string) => data.adListings.filter((a) => a.status === st).length;
+  console.log(
+    `\nAds: ${data.adListings.length} total · ${by("new")} new · ${by("drafted") + by("qualified")} drafted · ${by("sent")} sent · ${by("replied")} replied · ${by("won")} won · ${by("skipped")} skipped`,
+  );
+  console.log(`Replies awaiting approval: ${data.outreachQueue.filter((o) => o.adId && o.status === "pending_approval").length}`);
+}
+
+async function cmdAdsIngest() {
+  let summary = "";
+  let errors: string[] = [];
+  await updateStoreAsync(async (d) => {
+    const r = await runAdIngest(d, { newId, nowIso, pollImap: imapConfigured() ? pollImapInbox : undefined });
+    summary = r.summary;
+    errors = r.errors;
+  });
+  console.log(summary);
+  for (const e of errors) console.log(`  ! ${e}`);
+}
+
+async function cmdAdsAdd(title: string) {
+  if (!title) {
+    console.error('Usage: bhc ads add "<title>" [--body ...] [--url ...] [--email ...] [--phone ...]');
+    process.exit(1);
+  }
+  await updateStoreAsync(async (d) => {
+    const src = ensureBuiltinSource(d, "manual", { newId, nowIso });
+    const created = ingestRawAds(
+      d,
+      src,
+      [
+        {
+          title,
+          body: opt("body") ?? "",
+          url: opt("url"),
+          contactEmail: opt("email"),
+          contactPhone: opt("phone"),
+          contactName: opt("name"),
+          location: opt("location"),
+          postedAt: nowIso(),
+        },
+      ],
+      { newId, nowIso },
+    );
+    if (!created[0]) {
+      console.log("Duplicate — an ad with this title/URL already exists.");
+      return;
+    }
+    const r = await qualifyListing(d, created[0], { newId, nowIso }, { force: flag("force") });
+    const ad = created[0];
+    console.log(`${ad.status.toUpperCase()} · score ${ad.score} · ${ad.category} · ${ad.summary}`);
+    for (const reason of ad.reasons) console.log(`  - ${reason}`);
+    for (const draft of r.drafts) {
+      console.log(`\n[${draft.channel}] ${draft.status} → ${draft.channel === "sms" ? draft.prospectPhone : draft.prospectEmail || "(platform)"}`);
+      if (draft.channel !== "sms") console.log(`Subject: ${draft.subject}`);
+      console.log(draft.message);
+    }
+  });
+}
+
+async function cmdAdsList() {
+  const data = await readStore();
+  const all = flag("all");
+  const rows = data.adListings.filter((a) => all || a.status === "new" || a.status === "drafted" || a.status === "qualified");
+  if (!rows.length) {
+    console.log(all ? "No ads." : "Nothing needs attention.");
+    return;
+  }
+  for (const a of rows) {
+    const drafts = data.outreachQueue.filter((o) => o.adId === a.id);
+    console.log(
+      `${String(a.score).padStart(3)}  ${a.status.padEnd(9)} ${a.category.padEnd(20)} ${a.title.slice(0, 60).padEnd(60)} ${a.sourceName}  ${drafts.length ? `drafts: ${drafts.map((d) => `${d.channel}/${d.status}`).join(",")}` : ""}`,
+    );
+  }
+}
+
+async function cmdAdsSend() {
+  const senders = serverSenders();
+  if (!senders.email && !senders.sms) {
+    console.error("No sender configured. Set SMTP_*/RESEND_API_KEY for email and/or TWILIO_* for SMS.");
+    process.exit(1);
+  }
+  let summary = "";
+  await updateStoreAsync(async (d) => {
+    const r = await processOutreachQueue(d, { newId, nowIso }, senders);
+    summary = r.summary;
+  });
+  console.log(summary);
+}
+
+async function cmdAdsTest(channel: "email" | "sms", to: string) {
+  if (!to) {
+    console.error(`Usage: bhc ads test-${channel} <to>`);
+    process.exit(1);
+  }
+  const c = companyProfile();
+  const r =
+    channel === "sms"
+      ? await sendSms({ to, body: `Test from ${c.shortName} CRM — SMS outreach is connected. Reply STOP to opt out.` })
+      : await sendEmail({ to, subject: `Test — ${c.name} CRM outreach`, text: `Email outreach is connected.\n\n${c.signer}\n${c.name}` });
+  console.log(r.ok ? `OK via ${r.provider} (${r.id ?? "no id"})` : `FAILED: ${r.error}`);
+  if (!r.ok) process.exitCode = 1;
+}
+
 async function main() {
   const cmd = args[0];
   const sub = args[1];
@@ -350,6 +492,18 @@ async function main() {
     if (sub === "backlog") return cmdWebhooksBacklog();
     if (sub === "retry") return cmdWebhooksRetry();
     console.error(`Unknown webhooks subcommand: ${sub ?? "(none)"}`);
+    process.exit(1);
+  }
+
+  if (cmd === "ads") {
+    if (sub === "status") return cmdAdsStatus();
+    if (sub === "ingest") return cmdAdsIngest();
+    if (sub === "add") return cmdAdsAdd(args[2] ?? "");
+    if (sub === "list") return cmdAdsList();
+    if (sub === "send") return cmdAdsSend();
+    if (sub === "test-email") return cmdAdsTest("email", args[2] ?? "");
+    if (sub === "test-sms") return cmdAdsTest("sms", args[2] ?? "");
+    console.error(`Unknown ads subcommand: ${sub ?? "(none)"}`);
     process.exit(1);
   }
 

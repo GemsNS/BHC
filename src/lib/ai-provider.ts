@@ -64,8 +64,14 @@ export function resolveAIProvider(): AIProviderId {
   return "none";
 }
 
+/** Main Mainframe model — drafting, reasoning, tool use. */
 export function getAnthropicModel(): string {
-  return process.env.ANTHROPIC_MODEL?.trim() || process.env.CLAUDE_MODEL?.trim() || "claude-sonnet-4-20250514";
+  return process.env.ANTHROPIC_MODEL?.trim() || process.env.CLAUDE_MODEL?.trim() || "claude-opus-5";
+}
+
+/** Cheaper model for high-volume extraction/classification (ad triage). */
+export function getAnthropicFastModel(): string {
+  return process.env.ANTHROPIC_FAST_MODEL?.trim() || "claude-haiku-4-5";
 }
 
 export function getGeminiModel(): string {
@@ -112,6 +118,9 @@ export async function completeChat(input: {
   system: string;
   user: string;
   temperature?: number;
+  /** "fast" routes to the cheaper extraction model (Anthropic only; other providers ignore it) */
+  tier?: "main" | "fast";
+  maxTokens?: number;
 }): Promise<{ text: string; provider: AIProviderId } | null> {
   const provider = resolveAIProvider();
   if (provider === "none") return null;
@@ -121,6 +130,8 @@ export async function completeChat(input: {
       system: input.system,
       user: input.user,
       temperature: input.temperature ?? 0.3,
+      model: input.tier === "fast" ? getAnthropicFastModel() : getAnthropicModel(),
+      maxTokens: input.maxTokens,
     });
     return text ? { text, provider: "anthropic" } : null;
   }
@@ -166,13 +177,21 @@ export async function runAIAgentLoop(input: {
   return openaiAgentLoop(input);
 }
 
+/** Claude 4.6+ models reject `temperature`; only the Haiku 4.5 / older line accepts it. */
+function anthropicSupportsTemperature(model: string): boolean {
+  return /haiku-4-5|sonnet-4-5|opus-4-5|sonnet-4-20|opus-4-1|opus-4-20|3-5|3-7/.test(model);
+}
+
 async function anthropicGenerateText(input: {
   system: string;
   user: string;
   temperature: number;
+  model?: string;
+  maxTokens?: number;
 }): Promise<string | null> {
   const key = getAnthropicApiKey();
   if (!key) return null;
+  const model = input.model ?? getAnthropicModel();
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -182,9 +201,9 @@ async function anthropicGenerateText(input: {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: getAnthropicModel(),
-        max_tokens: 2048,
-        temperature: input.temperature,
+        model,
+        max_tokens: input.maxTokens ?? 2048,
+        ...(anthropicSupportsTemperature(model) ? { temperature: input.temperature } : {}),
         system: input.system,
         messages: [{ role: "user", content: input.user }],
       }),
@@ -256,7 +275,7 @@ async function anthropicAgentLoop(input: {
         body: JSON.stringify({
           model: getAnthropicModel(),
           max_tokens: 4096,
-          temperature: 0.2,
+          ...(anthropicSupportsTemperature(getAnthropicModel()) ? { temperature: 0.2 } : {}),
           system,
           messages: apiMessages,
           tools,

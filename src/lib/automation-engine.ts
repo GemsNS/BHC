@@ -1,9 +1,11 @@
+import { runAdIngest, type AdPipelineHooks } from "./ad-pipeline";
 import { catalogEntry } from "./automation-defaults";
 import {
   audit,
   isAutomationDue,
   runAutomationDetailed,
 } from "./mainframe-automations";
+import { processOutreachQueue, type Senders } from "./outreach-send";
 import type { AppData, AutomationTickRecord } from "./types";
 import { deliverPendingWebhooks, queueWebhook, webhookBacklog } from "./webhooks";
 import { runScheduledWorkflows } from "./workflows";
@@ -34,6 +36,10 @@ export type TickOptions = {
   fetcher?: typeof fetch;
   /** Server-side backup hook — returns a label or null when skipped */
   backup?: (force: boolean) => Promise<string | null>;
+  /** Job-ad pipeline I/O (RSS fetcher, IMAP poller, AI on/off). Omit to skip ad_ingest. */
+  ads?: Pick<AdPipelineHooks, "fetcher" | "pollImap" | "ai" | "classifyLimit">;
+  /** Real email/SMS senders. Omit to skip outreach_send. */
+  senders?: Senders;
 };
 
 const TICK_HISTORY_CAP = 60;
@@ -105,12 +111,74 @@ export async function runAutomationTick(
         continue;
       }
 
+      if (auto.action === "ad_ingest") {
+        if (!opts.ads) {
+          results.push(`[${auto.name}] skipped — runs on the Node host (RSS/IMAP polling).`);
+          continue;
+        }
+        const r = await runAdIngest(data, {
+          ...opts.ads,
+          newId: opts.newId,
+          nowIso: opts.nowIso,
+          now: started,
+        });
+        auto.lastRunAt = startedIso;
+        counters.automationsRun += 1;
+        counters.tasksCreated += 0;
+        results.push(`[${auto.name}] ${r.summary}`);
+        for (const e of r.errors) errors.push(`${auto.name}: ${e}`);
+        if (r.created || r.qualified) audit(data, "ad_ingest", r.summary, opts.newId);
+        continue;
+      }
+
+      if (auto.action === "outreach_send") {
+        if (!opts.senders) {
+          results.push(`[${auto.name}] skipped — sending needs the Node host (SMTP/Twilio).`);
+          continue;
+        }
+        const r = await processOutreachQueue(data, { newId: opts.newId, nowIso: opts.nowIso, now: started }, opts.senders);
+        auto.lastRunAt = startedIso;
+        counters.automationsRun += 1;
+        if (r.sent || r.failed) {
+          results.push(`[${auto.name}] ${r.summary}`);
+          audit(data, "outreach_send", r.summary, opts.newId);
+        }
+        continue;
+      }
+
       const outcome = runAutomationDetailed(data, auto, opts.newId, started);
       counters.automationsRun += 1;
       counters.notificationsCreated += outcome.notifications;
       counters.tasksCreated += outcome.tasks;
       counters.sequenceSteps += outcome.sequenceSteps;
       results.push(`[${auto.name}] ${outcome.summary}`);
+
+      // Daily digest → email the owner when a mailbox is configured (DIGEST_EMAIL_TO)
+      if (auto.action === "daily_digest" && outcome.notifications > 0 && opts.senders?.email) {
+        const to = typeof process !== "undefined" ? process.env?.DIGEST_EMAIL_TO?.trim() : "";
+        if (to) {
+          const pending = data.outreachQueue.filter((o) => o.status === "pending_approval");
+          const newAds = data.adListings.filter((a) => a.status === "new").length;
+          const replied = data.adListings.filter((a) => a.status === "replied").length;
+          const unread = data.notifications.filter((n) => !n.readAt).slice(0, 12);
+          const text = [
+            outcome.summary.replace(/^Daily digest: /, ""),
+            "",
+            `Job ads: ${newAds} new · ${pending.length} repl${pending.length === 1 ? "y" : "ies"} awaiting approval · ${replied} prospect${replied === 1 ? "" : "s"} replied`,
+            "",
+            unread.length ? "Open alerts:" : "No open alerts.",
+            ...unread.map((n) => `• ${n.title} — ${n.body}`),
+            "",
+            "Approve replies: /admin/ads · Automation hub: /admin/automation",
+          ].join("\n");
+          try {
+            const r = await opts.senders.email({ to, subject: `BHC daily digest — ${new Date(started).toLocaleDateString()}`, text });
+            results.push(r.ok ? `[Daily ops digest] emailed to ${to}` : `[Daily ops digest] email failed: ${r.error}`);
+          } catch (err) {
+            errors.push(`digest email: ${err instanceof Error ? err.message : String(err)}`);
+          }
+        }
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       errors.push(`${auto.name}: ${msg}`);

@@ -182,7 +182,7 @@ function executeAction(
   runId: string,
 ): boolean {
   const s = resolveSubjects(data, context);
-  const { lead, shift, job } = s;
+  const { lead, job } = s;
   const stamp = new Date().toISOString();
   const authorId = context.authorId ?? "emp-admin";
   const related = primaryRelated(s);

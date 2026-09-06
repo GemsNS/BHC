@@ -105,6 +105,20 @@ Deliveries are stored in `webhookDeliveries` (last 200) with `status`, `attempts
 
 Auth for `/api/automation`: admin/manager session header, or `x-bhc-automation-secret: $AUTOMATION_SECRET` for cron/CI. Full guide: `docs/AUTOMATION.md`.
 
+## Job ads & outreach
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/ads` | sources, listings, outreach drafts, connection status (AI/email/SMS/IMAP), stats |
+| POST | `/api/ads` | `{ action }` ∈ add_source · update_source · remove_source · ingest · add_manual · requalify · redraft · skip · restore · mark_replied · set_status · update_outreach · approve · send · cancel · send_test |
+| PUT | `/api/ads` | `{ url }` → preview an RSS/Atom feed |
+| POST | `/api/ads/inbound` | push `{title, body, url, contactEmail, contactPhone}` or a forwarded email `{subject, text|html, from}`; auth `x-bhc-inbound-secret` or `?secret=` |
+| POST | `/api/sms/inbound` | Twilio inbound SMS webhook (X-Twilio-Signature validated); STOP → opt-out, else reply → lead/ad updated |
+| POST | `/api/outreach` | `{ action: "send", id }` performs a real send when SMTP/Resend or Twilio is configured (falls back to mark-sent) |
+| POST | `/api/webhooks` | `{ preset, url }` creates from a preset; `{ action: "test", id }` sends a signed test; `format` json/slack/discord |
+
+Full guide: `docs/OUTREACH.md`.
+
 ## Other CRM routes (existing)
 
 `/api/leads` `/api/jobs` `/api/crm` `/api/invoices` `/api/progress` `/api/shifts` `/api/zones` `/api/knocks` `/api/canvass` `/api/employees` `/api/inventory` `/api/tools` `/api/fleet` `/api/fuel` `/api/materials` `/api/damage` `/api/tickets` `/api/workflows` `/api/outreach` `/api/announcements` `/api/time-entries` `/api/dashboard` `/api/stats` `/api/markets` `/api/contact`
