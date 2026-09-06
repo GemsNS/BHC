@@ -112,6 +112,9 @@ function toolDescription(name: MainframeToolName): string {
     delete_memory: "Delete an assistant memory entry",
     import_data: "Bulk import leads, jobs, companies, or memory from records array",
     lookup_hrm: "HRM public data: weather (Open-Meteo), geocode address (Nominatim), or summary",
+    automation_status: "Show automation engine status: scheduler ticks, due automations, webhook backlog",
+    toggle_automation: "Enable or disable an automation by id or name",
+    store_health: "Integrity report for the CRM store (size, counts, dangling references)",
   };
   return map[name] ?? `${name.replace(/_/g, " ")} — CRM operation`;
 }
@@ -261,6 +264,18 @@ function toolParameters(name: MainframeToolName): Record<string, unknown> {
           force: { type: "boolean", description: "Run all enabled automations" },
         },
       };
+    case "automation_status":
+    case "store_health":
+      return { type: "object", properties: {} };
+    case "toggle_automation":
+      return {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "Automation id, action, or name fragment" },
+          enabled: { type: "boolean", description: "Omit to flip the current state" },
+        },
+        required: ["id"],
+      };
     case "remember_knowledge":
       return {
         type: "object",
@@ -336,8 +351,21 @@ function parseLocalIntent(text: string): Array<{ tool: MainframeToolName; args: 
     return [];
   }
 
-  if (/daily automation|run automations|morning scan/i.test(t)) {
+  if (/automation (status|health)|scheduler status|what('s| is) automated/i.test(t)) {
+    runs.push({ tool: "automation_status", args: {} });
+  } else if (/daily automation|run automations|morning scan/i.test(t)) {
     runs.push({ tool: "run_daily_automations", args: { force: /force|all/i.test(t) } });
+  }
+  if (/store health|data health|integrity check/i.test(t)) {
+    runs.push({ tool: "store_health", args: {} });
+  }
+  {
+    const m = t.match(/(enable|disable|turn (?:on|off)|pause|resume) (?:the )?(.+?) automation/i);
+    if (m) {
+      const verb = m[1].toLowerCase();
+      const enabled = /enable|turn on|resume/.test(verb);
+      runs.push({ tool: "toggle_automation", args: { id: m[2].trim(), enabled } });
+    }
   }
   if (/approve all outreach|approve outreach/i.test(t)) {
     runs.push({ tool: "approve_outreach", args: { all: /all/.test(lower) } });

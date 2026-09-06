@@ -33,14 +33,49 @@ Enable Pages on `gh-pages` branch. URL: https://gemsns.github.io/BHC/
 
 **Limitations:** no `/api/*`. Client uses localStorage. Calendar ICS download still works client-side. Webhooks require a Node host. Browser AI: paste key on `/admin/assistant` or set `NEXT_PUBLIC_GEMINI_API_KEY` at **build time** (visible in JS — testing only).
 
-### 3. Node host (Fly, Railway, VPS, Cloud Run)
+### 3. Production — bhcontracting.ca (Node host, systemd)
 
-- Node 20+
-- `npm ci && npm run build && npm start`
-- Persist `/workspace/data` (or `data/`) as a volume
-- Set env vars from `.env.example`
-- Put a reverse proxy (TLS) in front
-- **Do not expose this demo auth model to the public internet without hardening**
+Layout on the host: app in `/opt/bhc`, service unit `bhc`, store in `/opt/bhc/data` (persisted across deploys), TLS at the reverse proxy.
+
+**One-time setup**
+
+```bash
+sudo cp deploy/production/bhc.service /etc/systemd/system/bhc.service
+sudo systemctl daemon-reload && sudo systemctl enable --now bhc
+# optional: external timer instead of the in-process scheduler (then set BHC_SCHEDULER=0 in .env)
+sudo cp deploy/production/bhc-automation.{service,timer} /etc/systemd/system/
+sudo systemctl enable --now bhc-automation.timer
+```
+
+Add to `/opt/bhc/.env`: `AUTOMATION_SECRET=<long random>` (lets cron/CI trigger ticks) and any `AUTOMATION_*` thresholds.
+
+**Every release** — from the host:
+
+```bash
+cd /opt/bhc && bash deploy/production/deploy.sh          # deploy origin/main
+bash deploy/production/deploy.sh --ref v0.3.0            # a tag or sha
+bash deploy/production/deploy.sh --rollback              # previous release
+```
+
+The script snapshots `data/store.json` to `data/backups/pre-deploy-*.json`, fetches, runs `npm ci` only if `package-lock.json` changed, builds to a side directory and swaps it in, restarts `bhc`, waits for `GET /api/health` = 200, and **rolls back automatically** if the health check fails. It then runs one automation tick so the new code's checks/backups execute immediately. Log: `data/deploy/deploy.log`.
+
+**From your workstation**
+
+```bash
+npm run release              # verify (lint+typecheck+test+build) → git push origin main → CI → Deploy production (Actions)
+npm run release -- --ssh     # same, then run deploy.sh over SSH (PROD_SSH=user@host)
+```
+
+**GitHub Actions** (`.github/workflows/`):
+
+| Workflow | Trigger | Does |
+|----------|---------|------|
+| `ci.yml` | every push / PR | lint, typecheck, test, build, engine smoke |
+| `deploy-production.yml` | CI success on `main`, or manual | SSH → `deploy.sh`, then public health check. **No-op until secrets exist:** `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_KEY` (+ optional `PROD_SSH_PORT`, `PROD_APP_DIR`) |
+| `nightly.yml` | 06:15 UTC daily | health probe + automation tick via `AUTOMATION_SECRET` |
+| `gh-pages.yml` | manual | static demo → `gh-pages` |
+
+Generic Node hosts (Fly, Railway, Cloud Run): `npm ci && npm run build && npm start`, persist `data/`, set env from `.env.example`, TLS in front. **Do not expose the current auth model without hardening** (see backlog).
 
 ## Environment variables
 
@@ -65,7 +100,10 @@ Enable Pages on `gh-pages` branch. URL: https://gemsns.github.io/BHC/
 | `QUICKBOOKS_CLIENT_SECRET` | QuickBooks OAuth | **server only, never commit** |
 | `QUICKBOOKS_ENV` | QuickBooks API host | `production` or `sandbox` |
 | `QUICKBOOKS_REDIRECT_URI` | OAuth callback | `https://bhcontracting.ca/api/quickbooks/callback` |
-| `WEBHOOK_RETRY` | Future | not wired |
+| `BHC_SCHEDULER` / `BHC_SCHEDULER_INTERVAL_MIN` | Automation scheduler | default on, every 15 min (`docs/AUTOMATION.md`) |
+| `AUTOMATION_SECRET` | `POST /api/automation` from cron/CI | header `x-bhc-automation-secret` |
+| `BHC_BACKUP_KEEP` | Nightly store backups | default 14 snapshots |
+| `AUTOMATION_*` thresholds | Ops checks | invoice due days, job silent days, tool max days, … |
 
 ## PWA / mobile
 
@@ -77,10 +115,15 @@ Enable Pages on `gh-pages` branch. URL: https://gemsns.github.io/BHC/
 
 ## Health checks
 
+- `GET /api/health` — public, secret-free: store ok, scheduler state, AI/mail provider names. 200 or 503. Use for uptime monitors.
+- `GET /api/automation` — (admin) scheduler, due automations, recent ticks, backups, store health
 - `GET /api/ai/status` — AI configured?
-- `GET /api/store` — store readable?
-- `npm run bhc -- store summary`
+- `npm run bhc -- store health` · `npm run bhc -- automations status`
 
-## Rollback
+## Backups & rollback
 
-Pages: revert `gh-pages` branch. App: revert `main` and redeploy. Store file is independent — keep backups of `data/store.json`.
+- Nightly: `store_backup` automation → `data/backups/store-*.json` (keeps `BHC_BACKUP_KEEP`, default 14)
+- Every deploy: `data/backups/pre-deploy-*.json` (last 10)
+- Manual: `npm run bhc -- store backup` · restore with `npm run bhc -- store restore <file>` (takes a `pre-restore-*` copy first) or Automation hub → Restore (admin)
+- App rollback: `bash deploy/production/deploy.sh --rollback` (previous SHA recorded in `data/deploy/previous_sha`)
+- Pages: revert `gh-pages` branch.

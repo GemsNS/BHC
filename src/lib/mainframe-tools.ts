@@ -5,6 +5,8 @@ import {
 import { DEFAULT_STAFF_PIN } from "./auth-credentials";
 import { huntLeadsFromCriteria } from "./mainframe-prospects";
 import { runDailyAutomations } from "./mainframe-automations";
+import { automationStatus, describeSchedule } from "./automation-engine";
+import { storeHealth } from "./store-health";
 import { findProspectsForLead, scoreLead } from "./lead-automation";
 import type {
   AppData,
@@ -89,6 +91,9 @@ export const MAINFRAME_TOOL_NAMES = [
   "delete_memory",
   "import_data",
   "lookup_hrm",
+  "automation_status",
+  "toggle_automation",
+  "store_health",
 ] as const;
 
 export type MainframeToolName = (typeof MAINFRAME_TOOL_NAMES)[number];
@@ -149,9 +154,67 @@ export function executeMainframeTool(
         summary:
           "lookup_hrm requires server async — use from AI chat on Node host (not local parser).",
       };
+    case "automation_status":
+      return toolAutomationStatus(data);
+    case "toggle_automation":
+      return toolToggleAutomation(data, args);
+    case "store_health":
+      return toolStoreHealth(data);
     default:
       return { ok: false, summary: `Unknown tool: ${tool}` };
   }
+}
+
+function toolAutomationStatus(data: AppData): ToolExecution {
+  const status = automationStatus(data);
+  const lines = status.automations.map(
+    (a) =>
+      `${a.enabled ? "●" : "○"} ${a.name} — ${a.schedule}${a.due ? " [due]" : ""}${a.lastRunAt ? ` (last ${a.lastRunAt.slice(0, 16).replace("T", " ")})` : ""}`,
+  );
+  const last = status.lastTick
+    ? `Last tick ${status.lastTick.finishedAt.slice(0, 16).replace("T", " ")} via ${status.lastTick.source}: ${status.lastTick.results.length} result(s), ${status.lastTick.errors.length} error(s).`
+    : "No automation tick recorded yet.";
+  return {
+    ok: true,
+    summary: `${last}\n${status.dueCount} automation(s) due now · ${status.webhookBacklog} webhook(s) awaiting retry · ${status.unreadNotifications} unread alert(s).\n${lines.join("\n")}`,
+    data: {
+      dueCount: status.dueCount,
+      webhookBacklog: status.webhookBacklog,
+      unread: status.unreadNotifications,
+      automations: status.automations,
+    },
+  };
+}
+
+function toolToggleAutomation(data: AppData, args: Record<string, unknown>): ToolExecution {
+  const query = String(args.id ?? args.name ?? args.query ?? "").trim().toLowerCase();
+  if (!query) return { ok: false, summary: "Provide the automation id or name." };
+  const auto = data.assistantAutomations.find(
+    (a) =>
+      a.id.toLowerCase() === query ||
+      a.action.toLowerCase() === query ||
+      a.name.toLowerCase().includes(query),
+  );
+  if (!auto) return { ok: false, summary: `No automation matches "${query}".` };
+  const enabled = args.enabled == null ? !auto.enabled : Boolean(args.enabled);
+  auto.enabled = enabled;
+  return {
+    ok: true,
+    summary: `${auto.name} is now ${enabled ? "enabled" : "disabled"} (${describeSchedule(auto)}).`,
+    data: { id: auto.id, enabled },
+  };
+}
+
+function toolStoreHealth(data: AppData): ToolExecution {
+  const h = storeHealth(data);
+  const issues = h.issues.length
+    ? h.issues.map((i) => `- [${i.level}] ${i.message}`).join("\n")
+    : "- no issues";
+  return {
+    ok: h.ok,
+    summary: `Store health: ${h.ok ? "OK" : "ERRORS"} · ${h.approxMB} MB · ${data.leads.length} leads, ${data.jobs.length} jobs, ${data.invoices.length} invoices, ${h.photoDataUrls} inline photos.\n${issues}`,
+    data: { ok: h.ok, approxMB: h.approxMB, issues: h.issues },
+  };
 }
 
 function toolGetSummary(data: AppData): ToolExecution {

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { newId, nowIso, readStore, updateStore } from "@/lib/store";
+import { newId, nowIso, readStore, updateStore, updateStoreAsync } from "@/lib/store";
 import type { DamageReport } from "@/lib/types";
+import { dispatchWebhooks } from "@/lib/webhooks";
+import { onDamageReported } from "@/lib/workflows";
 
 export async function GET() {
   const data = await readStore();
@@ -42,12 +44,26 @@ export async function POST(request: Request) {
     createdAt: nowIso(),
     resolved: false,
   };
-  await updateStore((d) => {
+  await updateStoreAsync(async (d) => {
     d.damageReports.unshift(report);
     if (report.targetType === "tool" && report.targetId) {
       const tool = d.tools.find((t) => t.id === report.targetId);
       if (tool && report.severity === "critical") tool.status = "damaged";
     }
+    onDamageReported(d, report);
+    await dispatchWebhooks(
+      d,
+      "damage.reported",
+      {
+        reportId: report.id,
+        severity: report.severity,
+        targetType: report.targetType,
+        targetLabel: report.targetLabel,
+        jobId: report.jobId,
+      },
+      newId,
+      nowIso,
+    );
   });
   return NextResponse.json({ report }, { status: 201 });
 }

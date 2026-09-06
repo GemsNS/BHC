@@ -1,0 +1,70 @@
+name: Deploy production
+
+# Runs deploy/production/deploy.sh on bhcontracting.ca over SSH after CI passes on main.
+# It is a no-op until these repository secrets exist:
+#   PROD_SSH_HOST   e.g. bhcontracting.ca
+#   PROD_SSH_USER   e.g. bhc
+#   PROD_SSH_KEY    private key (deploy user) — never commit it
+# Optional: PROD_SSH_PORT (22), PROD_APP_DIR (/opt/bhc)
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (default origin/main)"
+        required: false
+        default: "origin/main"
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      HOST: ${{ secrets.PROD_SSH_HOST }}
+    steps:
+      - name: Check secrets
+        id: gate
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "PROD_SSH_HOST not set — skipping deploy (configure secrets to enable)."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy over SSH
+        if: steps.gate.outputs.enabled == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: ${{ secrets.PROD_SSH_PORT || 22 }}
+          command_timeout: 15m
+          script: |
+            set -e
+            cd "${{ secrets.PROD_APP_DIR || '/opt/bhc' }}"
+            bash deploy/production/deploy.sh --ref "${{ github.event.inputs.ref || 'origin/main' }}"
+
+      - name: Verify public health
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS --max-time 10 "https://${HOST}/api/health" | tee /tmp/health.json; then
+              echo; echo "✔ https://${HOST}/api/health OK"; exit 0
+            fi
+            sleep 10
+          done
+          echo "✖ health check failed"; exit 1

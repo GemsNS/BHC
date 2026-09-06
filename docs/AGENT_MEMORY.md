@@ -1,7 +1,7 @@
 # Agent memory — BHC project context
 
 Persistent log of user preferences, decisions, and chat themes for future agents and engineers.  
-**Last updated:** 2026-08-24
+**Last updated:** 2026-09-05
 
 ## How to use this file
 
@@ -74,6 +74,22 @@ Persistent log of user preferences, decisions, and chat themes for future agents
 - Metric chips and pipeline graph nodes expand the matching briefing card; action buttons in the panel still navigate.
 
 **Key files:** `src/lib/jarvis-briefing.ts`, `src/components/JarvisBar.tsx`, `src/components/JarvisDetailPanel.tsx`, `src/app/admin/dashboard/page.tsx`, `src/app/globals.css` (JARVIS + HUD blocks).
+
+### Automation supercharge (2026-09-05, Claude)
+
+**User ask:** "supercharge this project and set it up to automate as many tasks as possible on top of the current system." Production is live at bhcontracting.ca; the user runs the deploy themselves.
+
+**Shipped:**
+
+- Automation engine (`src/lib/automation-engine.ts`) + in-process scheduler started from `src/instrumentation.ts` (every 15 min, `BHC_SCHEDULER=0` to disable). 14-entry catalog: reminders, invoice follow-up, job health, inventory reorder, tool overdue, damage escalation, fleet check, daily digest, sequences, webhook retry, nightly backup, pipeline scan (+ prospect hunt / outreach digest off by default). Idempotent via `dedupeKey` + open-task lookups.
+- Workflow engine: 7 new triggers (job created/status, invoice status, proposal signed, damage, ticket, scheduled) and 5 new actions (notification, webhook, job from lead, invoice draft, lead status). Four templates ship **paused**.
+- Webhooks: pending queue, exponential backoff retry (max 5), `X-BHC-Delivery` / `X-BHC-Attempt`, 9 new events.
+- `/admin/automation` hub (Administration nav), `/api/automation`, public `/api/health`, JARVIS "Automation" chip + card, Mainframe tools `automation_status` / `toggle_automation` / `store_health`.
+- Backups (`data/backups/`, rotating) + store integrity report; CLI `automations tick|status`, `store health|backup|backups|restore`, `webhooks backlog|retry`.
+- CI/CD: `.github/workflows/ci.yml` (lint/typecheck/test/build), `deploy-production.yml` (SSH deploy after CI, gated on secrets), `nightly.yml`, `gh-pages.yml` (manual), Dependabot. Host script `deploy/production/deploy.sh` with pre-deploy snapshot, health gate, auto-rollback; workstation `npm run release`.
+- Store key bumped to **v10** (`automationRuns` collection).
+
+**Decisions:** additive-only migrations; anything that creates business records ships disabled; nothing sends customer email. Node 22 is required to run vitest 4 locally (Node 21 fails on `util.styleText`).
 
 ---
 

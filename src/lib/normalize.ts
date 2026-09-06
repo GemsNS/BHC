@@ -3,6 +3,7 @@ import { DEFAULT_STAFF_PIN } from "./auth-credentials";
 import { buildSeedData } from "./seed";
 import { normalizeAddressKey } from "./knocker/geo";
 import { DEFAULT_KNOCK_COLORS } from "./knocker/colors";
+import { ensureDefaultAutomations, ensureWorkflowTemplates } from "./automation-defaults";
 
 function normalizeKnock(k: KnockEvent): KnockEvent {
   return {
@@ -140,15 +141,21 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     activities: raw.activities ?? seed.activities,
     tickets: raw.tickets ?? seed.tickets,
     shifts: raw.shifts ?? seed.shifts,
-    workflows: raw.workflows ?? seed.workflows,
+    workflows: ensureWorkflowTemplates(
+      raw.workflows ?? seed.workflows,
+      new Date().toISOString(),
+    ),
     workflowRuns: raw.workflowRuns ?? seed.workflowRuns,
     sequences: raw.sequences ?? seed.sequences,
     sequenceEnrollments: raw.sequenceEnrollments ?? seed.sequenceEnrollments,
     outreachQueue: raw.outreachQueue ?? seed.outreachQueue,
     assistantProfiles: raw.assistantProfiles ?? seed.assistantProfiles,
-    assistantAutomations: raw.assistantAutomations ?? seed.assistantAutomations,
+    assistantAutomations: ensureDefaultAutomations(
+      raw.assistantAutomations ?? seed.assistantAutomations,
+    ),
     assistantAudit: raw.assistantAudit ?? seed.assistantAudit,
     assistantMemory: raw.assistantMemory ?? seed.assistantMemory,
     contracts: raw.contracts ?? seed.contracts,
+    automationRuns: raw.automationRuns ?? [],
   };
 }

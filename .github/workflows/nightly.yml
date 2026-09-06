@@ -1,0 +1,32 @@
+name: Nightly production check
+
+# Every night: hit the public health endpoint and, when AUTOMATION_SECRET is configured,
+# trigger an automation tick (belt-and-braces alongside the in-process scheduler).
+# Secrets: PROD_SSH_HOST (public hostname), AUTOMATION_SECRET (matches host .env)
+
+on:
+  schedule:
+    - cron: "15 6 * * *" # 06:15 UTC ≈ 02:15 Atlantic
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      HOST: ${{ secrets.PROD_SSH_HOST }}
+      SECRET: ${{ secrets.AUTOMATION_SECRET }}
+    steps:
+      - name: Health
+        run: |
+          if [ -z "$HOST" ]; then echo "PROD_SSH_HOST not set — skipping"; exit 0; fi
+          curl -fsS --max-time 15 "https://${HOST}/api/health" | tee health.json
+          echo
+      - name: Automation tick
+        run: |
+          if [ -z "$HOST" ] || [ -z "$SECRET" ]; then echo "AUTOMATION_SECRET not set — skipping tick"; exit 0; fi
+          curl -fsS --max-time 60 -X POST "https://${HOST}/api/automation" \
+            -H "content-type: application/json" \
+            -H "x-bhc-automation-secret: ${SECRET}" \
+            -d '{"action":"tick"}' | head -c 2000
+          echo

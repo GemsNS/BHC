@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { newId, nowIso, readStore, updateStore } from "@/lib/store";
+import { newId, nowIso, readStore, updateStore, updateStoreAsync } from "@/lib/store";
 import type { InvoiceDoc, InvoiceLine } from "@/lib/types";
 import { summarizeProgress } from "@/lib/ai-summarize";
+import { deliverPendingWebhooks, queueWebhook } from "@/lib/webhooks";
+import { onInvoiceStatusChanged } from "@/lib/workflows";
 
 export async function GET() {
   const data = await readStore();
@@ -123,7 +125,24 @@ export async function PATCH(request: Request) {
   await updateStore((d) => {
     const inv = d.invoices.find((i) => i.id === id);
     if (!inv) return;
-    if (body.status) inv.status = body.status;
+    if (body.status && body.status !== inv.status) {
+      const previous = inv.status;
+      inv.status = body.status;
+      onInvoiceStatusChanged(d, inv);
+      queueWebhook(
+        d,
+        "invoice.status_changed",
+        { invoiceId: inv.id, jobId: inv.jobId, from: previous, to: inv.status },
+        newId,
+        nowIso,
+      );
+    } else if (body.status) {
+      inv.status = body.status;
+    }
+  });
+  // Deliver anything queued above (and any prior backlog) without blocking the write
+  await updateStoreAsync(async (d) => {
+    await deliverPendingWebhooks(d, nowIso, { limit: 10 });
   });
   return NextResponse.json({ ok: true });
 }

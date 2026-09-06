@@ -57,7 +57,7 @@ You are the production upgrade agent for BH Contracting LTD. (BHC) — a Next.js
    - `/admin/team` lists staff and reset-password works
 5. **Gemini / Mainframe**: confirm `gemini-3.6-flash` (or current model in `src/lib/ai-provider.ts`) responds in `/admin/assistant` without 404 or `thoughtSignature` tool errors.
 6. **Apache/TLS**: ensure certbot renewal timer is active; reload Apache after config changes.
-7. **GitHub Pages** (static demo): `npm run build` with static export if applicable; push `out/` or use existing GH Actions workflow — static demo uses `localStorage` key `bhc-crm-store-v9`.
+7. **GitHub Pages** (static demo): `npm run build` with static export if applicable; push `out/` or use existing GH Actions workflow — static demo uses `localStorage` key `bhc-crm-store-v10`.
 
 ## Safe upgrade rules
 

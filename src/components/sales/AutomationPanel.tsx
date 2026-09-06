@@ -10,7 +10,8 @@ import type {
   WorkflowDefinition,
   WorkflowRun,
 } from "@/lib/types";
-import { processSequenceSteps } from "@/lib/workflows";
+import { processSequenceSteps, WORKFLOW_TRIGGER_LABELS } from "@/lib/workflows";
+import Link from "next/link";
 
 export function AutomationPanel() {
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
@@ -78,8 +79,12 @@ export function AutomationPanel() {
   return (
     <div className="jarvis-panel-stack">
       <p className="text-sm text-[var(--muted)]">
-        Workflows run on lead events and shift posts. Sequences drip email/call steps.
-        GoDaddy business email can connect here later for live sends.
+        Workflows fire on lead, job, invoice, proposal, damage, and ticket events. Sequences drip
+        email/call steps. Scheduled checks, reminders, backups, and webhook retries live in the{" "}
+        <Link href="/admin/automation" className="linkish">
+          Automation hub
+        </Link>
+        . Templates marked paused are safe to enable when you are ready.
       </p>
 
       <section className="jarvis-glass-panel">
@@ -96,6 +101,13 @@ export function AutomationPanel() {
                 <div>
                   <p className="font-semibold">{wf.name}</p>
                   <p className="text-xs text-[var(--muted)]">{wf.description}</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-wide text-[var(--muted)]">
+                    {WORKFLOW_TRIGGER_LABELS[wf.trigger] ?? wf.trigger}
+                    {wf.triggerConfig?.status ? ` = ${wf.triggerConfig.status}` : ""}
+                    {wf.triggerConfig?.severity ? ` = ${wf.triggerConfig.severity}` : ""}
+                    {" · "}
+                    {wf.actions.map((a) => a.type.replace(/_/g, " ")).join(", ")}
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   <StatusBadge status={wf.enabled ? "enabled" : "disabled"} />

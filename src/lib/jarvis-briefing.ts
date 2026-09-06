@@ -208,11 +208,53 @@ export function buildJarvisSnapshot(
     });
   }
 
+  const automationSignal = automationHealthSignal(data, now);
+  if (automationSignal && (context === "overview" || context === "global")) {
+    metrics.push({
+      id: "automation",
+      label: "Automation",
+      value: automationSignal.value,
+      tone: automationSignal.tone,
+      href: "/admin/automation",
+      insightId: "automation",
+    });
+  }
+
   return {
     context,
     metrics: metrics.slice(0, 5),
     insightCount: 0,
   };
+}
+
+type AutomationSignal = { value: string; tone: JarvisTone; text: string };
+
+/**
+ * Compact health read on the automation engine: stale ticks, webhook backlog,
+ * or recent errors. Returns null when everything is quiet and healthy.
+ */
+export function automationHealthSignal(data: AppData, now = Date.now()): AutomationSignal | null {
+  const last = data.automationRuns[0];
+  const backlog = data.webhookDeliveries.filter(
+    (d) => d.status !== "ok" && d.attempts < 5 && (d.status === "pending" || d.nextRetryAt),
+  ).length;
+  const errors = data.automationRuns.slice(0, 3).reduce((s, r) => s + r.errors.length, 0);
+  const enabled = data.assistantAutomations.filter((a) => a.enabled).length;
+  if (!enabled) return null;
+  if (!last) {
+    return { value: "idle", tone: "neutral", text: "Automation engine has not ticked yet on this host." };
+  }
+  const ageMin = Math.round((now - new Date(last.finishedAt).getTime()) / 60_000);
+  if (errors > 0) {
+    return { value: `${errors} err`, tone: "warn", text: `${errors} automation error(s) in the last ticks.` };
+  }
+  if (backlog > 0) {
+    return { value: `${backlog} retry`, tone: "warn", text: `${backlog} webhook deliver(ies) waiting for retry.` };
+  }
+  if (ageMin > 180) {
+    return { value: `${Math.round(ageMin / 60)}h ago`, tone: "warn", text: `Last automation tick was ${Math.round(ageMin / 60)}h ago — scheduler may be stopped.` };
+  }
+  return { value: `${enabled} live`, tone: "success", text: `${enabled} automations armed · last tick ${ageMin} min ago.` };
 }
 
 /** Context-aware briefing cards — expand for breakdown + actions */
@@ -688,6 +730,30 @@ export function buildJarvisInsights(
         label: n.title,
         meta: n.body.slice(0, 60),
       })),
+    });
+  }
+
+  const automationSignal = automationHealthSignal(data, now);
+  if (automationSignal && (context === "overview" || context === "global")) {
+    const lastTick = data.automationRuns[0];
+    pushInsight(insights, {
+      id: "automation",
+      category: "ai",
+      tone: automationSignal.tone,
+      title: "Automation engine",
+      text: automationSignal.text,
+      priority: automationSignal.tone === "warn" ? 80 : 30,
+      href: "/admin/automation",
+      primaryAction: { label: "Automation hub", href: "/admin/automation", kind: "primary" },
+      details: lastTick
+        ? [
+            { label: "Last tick", value: `${new Date(lastTick.finishedAt).toLocaleString()} · ${lastTick.source}` },
+            { label: "Alerts created", value: String(lastTick.counters.notificationsCreated) },
+            { label: "Tasks created", value: String(lastTick.counters.tasksCreated) },
+            { label: "Webhooks", value: `${lastTick.counters.webhooksSent} sent · ${lastTick.counters.webhooksFailed} failed` },
+          ]
+        : [],
+      entities: (lastTick?.results ?? []).slice(0, 4).map((r) => ({ label: r.slice(0, 90) })),
     });
   }
 

@@ -51,7 +51,11 @@ Open [http://localhost:3000](http://localhost:3000) → **login**.
 | --- | --- |
 | `npm run dev` | Dev server `0.0.0.0:3000` |
 | `npm run lint` / `npm test` / `npm run build` | Quality checks |
-| `npm run bhc -- <cmd>` | CLI — AI, store, automations |
+| `npm run verify` | Lint + typecheck + test + build (what CI runs) |
+| `npm run release` | Verify → push `main` → CI deploys production (`docs/DEPLOYMENT.md`) |
+| `npm run bhc -- <cmd>` | CLI — AI, store, automations, webhooks, backups |
+| `npm run automation:tick` / `automation:status` | Run / inspect the automation engine (`docs/AUTOMATION.md`) |
+| `npm run store:backup` / `store:health` | Snapshot / integrity report for `data/store.json` |
 | `npm run build:gh-pages` | Static demo → `./out` |
 | `npm run deploy:gh-pages` | Publish `gh-pages` |
 
@@ -77,4 +81,4 @@ https://gemsns.github.io/BHC/ — localStorage demo (no server APIs). Full AI/we
 
 ## Data
 
-JSON store `data/store.json` (gitignored). Reset: `POST /api/seed`. Browser demos use `bhc-crm-store-v8`.
+JSON store `data/store.json` (gitignored). Reset: `POST /api/seed`. Browser demos use `bhc-crm-store-v10`.

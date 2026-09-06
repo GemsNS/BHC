@@ -97,7 +97,28 @@ export type WorkflowTrigger =
   | "lead_created"
   | "lead_status_changed"
   | "shift_posted_pool"
+  | "job_created"
+  | "job_status_changed"
+  | "invoice_status_changed"
+  | "proposal_signed"
+  | "damage_reported"
+  | "ticket_created"
+  | "scheduled"
   | "manual";
+
+export const WORKFLOW_TRIGGERS: WorkflowTrigger[] = [
+  "lead_created",
+  "lead_status_changed",
+  "shift_posted_pool",
+  "job_created",
+  "job_status_changed",
+  "invoice_status_changed",
+  "proposal_signed",
+  "damage_reported",
+  "ticket_created",
+  "scheduled",
+  "manual",
+];
 
 export type WorkflowActionType =
   | "create_task"
@@ -107,7 +128,28 @@ export type WorkflowActionType =
   | "create_ticket"
   | "notify"
   | "find_prospects"
-  | "queue_outreach";
+  | "queue_outreach"
+  | "create_notification"
+  | "send_webhook"
+  | "create_job_from_lead"
+  | "create_invoice_draft"
+  | "update_lead_status";
+
+export const WORKFLOW_ACTION_TYPES: WorkflowActionType[] = [
+  "create_task",
+  "log_email",
+  "assign_lead",
+  "enroll_sequence",
+  "create_ticket",
+  "notify",
+  "find_prospects",
+  "queue_outreach",
+  "create_notification",
+  "send_webhook",
+  "create_job_from_lead",
+  "create_invoice_draft",
+  "update_lead_status",
+];
 
 export type SequenceStepType = "email" | "call" | "task";
 
@@ -424,12 +466,49 @@ export interface AssistantDailyAutomation {
   enabled: boolean;
   /** Hour in local server time (0–23) when automation is due */
   runHour: number;
-  action:
-    | "pipeline_scan"
-    | "prospect_hunt"
-    | "outreach_digest"
-    | "process_sequences";
+  /** When set, runs every N minutes instead of once daily */
+  intervalMinutes?: number;
+  action: AutomationActionName;
   lastRunAt: string | null;
+}
+
+/** Every unattended job the automation engine knows how to run */
+export type AutomationActionName =
+  | "pipeline_scan"
+  | "prospect_hunt"
+  | "outreach_digest"
+  | "process_sequences"
+  | "task_reminders"
+  | "invoice_followup"
+  | "job_health"
+  | "inventory_reorder"
+  | "tool_overdue"
+  | "damage_escalation"
+  | "fleet_check"
+  | "webhook_retry"
+  | "store_backup"
+  | "daily_digest";
+
+/** One execution of the automation engine (scheduler tick, API, CLI, UI) */
+export interface AutomationTickRecord {
+  id: string;
+  source: "scheduler" | "api" | "cli" | "ui" | "test";
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+  /** Human-readable line per step that did something */
+  results: string[];
+  counters: {
+    automationsRun: number;
+    notificationsCreated: number;
+    tasksCreated: number;
+    sequenceSteps: number;
+    webhooksSent: number;
+    webhooksFailed: number;
+    workflowsRun: number;
+    backupCreated: boolean;
+  };
+  errors: string[];
 }
 
 export interface AssistantAuditEntry {
@@ -608,7 +687,16 @@ export type WebhookEventName =
   | "todo.created"
   | "todo.completed"
   | "territory.created"
-  | "automation.ran";
+  | "automation.ran"
+  | "lead.created"
+  | "lead.status_changed"
+  | "job.created"
+  | "job.status_changed"
+  | "invoice.status_changed"
+  | "damage.reported"
+  | "ticket.created"
+  | "workflow.ran"
+  | "automation.tick";
 
 export interface WebhookEndpoint {
   id: string;
@@ -629,6 +717,10 @@ export interface WebhookDelivery {
   attempts: number;
   lastError: string | null;
   createdAt: string;
+  /** When the retry loop may try again (null = no retry scheduled) */
+  nextRetryAt?: string | null;
+  /** Set once delivered or permanently abandoned */
+  completedAt?: string | null;
 }
 
 export interface PushSubscriptionRecord {
@@ -648,6 +740,8 @@ export interface InAppNotification {
   href: string | null;
   readAt: string | null;
   createdAt: string;
+  /** Automation idempotency key — prevents duplicate alerts across ticks */
+  dedupeKey?: string;
 }
 
 export interface GpsTrackingConfig {
@@ -828,6 +922,8 @@ export interface AppData {
   assistantAudit: AssistantAuditEntry[];
   assistantMemory: AssistantMemoryEntry[];
   contracts: ContractRecord[];
+  /** Automation engine tick history (capped) */
+  automationRuns: AutomationTickRecord[];
 }
 
 export const ROLE_LABELS: Record<EmployeeRole, string> = {

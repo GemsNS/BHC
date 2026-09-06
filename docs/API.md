@@ -89,9 +89,21 @@ X-BHC-Signature: sha256=<hex hmac sha256 of raw body>
 }
 ```
 
-Verify: HMAC-SHA256 of the **raw JSON body** with endpoint `secret`. Events: `pin.created`, `pin.updated`, `proposal.created`, `proposal.signed`, `todo.created`, `todo.completed`, `territory.created`, `automation.ran`.
+Verify: HMAC-SHA256 of the **raw JSON body** with endpoint `secret`. Extra headers: `X-BHC-Delivery` (id, stable across retries) and `X-BHC-Attempt` (1–5).
 
-Deliveries are stored in `webhookDeliveries` (last 200). Failed HTTP is logged; no automatic retry loop yet (future).
+Events: `pin.created`, `pin.updated`, `proposal.created`, `proposal.signed`, `todo.created`, `todo.completed`, `territory.created`, `automation.ran`, `lead.created`, `lead.status_changed`, `job.created`, `job.status_changed`, `invoice.status_changed`, `damage.reported`, `ticket.created`, `workflow.ran`, `automation.tick`.
+
+Deliveries are stored in `webhookDeliveries` (last 200) with `status`, `attempts`, `nextRetryAt`, `completedAt`. Failures retry with exponential backoff (5/10/20/40 min, max 5 attempts) on each automation tick. Force a retry: `POST /api/automation {"action":"retry_webhooks"}` or `npm run bhc -- webhooks retry`.
+
+## Automation engine
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/automation` | scheduler info, automation status (due/last run), store health, backups, recent ticks, alerts, webhook backlog |
+| POST | `/api/automation` | `{ action: "tick", force? }` · `{ action: "run", ids }` · `{ action: "toggle", id, enabled? }` · `{ action: "backup", name? }` · `{ action: "restore", name }` · `{ action: "retry_webhooks" }` · `{ action: "mark_read", ids? }` · `{ action: "clear_notifications" }` |
+| GET | `/api/health` | public liveness — `{ ok, store, scheduler, ai, mail, uptimeSec, commit }`; 200 or 503 |
+
+Auth for `/api/automation`: admin/manager session header, or `x-bhc-automation-secret: $AUTOMATION_SECRET` for cron/CI. Full guide: `docs/AUTOMATION.md`.
 
 ## Other CRM routes (existing)
 
@@ -106,6 +118,10 @@ npm run bhc -- ai status
 npm run bhc -- ai chat "CRM summary"
 npm run bhc -- ai summarize --job job-1
 npm run bhc -- store summary
-npm run bhc -- automations list
-npm run bhc -- automations run-daily --force
+npm run bhc -- store health
+npm run bhc -- store backup | backups | restore <file.json>
+npm run bhc -- automations list | status
+npm run bhc -- automations tick [--force] [--json]
+npm run bhc -- automations run <id>
+npm run bhc -- webhooks backlog | retry
 ```

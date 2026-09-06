@@ -43,13 +43,15 @@ export async function readStore(): Promise<AppData> {
       !parsed.shifts ||
       !parsed.workflows ||
       !parsed.companies ||
-      !parsed.assistantMemory
+      !parsed.assistantMemory ||
+      !parsed.automationRuns
     ) {
       await writeStore(normalized);
     }
     return normalized;
   } catch {
-    const seed = buildSeedData();
+    // Normalize the fresh seed too so catalog automations / workflow templates exist from day one
+    const seed = normalizeStore(buildSeedData());
     await writeStore(seed);
     return seed;
   }
@@ -69,6 +71,23 @@ export async function updateStore(
   const result = mutator(data) ?? data;
   await writeStore(result);
   return result;
+}
+
+/**
+ * Read → async mutate → write. Use when the mutator must await network work
+ * (webhook delivery, retries) before the store is persisted.
+ */
+export async function updateStoreAsync(
+  mutator: (data: AppData) => Promise<AppData | void>,
+): Promise<AppData> {
+  const data = await readStore();
+  const result = (await mutator(data)) ?? data;
+  await writeStore(result);
+  return result;
+}
+
+export function storePaths(): { dataDir: string; storePath: string } {
+  return { dataDir: DATA_DIR, storePath: STORE_PATH };
 }
 
 export function newId(): string {

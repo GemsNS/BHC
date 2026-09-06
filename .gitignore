@@ -49,3 +49,7 @@ deploy/gcp/vm/AGENT_SECRETS.env
 # Mainframe uploads + AI usage ledger
 data/uploads/
 data/ai-usage.json
+
+# side-directory builds used by deploy/production/deploy.sh
+/.next-build/
+/.next-prev/

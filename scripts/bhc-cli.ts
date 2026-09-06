@@ -14,10 +14,15 @@
 import "dotenv/config";
 import { getAIStatus } from "../src/lib/ai-provider";
 import { summarizeProgress } from "../src/lib/ai-summarize";
+import { automationStatus } from "../src/lib/automation-engine";
 import { runMainframeTurn, type ChatMessage } from "../src/lib/mainframe-agent";
 import { automationsDue, runAutomation, runDailyAutomations } from "../src/lib/mainframe-automations";
 import { executeMainframeTool } from "../src/lib/mainframe-tools";
-import { newId, nowIso, readStore, writeStore } from "../src/lib/store";
+import { runServerTick } from "../src/lib/scheduler";
+import { createBackup, listBackups, restoreBackup } from "../src/lib/store-backup";
+import { storeHealth } from "../src/lib/store-health";
+import { newId, nowIso, readStore, updateStoreAsync, writeStore } from "../src/lib/store";
+import { deliverPendingWebhooks, webhookBacklog } from "../src/lib/webhooks";
 
 const args = process.argv.slice(2);
 
@@ -54,16 +59,29 @@ Commands:
     --photos <n>                Photo count
 
   store summary                 CRM ops summary from local store
+  store health                  Integrity report (size, counts, dangling refs)
+  store backup [--label x]      Snapshot data/store.json → data/backups/
+  store backups                 List snapshots
+  store restore <file.json>     Restore a snapshot (safety copy taken first)
 
-  automations list              List daily automations + due status
-  automations run-daily         Run due daily automations
+  automations list              List automations + due status
+  automations status            Engine status: last tick, backlog, due
+  automations tick              Full engine tick (checks, sequences, webhooks, backup)
+    --force                     Run every enabled automation regardless of schedule
+    --json                      Print the tick record as JSON
+  automations run-daily         Legacy: run due automations (no webhooks/backup)
     --force                     Run all enabled automations
   automations run <id>          Run one automation by id
 
+  webhooks backlog              Deliveries waiting for retry
+  webhooks retry                Retry the backlog now
+
 Environment:
-  GEMINI_API_KEY, GEMINI_MODEL  Preferred AI provider (Google AI Studio)
+  ANTHROPIC_API_KEY             Preferred AI provider (Claude)
+  GEMINI_API_KEY, GEMINI_MODEL  Google AI Studio
   OPENAI_API_KEY, OPENAI_*      OpenAI-compatible fallback
-  AI_PROVIDER=gemini|openai     Force provider selection
+  AI_PROVIDER=anthropic|gemini|openai
+  BHC_BACKUP_KEEP=14            Snapshots to keep
 `);
 }
 
@@ -180,6 +198,117 @@ async function cmdAutomationsRun(id: string) {
   console.log(summary);
 }
 
+async function cmdAutomationsStatus() {
+  const data = await readStore();
+  const s = automationStatus(data);
+  if (s.lastTick) {
+    console.log(
+      `Last tick: ${s.lastTick.finishedAt} (${s.lastTick.source}, ${s.lastTick.durationMs}ms) — ${s.lastTick.results.length} result(s), ${s.lastTick.errors.length} error(s)`,
+    );
+  } else {
+    console.log("Last tick: never");
+  }
+  console.log(
+    `Ticks today: ${s.ticksToday} · due now: ${s.dueCount} · webhook backlog: ${s.webhookBacklog} · unread alerts: ${s.unreadNotifications}`,
+  );
+  console.log("");
+  for (const a of s.automations) {
+    console.log(
+      `  ${a.enabled ? "●" : "○"} ${a.id.padEnd(24)} ${a.schedule.padEnd(18)} ${a.due ? "[DUE] " : "      "}${a.lastRunAt ?? "never"}`,
+    );
+  }
+  if (s.recentErrors.length) {
+    console.log("\nRecent errors:");
+    for (const e of s.recentErrors) console.log(`  ! ${e}`);
+  }
+}
+
+async function cmdAutomationsTick() {
+  const record = await runServerTick({ source: "cli", force: flag("force") });
+  if (flag("json")) {
+    console.log(JSON.stringify(record, null, 2));
+    return;
+  }
+  console.log(`Tick ${record.id.slice(0, 8)} — ${record.durationMs}ms`);
+  for (const r of record.results) console.log(`• ${r}`);
+  for (const e of record.errors) console.log(`! ${e}`);
+  if (!record.results.length && !record.errors.length) {
+    console.log("Nothing was due. Use --force to run every enabled automation.");
+  }
+  const c = record.counters;
+  console.log(
+    `\n${c.automationsRun} automation(s) · ${c.notificationsCreated} alert(s) · ${c.tasksCreated} task(s) · ${c.sequenceSteps} sequence step(s) · webhooks ${c.webhooksSent} sent / ${c.webhooksFailed} failed${c.backupCreated ? " · backup written" : ""}`,
+  );
+  if (record.errors.length) process.exitCode = 1;
+}
+
+async function cmdStoreHealth() {
+  const data = await readStore();
+  const h = storeHealth(data);
+  console.log(`Store: ${h.ok ? "OK" : "ERRORS"} · ${h.approxMB} MB · ${h.photoDataUrls} inline photos`);
+  const keys = Object.keys(h.counts).sort();
+  for (const k of keys) console.log(`  ${k.padEnd(22)} ${h.counts[k]}`);
+  console.log("");
+  if (!h.issues.length) console.log("No integrity issues.");
+  for (const i of h.issues) console.log(`  [${i.level}] ${i.message}`);
+  if (!h.ok) process.exitCode = 1;
+}
+
+async function cmdStoreBackup() {
+  const info = await createBackup({ label: opt("label") ?? "manual" });
+  if (!info) {
+    console.log("No data/store.json yet — nothing to back up.");
+    return;
+  }
+  console.log(`Backup written: ${info.path} (${Math.round(info.bytes / 1024)} KB)`);
+}
+
+async function cmdStoreBackups() {
+  const list = await listBackups();
+  if (!list.length) {
+    console.log("No snapshots in data/backups/.");
+    return;
+  }
+  for (const b of list) {
+    console.log(`  ${b.createdAt}  ${String(Math.round(b.bytes / 1024)).padStart(7)} KB  ${b.name}`);
+  }
+}
+
+async function cmdStoreRestore(name: string) {
+  if (!name) {
+    console.error("Usage: bhc store restore <file.json>");
+    process.exit(1);
+  }
+  const result = await restoreBackup(name);
+  console.log(
+    `Restored ${result.restored}. Safety copy: ${result.safetyBackup ?? "none"}. Counts: ${JSON.stringify(result.counts)}`,
+  );
+}
+
+async function cmdWebhooksBacklog() {
+  const data = await readStore();
+  const backlog = webhookBacklog(data);
+  if (!backlog.length) {
+    console.log("Webhook backlog is empty.");
+    return;
+  }
+  for (const d of backlog) {
+    console.log(
+      `  ${d.event.padEnd(24)} attempt ${d.attempts}  retry ${d.nextRetryAt ?? "now"}  ${d.lastError ?? "pending"}`,
+    );
+  }
+}
+
+async function cmdWebhooksRetry() {
+  let result = { sent: 0, failed: 0, abandoned: 0 };
+  await updateStoreAsync(async (d) => {
+    const now = nowIso();
+    for (const del of webhookBacklog(d)) del.nextRetryAt = now;
+    result = await deliverPendingWebhooks(d, nowIso);
+  });
+  console.log(`Webhooks: ${result.sent} delivered, ${result.failed} will retry, ${result.abandoned} abandoned.`);
+}
+
 async function main() {
   const cmd = args[0];
   const sub = args[1];
@@ -199,15 +328,28 @@ async function main() {
 
   if (cmd === "store") {
     if (sub === "summary") return cmdStoreSummary();
+    if (sub === "health") return cmdStoreHealth();
+    if (sub === "backup") return cmdStoreBackup();
+    if (sub === "backups") return cmdStoreBackups();
+    if (sub === "restore") return cmdStoreRestore(args[2] ?? "");
     console.error(`Unknown store subcommand: ${sub ?? "(none)"}`);
     process.exit(1);
   }
 
   if (cmd === "automations") {
     if (sub === "list") return cmdAutomationsList();
+    if (sub === "status") return cmdAutomationsStatus();
+    if (sub === "tick") return cmdAutomationsTick();
     if (sub === "run-daily") return cmdAutomationsRunDaily();
     if (sub === "run") return cmdAutomationsRun(args[2] ?? "");
     console.error(`Unknown automations subcommand: ${sub ?? "(none)"}`);
+    process.exit(1);
+  }
+
+  if (cmd === "webhooks") {
+    if (sub === "backlog") return cmdWebhooksBacklog();
+    if (sub === "retry") return cmdWebhooksRetry();
+    console.error(`Unknown webhooks subcommand: ${sub ?? "(none)"}`);
     process.exit(1);
   }
 

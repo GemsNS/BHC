@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { bindPinsToTerritory, findDuplicateKnock, appendPinActivity } from "@/lib/knocker/ops";
 import { closePolygon, simplifyPath } from "@/lib/knocker/geo";
-import { onLeadCreated } from "@/lib/workflows";
+import { onLeadCreated, onProposalSigned } from "@/lib/workflows";
 import { dispatchWebhooks } from "@/lib/webhooks";
 import { computeProposalTotal, linesFromCatalog, signProposal } from "@/lib/proposals";
 import { defaultEndAt } from "@/lib/calendar";
@@ -403,6 +403,8 @@ export async function POST(request: Request) {
     });
     if (!signedId) return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     const data = await readStore();
+    const signed = data.knockProposals.find((p) => p.id === parsed.proposalId);
+    if (signed) onProposalSigned(data, signed);
     await dispatchWebhooks(data, "proposal.signed", { proposalId: parsed.proposalId }, newId, nowIso);
     await writeStore(data);
     const proposal = data.knockProposals.find((p) => p.id === parsed.proposalId);

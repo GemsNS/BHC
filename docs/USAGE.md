@@ -72,4 +72,4 @@ Save the returned `secret`. Verify `X-BHC-Signature`.
 curl -X POST http://localhost:3000/api/seed
 ```
 
-On Pages, clear site data / localStorage key `bhc-crm-store-v8`.
+On Pages, clear site data / localStorage key `bhc-crm-store-v10`.
