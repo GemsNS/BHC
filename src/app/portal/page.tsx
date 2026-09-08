@@ -1,15 +1,25 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { AppsShell } from "@/components/AppsShell";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useSession } from "@/lib/session";
 import { fetchJson, loadAppData } from "@/lib/client-data";
-import { isStaticDemo, withBasePath } from "@/lib/paths";
+import { isStaticDemo } from "@/lib/paths";
+import { sessionHeaders } from "@/lib/session-headers";
+import {
+  formatDuration,
+  LUNCH_DEDUCT_MINUTES,
+  paidDurationMs,
+} from "@/lib/time-clock";
 import type { Job, TimeEntry } from "@/lib/types";
 
 export default function PortalPage() {
   const { user } = useSession();
+  const search = useSearchParams();
+  const nextPath = search.get("next");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [jobId, setJobId] = useState("");
@@ -37,7 +47,7 @@ export default function PortalPage() {
   }
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const openEntry = useMemo(
@@ -46,6 +56,10 @@ export default function PortalPage() {
       null,
     [entries, user?.id],
   );
+
+  const livePaid = openEntry
+    ? formatDuration(paidDurationMs(openEntry.clockIn, null))
+    : null;
 
   async function clock(action: "clock_in" | "clock_out") {
     if (!user) return;
@@ -78,9 +92,12 @@ export default function PortalPage() {
         });
         setMessage(action === "clock_in" ? "Clocked in" : "Clocked out");
       } else {
-        const res = await fetch(withBasePath("/api/time-entries"), {
+        const res = await fetch("/api/time-entries", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...sessionHeaders(),
+          },
           body: JSON.stringify({
             action,
             employeeId: user.id,
@@ -89,11 +106,19 @@ export default function PortalPage() {
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Failed");
-        setMessage(
-          action === "clock_in"
-            ? `Clocked in at ${new Date(json.entry.clockIn).toLocaleTimeString()}`
-            : `Clocked out at ${new Date(json.entry.clockOut).toLocaleTimeString()}`,
-        );
+        if (action === "clock_in") {
+          setMessage(
+            `Clocked in at ${new Date(json.entry.clockIn).toLocaleTimeString()}`,
+          );
+          if (nextPath && nextPath.startsWith("/")) {
+            window.location.href = nextPath;
+            return;
+          }
+        } else {
+          setMessage(
+            `Clocked out · paid ${json.paidLabel ?? formatDuration(paidDurationMs(json.entry.clockIn, json.entry.clockOut))} (incl. ${LUNCH_DEDUCT_MINUTES}m lunch deduction when applicable)`,
+          );
+        }
       }
       await load();
     } catch (err) {
@@ -111,11 +136,24 @@ export default function PortalPage() {
             <p>{user?.name}</p>
             <h2>{openEntry ? "ON THE CLOCK" : "OFF SHIFT"}</h2>
             {openEntry ? (
-              <p className="clock-since">
-                Since {new Date(openEntry.clockIn).toLocaleTimeString()}
-              </p>
+              <>
+                <p className="clock-since">
+                  Since {new Date(openEntry.clockIn).toLocaleTimeString()}
+                </p>
+                <p className="clock-since">Paid so far: {livePaid}</p>
+              </>
             ) : null}
           </div>
+
+          <p className="text-sm text-[var(--muted)]">
+            Clock in before using field tools. Shifts auto-close at 12 hours —
+            clock in again to continue. A {LUNCH_DEDUCT_MINUTES}-minute lunch is
+            deducted from paid time on punches longer than{" "}
+            {LUNCH_DEDUCT_MINUTES} minutes.{" "}
+            <Link href="/apps/hours" className="underline">
+              Hour tracker
+            </Link>
+          </p>
 
           <label className="field">
             <span>Job (optional)</span>

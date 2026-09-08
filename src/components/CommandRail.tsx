@@ -23,12 +23,13 @@ const APP_TABS: Array<{
   short: string;
 }> = [
   { href: "/apps", label: "Home", perm: "apps", exact: true, short: "Hm" },
+  { href: "/apps/clock", label: "Clock", perm: "clock", short: "Cl" },
+  { href: "/apps/hours", label: "Hours", perm: "clock", short: "Hr" },
   { href: "/apps/schedule", label: "Schedule", perm: "schedule", short: "Sc" },
   { href: "/apps/board", label: "Board", perm: "board", short: "Bd" },
   { href: "/apps/progress", label: "Progress", perm: "progress", short: "Pr" },
   { href: "/apps/tools", label: "Tools", perm: "tools", short: "Tl" },
   { href: "/apps/knocker", label: "Knock", perm: "knocker", short: "Kn" },
-  { href: "/apps/clock", label: "Clock", perm: "clock", short: "Cl" },
 ];
 
 export const APP_FIELD_TABS = APP_TABS;

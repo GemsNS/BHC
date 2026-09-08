@@ -4,7 +4,7 @@ import { live } from "@/lib/events";
 import { findLeadByAddress, recordMessage } from "@/lib/messaging";
 import { enqueueNotification } from "@/lib/notifications";
 import { isOptedOut } from "@/lib/outreach-send";
-import { sendSms, smsConfigStatus, toE164 } from "@/lib/sms";
+import { sendSms, smsConfigStatus, toE164, twilioEnabled } from "@/lib/sms";
 import { newId, nowIso, updateStoreAsync } from "@/lib/store";
 import { readTwilioForm, twilioPublicUrl, twilioSignatureValid, twiml, xmlEscape } from "@/lib/twilio-verify";
 import type { Lead } from "@/lib/types";
@@ -16,6 +16,12 @@ export const dynamic = "force-dynamic";
  * Missed / busy / no-answer → voicemail prompt + missed-call text-back + lead/task.
  */
 export async function POST(request: Request) {
+  if (!twilioEnabled()) {
+    return NextResponse.json(
+      { error: "Voice pending Twilio compliance approval (TWILIO_ENABLED=0)." },
+      { status: 503 },
+    );
+  }
   const token = process.env.TWILIO_AUTH_TOKEN?.trim();
   if (!token) return NextResponse.json({ error: "TWILIO_AUTH_TOKEN not set" }, { status: 503 });
   const params = await readTwilioForm(request);
