@@ -1,4 +1,3 @@
-import { createHmac, timingSafeEqual } from "crypto";
 import { invoiceTotal } from "./customer-touches";
 import { live } from "./events";
 import { publicToken } from "./numbering";
@@ -7,25 +6,24 @@ import { onInvoiceStatusChanged } from "./workflows";
 import type { AppData, InvoiceDoc, Payment, PaymentMethod } from "./types";
 
 /**
- * Payments: Stripe Checkout (hosted page, card / Apple Pay / Google Pay) and
- * manual records (e-Transfer, cash, cheque). Applying a payment marks the
- * invoice paid, the job invoiced, and kicks the review-request timer.
+ * Payments: e-Transfer / cash / cheque (manual + IMAP auto-match).
+ * Stripe Checkout was removed from the live workflow — card pay is disabled.
  *
- * Env: STRIPE_SECRET_KEY (sk_live_… / sk_test_…), STRIPE_WEBHOOK_SECRET (whsec_…), APP_BASE_URL
- * Stripe Dashboard → Developers → Webhooks → endpoint https://bhcontracting.ca/api/payments/webhook
- *   events: checkout.session.completed, checkout.session.async_payment_succeeded
+ * Env (optional legacy, ignored): STRIPE_* — kept out of the path via stripeConfigured().
+ * Active: ETRANSFER_EMAIL / OUTREACH_REPLY_EMAIL for Interac matching.
  */
 
 type Ctx = { newId: () => string; nowIso: () => string };
 
+/** Stripe is fully cut from the workflow. Always false. */
 export function stripeConfigured(): boolean {
-  return Boolean(process.env.STRIPE_SECRET_KEY?.trim());
+  return false;
 }
 
 export function paymentsStatus() {
   return {
-    stripe: stripeConfigured(),
-    webhookSecret: Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim()),
+    stripe: false,
+    webhookSecret: false,
     etransferEmail: process.env.ETRANSFER_EMAIL?.trim() || process.env.OUTREACH_REPLY_EMAIL?.trim() || process.env.CONTACT_TO_EMAIL?.trim() || null,
   };
 }
@@ -44,61 +42,28 @@ export function invoicePayUrl(inv: InvoiceDoc, base = process.env.APP_BASE_URL ?
   return `${base.replace(/\/$/, "")}/pay/${inv.token}`;
 }
 
-/** Create a Stripe Checkout session for the open balance. Returns the hosted URL. */
+/** Stripe Checkout — permanently disabled (cut from workflow). */
 export async function createStripeCheckout(
-  data: AppData,
-  inv: InvoiceDoc,
-  ctx: Ctx,
-  fetcher: typeof fetch = fetch,
+  _data: AppData,
+  _inv: InvoiceDoc,
+  _ctx: Ctx,
+  _fetcher: typeof fetch = fetch,
 ): Promise<{ url: string | null; error: string | null }> {
-  const key = process.env.STRIPE_SECRET_KEY?.trim();
-  if (!key) return { url: null, error: "STRIPE_SECRET_KEY not set" };
-  const balance = invoiceBalance(data, inv);
-  if (balance <= 0) return { url: null, error: "Nothing outstanding on this invoice" };
-  ensureInvoiceToken(inv, ctx.newId);
-  const base = (process.env.APP_BASE_URL ?? "https://bhcontracting.ca").replace(/\/$/, "");
-  const job = data.jobs.find((j) => j.id === inv.jobId);
-  const lead = job?.leadId ? data.leads.find((l) => l.id === job.leadId) : undefined;
-  const params = new URLSearchParams();
-  params.set("mode", "payment");
-  params.set("success_url", `${base}/pay/${inv.token}?paid=1`);
-  params.set("cancel_url", `${base}/pay/${inv.token}`);
-  params.set("line_items[0][quantity]", "1");
-  params.set("line_items[0][price_data][currency]", "cad");
-  params.set("line_items[0][price_data][unit_amount]", String(Math.round(balance * 100)));
-  params.set("line_items[0][price_data][product_data][name]", `${inv.number ?? "Invoice"} — ${job?.title ?? inv.customerName}`);
-  params.set("metadata[invoiceId]", inv.id);
-  params.set("metadata[jobId]", inv.jobId);
-  params.set("payment_intent_data[metadata][invoiceId]", inv.id);
-  if (lead?.email || inv.customerName.includes("@")) params.set("customer_email", lead?.email ?? inv.customerName);
-  try {
-    const res = await fetcher("https://api.stripe.com/v1/checkout/sessions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
-    });
-    const json = (await res.json().catch(() => ({}))) as { url?: string; error?: { message?: string } };
-    if (!res.ok || !json.url) return { url: null, error: json.error?.message ?? `Stripe HTTP ${res.status}` };
-    inv.payUrl = json.url;
-    live.payment(`Checkout link created for ${inv.number ?? inv.id.slice(0, 8)}`, `$${balance.toLocaleString()} · ${inv.customerName}`, { invoiceId: inv.id, jobId: inv.jobId });
-    return { url: json.url, error: null };
-  } catch (err) {
-    return { url: null, error: err instanceof Error ? err.message : "network error" };
-  }
+  return {
+    url: null,
+    error: "Card payments are disabled. Use e-Transfer or record a manual payment.",
+  };
 }
 
-/** Verify Stripe-Signature (t=…,v1=…) against the raw body. */
-export function verifyStripeSignature(rawBody: string, header: string | null, secret: string, toleranceSec = 300, now = Date.now()): boolean {
-  if (!header) return false;
-  const parts = Object.fromEntries(header.split(",").map((p) => p.split("=") as [string, string]));
-  const t = Number(parts.t);
-  const v1 = parts.v1;
-  if (!Number.isFinite(t) || !v1) return false;
-  if (Math.abs(now / 1000 - t) > toleranceSec) return false;
-  const expected = createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex");
-  const a = Buffer.from(expected);
-  const b = Buffer.from(v1);
-  return a.length === b.length && timingSafeEqual(a, b);
+/** Stripe signature verify — unused while Stripe is cut. Always false. */
+export function verifyStripeSignature(
+  _rawBody: string,
+  _header: string | null,
+  _secret: string,
+  _toleranceSec = 300,
+  _now = Date.now(),
+): boolean {
+  return false;
 }
 
 /**

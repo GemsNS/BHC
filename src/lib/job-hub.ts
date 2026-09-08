@@ -1,5 +1,6 @@
 import { invoiceTotal } from "./customer-touches";
 import { quoteTotals } from "./quotes";
+import { paidDurationMs } from "./time-clock";
 import type { AppData, Job } from "./types";
 
 /**
@@ -32,12 +33,12 @@ export function jobHub(data: AppData, jobId: string) {
   const materialCost = materials.reduce((s, m) => s + m.quantity * m.unitCost, 0);
   const hours = timeEntries.reduce((s, t) => {
     if (!t.clockOut) return s;
-    return s + (new Date(t.clockOut).getTime() - new Date(t.clockIn).getTime()) / 3_600_000;
+    return s + paidDurationMs(t.clockIn, t.clockOut) / 3_600_000;
   }, 0);
   const labourCost = timeEntries.reduce((s, t) => {
     if (!t.clockOut) return s;
     const rate = data.employees.find((e) => e.id === t.employeeId)?.hourlyRate ?? 0;
-    return s + ((new Date(t.clockOut).getTime() - new Date(t.clockIn).getTime()) / 3_600_000) * rate;
+    return s + (paidDurationMs(t.clockIn, t.clockOut) / 3_600_000) * rate;
   }, 0);
   const signedQuote = quotes.find((q) => q.status === "signed") ?? null;
   const contractValue = signedQuote ? quoteTotals(signedQuote).total : job.contractValue;

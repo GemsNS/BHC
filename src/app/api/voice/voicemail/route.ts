@@ -3,6 +3,7 @@ import { completeChat } from "@/lib/ai-provider";
 import { live } from "@/lib/events";
 import { findLeadByAddress, recordMessage } from "@/lib/messaging";
 import { enqueueNotification } from "@/lib/notifications";
+import { twilioEnabled } from "@/lib/sms";
 import { newId, nowIso, updateStoreAsync } from "@/lib/store";
 import { readTwilioForm, twilioPublicUrl, twilioSignatureValid } from "@/lib/twilio-verify";
 
@@ -13,6 +14,12 @@ export const dynamic = "force-dynamic";
  * voicemail + transcript, asks Claude for a one-line summary, and files a task.
  */
 export async function POST(request: Request) {
+  if (!twilioEnabled()) {
+    return NextResponse.json(
+      { error: "Voice pending Twilio compliance approval (TWILIO_ENABLED=0)." },
+      { status: 503 },
+    );
+  }
   const token = process.env.TWILIO_AUTH_TOKEN?.trim();
   if (!token) return NextResponse.json({ error: "TWILIO_AUTH_TOKEN not set" }, { status: 503 });
   const params = await readTwilioForm(request);

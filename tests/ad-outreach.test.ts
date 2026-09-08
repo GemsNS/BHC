@@ -415,6 +415,7 @@ describe("twilio sender", () => {
     expect(toE164("+44 20 7946 0958")).toBe("+442079460958");
     expect(toE164("12345")).toBeNull();
 
+    process.env.TWILIO_ENABLED = "1";
     process.env.TWILIO_ACCOUNT_SID = "ACtest";
     process.env.TWILIO_AUTH_TOKEN = "tok";
     process.env.TWILIO_FROM_NUMBER = "+19025550000";
@@ -438,6 +439,7 @@ describe("twilio sender", () => {
     const bad = await sendSms({ to: "902-555-0142", body: "x" }, failing);
     expect(bad.ok).toBe(false);
     expect(bad.error).toContain("21211");
+    delete process.env.TWILIO_ENABLED;
     delete process.env.TWILIO_ACCOUNT_SID;
     delete process.env.TWILIO_AUTH_TOKEN;
     delete process.env.TWILIO_FROM_NUMBER;

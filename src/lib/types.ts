@@ -1277,7 +1277,6 @@ export const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
   field: [
     "board",
     "jobs",
-    "hours",
     "apps",
     "clock",
     "tools",

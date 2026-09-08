@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireApiEmployee } from "@/lib/api-auth";
 import { autosendKinds, deliverDocument } from "@/lib/deliver";
 import { generateDocument } from "@/lib/documents";
-import { applyPayment, createStripeCheckout, ensureInvoiceToken, invoiceBalance, invoicePayUrl, paymentsStatus } from "@/lib/payments";
+import { applyPayment, ensureInvoiceToken, invoiceBalance, invoicePayUrl, paymentsStatus } from "@/lib/payments";
 import { newId, nowIso, readStore, updateStoreAsync } from "@/lib/store";
 
 export async function GET(request: Request) {
@@ -59,13 +59,13 @@ export async function POST(request: Request) {
   }
 
   if (body.action === "checkout") {
-    let result: { url: string | null; error: string | null } = { url: null, error: "not found" };
-    await updateStoreAsync(async (d) => {
-      const inv = d.invoices.find((i) => i.id === body.invoiceId);
-      if (!inv) return;
-      result = await createStripeCheckout(d, inv, ctx);
-    });
-    return NextResponse.json(result, { status: result.url ? 200 : 400 });
+    return NextResponse.json(
+      {
+        url: null,
+        error: "Card payments are disabled. Use e-Transfer or record a manual payment.",
+      },
+      { status: 410 },
+    );
   }
 
   let link: string | null = null;

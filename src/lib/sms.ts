@@ -3,6 +3,7 @@
  * practice because the env vars are not exposed to the browser.
  *
  * Env:
+ *   TWILIO_ENABLED=0|1            default 0 while compliance pending
  *   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
  *   TWILIO_FROM_NUMBER            E.164, e.g. +19025550123   (or)
  *   TWILIO_MESSAGING_SERVICE_SID  MG…  (preferred once you have one)
@@ -21,6 +22,8 @@ export type SmsConfigStatus = {
   configured: boolean;
   provider: "twilio" | "none";
   from: string | null;
+  /** True when keys exist but TWILIO_ENABLED is off (compliance hold). */
+  pendingApproval: boolean;
 };
 
 function env(name: string): string | undefined {
@@ -29,12 +32,25 @@ function env(name: string): string | undefined {
   return v || undefined;
 }
 
+/** Explicit kill-switch. Default OFF until compliance clears and TWILIO_ENABLED=1. */
+export function twilioEnabled(): boolean {
+  const v = (env("TWILIO_ENABLED") ?? "0").toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
 export function smsConfigStatus(): SmsConfigStatus {
   const sid = env("TWILIO_ACCOUNT_SID");
   const token = env("TWILIO_AUTH_TOKEN");
   const from = env("TWILIO_MESSAGING_SERVICE_SID") ?? env("TWILIO_FROM_NUMBER") ?? null;
-  const configured = Boolean(sid && token && from);
-  return { configured, provider: configured ? "twilio" : "none", from };
+  const keysPresent = Boolean(sid && token && from);
+  const enabled = twilioEnabled();
+  const configured = keysPresent && enabled;
+  return {
+    configured,
+    provider: configured ? "twilio" : "none",
+    from: keysPresent ? from : null,
+    pendingApproval: keysPresent && !enabled,
+  };
 }
 
 /** Normalize a North-American phone number to E.164. Returns null when it cannot. */
@@ -54,11 +70,20 @@ export async function sendSms(
   msg: SmsMessage,
   fetcher: typeof fetch = fetch,
 ): Promise<SmsResult> {
+  const status = smsConfigStatus();
+  if (status.pendingApproval) {
+    return {
+      ok: false,
+      provider: "none",
+      id: null,
+      error: "SMS pending Twilio compliance approval (TWILIO_ENABLED=0).",
+    };
+  }
   const sid = env("TWILIO_ACCOUNT_SID");
   const token = env("TWILIO_AUTH_TOKEN");
   const service = env("TWILIO_MESSAGING_SERVICE_SID");
   const from = env("TWILIO_FROM_NUMBER");
-  if (!sid || !token || (!service && !from)) {
+  if (!sid || !token || (!service && !from) || !twilioEnabled()) {
     return { ok: false, provider: "none", id: null, error: "SMS not configured (TWILIO_*)." };
   }
   const to = toE164(msg.to);

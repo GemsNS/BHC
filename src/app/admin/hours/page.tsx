@@ -2,30 +2,42 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
+import { RequireAuth } from "@/components/RequireAuth";
 import { StatCard } from "@/components/StatCard";
 import { loadAppData } from "@/lib/client-data";
+import {
+  LUNCH_DEDUCT_MINUTES,
+  msToHours,
+  paidDurationMs,
+} from "@/lib/time-clock";
 import type { AppData } from "@/lib/types";
 import { formatCurrency, formatHours } from "@/lib/utils";
-
-function entryMs(clockIn: string, clockOut: string | null): number {
-  const end = clockOut ? new Date(clockOut).getTime() : Date.now();
-  return Math.max(0, end - new Date(clockIn).getTime());
-}
 
 export default function HoursPage() {
   const [data, setData] = useState<AppData | null>(null);
   useEffect(() => {
     loadAppData().then(setData);
   }, []);
-  if (!data) return <p className="text-[var(--muted)]">Loading hours…</p>;
 
+  return (
+    <RequireAuth perm="hours">
+      {!data ? (
+        <p className="text-[var(--muted)]">Loading hours…</p>
+      ) : (
+        <HoursBody data={data} />
+      )}
+    </RequireAuth>
+  );
+}
+
+function HoursBody({ data }: { data: AppData }) {
   const byEmployee = data.employees.map((employee) => {
     const entries = data.timeEntries.filter((t) => t.employeeId === employee.id);
     const ms = entries.reduce(
-      (sum, t) => sum + entryMs(t.clockIn, t.clockOut),
+      (sum, t) => sum + paidDurationMs(t.clockIn, t.clockOut),
       0,
     );
-    const hours = ms / (1000 * 60 * 60);
+    const hours = msToHours(ms);
     return {
       employee,
       hours,
@@ -40,10 +52,10 @@ export default function HoursPage() {
     <div>
       <PageHeader
         title="Hours & payroll"
-        subtitle="Roll time entries into payroll-ready totals."
+        subtitle={`Roll time entries into payroll-ready totals. Paid hours deduct a ${LUNCH_DEDUCT_MINUTES}-minute lunch; open punches auto-close at 12 hours.`}
       />
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <StatCard label="Total hours" value={totalHours.toFixed(1)} />
+        <StatCard label="Total paid hours" value={totalHours.toFixed(1)} />
         <StatCard label="Payroll estimate" value={formatCurrency(totalPay)} />
         <StatCard
           label="Currently clocked in"
@@ -56,7 +68,7 @@ export default function HoursPage() {
             <tr>
               <th className="px-4 py-3">Employee</th>
               <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Hours</th>
+              <th className="px-4 py-3">Paid hours</th>
               <th className="px-4 py-3">Pay est.</th>
               <th className="px-4 py-3">Status</th>
             </tr>
