@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { Deal, Employee, JobType, Lead, LeadStatus } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
-import { loadAppData } from "@/lib/client-data";
+import { fetchJson, loadAppData } from "@/lib/client-data";
 import { isStaticDemo } from "@/lib/paths";
 
 export function PipelinePanel() {
@@ -13,35 +13,50 @@ export function PipelinePanel() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    if (isStaticDemo()) {
+    setError(null);
+    try {
+      // Always hydrate from the store first so counts/render stay safe even if
+      // a subsequent API call is unauthorized or returns an error shape.
       const d = await loadAppData();
-      setLeads(d.leads);
-      setDeals(d.deals);
-      setEmployees(d.employees);
-    } else {
-      const [leadRes, crmRes] = await Promise.all([
-        fetch("/api/leads"),
-        fetch("/api/crm"),
-      ]);
-      const leadJson = await leadRes.json();
-      const crmJson = await crmRes.json();
-      setLeads(leadJson.leads);
-      setDeals(crmJson.deals);
-      setEmployees(leadJson.employees);
+      setLeads(Array.isArray(d.leads) ? d.leads : []);
+      setDeals(Array.isArray(d.deals) ? d.deals : []);
+      setEmployees(Array.isArray(d.employees) ? d.employees : []);
+
+      if (!isStaticDemo()) {
+        try {
+          const [leadJson, crmJson] = await Promise.all([
+            fetchJson<{ leads: Lead[]; employees: Employee[] }>("/api/leads"),
+            fetchJson<{ deals: Deal[] }>("/api/crm"),
+          ]);
+          setLeads(Array.isArray(leadJson.leads) ? leadJson.leads : []);
+          setDeals(Array.isArray(crmJson.deals) ? crmJson.deals : []);
+          setEmployees(Array.isArray(leadJson.employees) ? leadJson.employees : []);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Could not refresh pipeline from API");
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load pipeline");
+      setLeads([]);
+      setDeals([]);
+      setEmployees([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
-    load().catch(() => setLoading(false));
+    void load();
   }, []);
 
   async function onCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
+    setError(null);
     const formEl = e.currentTarget;
     const form = new FormData(formEl);
     const jobTypeRaw = String(form.get("jobType") || "residential");
@@ -57,61 +72,91 @@ export function PipelinePanel() {
       assignedToId: String(form.get("assignedToId") || "") || null,
     };
 
-    if (isStaticDemo()) {
-      const { mutateAppData, clientNewId, clientNowIso } = await import(
-        "@/lib/client-data"
-      );
-      const { onLeadCreated } = await import("@/lib/workflows");
-      await mutateAppData((d) => {
-        const stamp = clientNowIso();
-        const lead = {
-          id: clientNewId(),
-          ...payload,
-          status: "new" as const,
-          companyId: null,
-          leadScore: 50,
-          createdAt: stamp,
-          updatedAt: stamp,
-        };
-        d.leads.unshift(lead);
-        onLeadCreated(d, lead);
-      });
-    } else {
-      await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    try {
+      if (isStaticDemo()) {
+        const { mutateAppData, clientNewId, clientNowIso } = await import(
+          "@/lib/client-data"
+        );
+        const { onLeadCreated } = await import("@/lib/workflows");
+        await mutateAppData((d) => {
+          const stamp = clientNowIso();
+          const lead = {
+            id: clientNewId(),
+            ...payload,
+            status: "new" as const,
+            companyId: null,
+            leadScore: 50,
+            createdAt: stamp,
+            updatedAt: stamp,
+          };
+          d.leads.unshift(lead);
+          onLeadCreated(d, lead);
+        });
+      } else {
+        await fetchJson("/api/leads", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+      }
+      formEl.reset();
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create lead");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    formEl.reset();
-    await load();
   }
 
   async function updateStatus(id: string, status: LeadStatus) {
-    await fetch("/api/leads", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status }),
-    });
-    await load();
+    setError(null);
+    try {
+      if (isStaticDemo()) {
+        const { mutateAppData, clientNowIso } = await import("@/lib/client-data");
+        await mutateAppData((d) => {
+          const lead = d.leads.find((l) => l.id === id);
+          if (!lead) return;
+          lead.status = status;
+          lead.updatedAt = clientNowIso();
+        });
+      } else {
+        await fetchJson("/api/leads", {
+          method: "PATCH",
+          body: JSON.stringify({ id, status }),
+        });
+      }
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update lead");
+    }
   }
+
+  const openDeals = deals.filter((d) => d?.stage && !d.stage.startsWith("closed"));
 
   return (
     <div className="jarvis-panel-stack">
+      {error ? (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+          {error}
+        </p>
+      ) : null}
+
       <section className="jarvis-glass-panel">
         <h3 className="jarvis-panel-title">Open deals</h3>
         <ul className="jarvis-deal-list">
-          {deals
-            .filter((d) => !d.stage.startsWith("closed"))
-            .map((deal) => (
+          {loading && openDeals.length === 0 ? (
+            <li className="text-[var(--muted)]">Loading…</li>
+          ) : openDeals.length === 0 ? (
+            <li className="text-[var(--muted)]">No open deals</li>
+          ) : (
+            openDeals.map((deal) => (
               <li key={deal.id}>
                 <span>{deal.title}</span>
                 <span className="text-[var(--muted)]">
                   {deal.stage.replace("_", " ")} · {formatCurrency(deal.amount)}
                 </span>
               </li>
-            ))}
+            ))
+          )}
         </ul>
       </section>
 
@@ -160,6 +205,12 @@ export function PipelinePanel() {
             {loading ? (
               <tr>
                 <td colSpan={4}>Loading…</td>
+              </tr>
+            ) : leads.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="text-[var(--muted)]">
+                  No leads yet
+                </td>
               </tr>
             ) : (
               leads.map((lead) => (
