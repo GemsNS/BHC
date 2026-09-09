@@ -15,6 +15,8 @@ const PUBLIC_PREFIXES = [
   "/api/health",
   "/api/auth/login",
   "/api/auth/logout",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
   "/api/contact",
   "/api/sms/inbound",
   "/api/voice/",

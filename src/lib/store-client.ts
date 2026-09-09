@@ -15,6 +15,8 @@ export function sanitizeStoreForClient(data: AppData): AppData {
   return {
     ...data,
     employees: data.employees.map(sanitizeEmployeeForClient),
+    // Never expose reset tokens to the browser
+    passwordResetTokens: [],
   };
 }
 
@@ -26,6 +28,10 @@ export function mergeClientStoreUpdate(
   incoming: Partial<AppData>,
 ): AppData {
   const merged: AppData = { ...existing, ...incoming } as AppData;
+  // Client payloads never carry reset tokens — keep server copy
+  if (!incoming.passwordResetTokens) {
+    merged.passwordResetTokens = existing.passwordResetTokens ?? [];
+  }
   if (!incoming.employees) return merged;
 
   const prevById = new Map(existing.employees.map((e) => [e.id, e]));

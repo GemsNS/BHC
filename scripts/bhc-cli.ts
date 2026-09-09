@@ -95,6 +95,11 @@ Commands:
   ads test-email <to>           Send a test email through SMTP/Resend
   ads test-sms <to>             Send a test SMS through Twilio
 
+  auth reset <login>            Clear password → PIN 0000; must set password next login
+  auth set-password <login> --password <pw>
+                                Set a password directly (ops recovery)
+  auth reset-link <login>       Create a one-hour reset URL (prints link; emails if SMTP up)
+
 Environment:
   ANTHROPIC_API_KEY             Preferred AI provider (Claude)
   GEMINI_API_KEY, GEMINI_MODEL  Google AI Studio
@@ -476,6 +481,107 @@ async function cmdAdsTest(channel: "email" | "sms", to: string) {
   if (!r.ok) process.exitCode = 1;
 }
 
+async function cmdAuthReset(login: string) {
+  if (!login) {
+    console.error("Usage: bhc auth reset <login>");
+    process.exit(1);
+  }
+  const { bootstrapStaffPassword, findStaffByLoginOrEmail } = await import(
+    "../src/lib/password-reset"
+  );
+  const { DEFAULT_STAFF_PIN } = await import("../src/lib/auth-credentials");
+  let found = false;
+  await updateStoreAsync(async (d) => {
+    const emp = findStaffByLoginOrEmail(d, login);
+    if (!emp) return;
+    bootstrapStaffPassword(emp);
+    found = true;
+    console.log(
+      `Reset ${emp.login} (${emp.name}) → PIN ${DEFAULT_STAFF_PIN}; must set password on next login.`,
+    );
+  });
+  if (!found) {
+    console.error(`No active staff matching "${login}"`);
+    process.exit(1);
+  }
+}
+
+async function cmdAuthSetPassword(login: string) {
+  const password = opt("password");
+  if (!login || !password) {
+    console.error("Usage: bhc auth set-password <login> --password <pw>");
+    process.exit(1);
+  }
+  if (password.trim().length < 6) {
+    console.error("Password must be at least 6 characters");
+    process.exit(1);
+  }
+  const { findStaffByLoginOrEmail } = await import("../src/lib/password-reset");
+  const { hashPassword } = await import("../src/lib/auth-credentials");
+  let found = false;
+  await updateStoreAsync(async (d) => {
+    const emp = findStaffByLoginOrEmail(d, login);
+    if (!emp) return;
+    emp.passwordHash = hashPassword(password);
+    emp.mustChangePassword = false;
+    found = true;
+    console.log(`Password updated for ${emp.login} (${emp.name}).`);
+  });
+  if (!found) {
+    console.error(`No active staff matching "${login}"`);
+    process.exit(1);
+  }
+}
+
+async function cmdAuthResetLink(login: string) {
+  if (!login) {
+    console.error("Usage: bhc auth reset-link <login>");
+    process.exit(1);
+  }
+  const {
+    findStaffByLoginOrEmail,
+    issuePasswordResetToken,
+    passwordResetUrl,
+    sendPasswordResetEmail,
+  } = await import("../src/lib/password-reset");
+  let url: string | null = null;
+  let email: string | null = null;
+  let name = "";
+  let loginName = "";
+  let raw = "";
+  await updateStoreAsync(async (d) => {
+    const emp = findStaffByLoginOrEmail(d, login);
+    if (!emp) return;
+    const issued = issuePasswordResetToken(d, emp.id, { newId, nowIso });
+    raw = issued.rawToken;
+    url = passwordResetUrl(raw);
+    email = emp.email;
+    name = emp.name;
+    loginName = emp.login;
+  });
+  if (!url) {
+    console.error(`No active staff matching "${login}"`);
+    process.exit(1);
+  }
+  const toEmail = email ?? "";
+  console.log(`Reset link for ${loginName} (valid ~1 hour):\n${url}`);
+  if (toEmail.includes("@")) {
+    const sent = await sendPasswordResetEmail({
+      to: toEmail,
+      name,
+      login: loginName,
+      rawToken: raw,
+    });
+    console.log(
+      sent.ok
+        ? `Also emailed ${toEmail}.`
+        : `Email not sent (${sent.error}). Use the link above.`,
+    );
+  } else {
+    console.log("No email on file — use the link above.");
+  }
+}
+
 async function main() {
   const cmd = args[0];
   const sub = args[1];
@@ -530,6 +636,14 @@ async function main() {
     if (sub === "test-email") return cmdAdsTest("email", args[2] ?? "");
     if (sub === "test-sms") return cmdAdsTest("sms", args[2] ?? "");
     console.error(`Unknown ads subcommand: ${sub ?? "(none)"}`);
+    process.exit(1);
+  }
+
+  if (cmd === "auth") {
+    if (sub === "reset") return cmdAuthReset(args[2] ?? "");
+    if (sub === "set-password") return cmdAuthSetPassword(args[2] ?? "");
+    if (sub === "reset-link") return cmdAuthResetLink(args[2] ?? "");
+    console.error(`Unknown auth subcommand: ${sub ?? "(none)"}`);
     process.exit(1);
   }
 

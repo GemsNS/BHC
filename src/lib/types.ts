@@ -291,6 +291,17 @@ export interface Employee {
   active: boolean;
 }
 
+/** One-time staff password reset (email link). Raw token is never stored. */
+export interface PasswordResetToken {
+  id: string;
+  employeeId: string;
+  /** SHA-256 of the raw token from the email link */
+  tokenHash: string;
+  expiresAt: string;
+  createdAt: string;
+  usedAt?: string | null;
+}
+
 export interface Lead {
   id: string;
   name: string;
@@ -1204,6 +1215,8 @@ export interface AppData {
   documents: JobDocument[];
   payments: Payment[];
   messages: Message[];
+  /** Staff password-reset tokens (hashed); never sent to the browser */
+  passwordResetTokens: PasswordResetToken[];
 }
 
 export const ROLE_LABELS: Record<EmployeeRole, string> = {

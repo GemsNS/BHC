@@ -228,5 +228,6 @@ export function buildProductionSeed(): AppData {
     documents: [],
     payments: [],
     messages: [],
+    passwordResetTokens: [],
   };
 }
