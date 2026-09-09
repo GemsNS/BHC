@@ -45,11 +45,12 @@ function SnowHero({ onBook }: { onBook: () => void }) {
   const item = reduce
     ? { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0 } }
     : {
-        hidden: { opacity: 0, y: 20 },
+        // Keep opacity at 1 for hydration / screenshot safety; animate position only.
+        hidden: { opacity: 1, y: 18 },
         show: {
           opacity: 1,
           y: 0,
-          transition: { duration: 0.6, ease: easeArchitectural },
+          transition: { duration: 0.55, ease: easeArchitectural },
         },
       };
 
@@ -79,7 +80,8 @@ function SnowHero({ onBook }: { onBook: () => void }) {
       ) : null}
 
       <div className="relative z-10 flex min-h-[100dvh] flex-col justify-end px-4 pb-16 pt-28 sm:px-6 sm:pb-20 sm:pt-32 lg:px-8 lg:pb-24">
-        <div className="mx-auto w-full max-w-7xl">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-t from-[#071018] via-[#071018]/85 to-transparent" aria-hidden />
+        <div className="relative mx-auto w-full max-w-7xl">
           <motion.div
             initial="hidden"
             animate="show"
