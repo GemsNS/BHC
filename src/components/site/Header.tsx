@@ -10,7 +10,11 @@ import { headerNavForPathname, quoteCtaHref } from "@/lib/site/siteNav";
 export function Header() {
   const pathname = usePathname();
   const nav = headerNavForPathname(pathname);
-  const isHome = pathname === "/" || pathname === "/residential" || pathname === "/commercial";
+  const isHome =
+    pathname === "/" ||
+    pathname === "/residential" ||
+    pathname === "/commercial" ||
+    pathname === "/snow-removal";
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
