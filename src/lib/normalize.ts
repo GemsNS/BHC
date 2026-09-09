@@ -137,7 +137,14 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     jobProgress: raw.jobProgress ?? seed.jobProgress,
     invoices: raw.invoices ?? seed.invoices,
     companies: raw.companies ?? seed.companies,
-    deals: raw.deals ?? seed.deals,
+    deals: (raw.deals ?? seed.deals).map((d) => ({
+      ...d,
+      stage: d.stage ?? "discovery",
+      amount: typeof d.amount === "number" && Number.isFinite(d.amount) ? d.amount : 0,
+      title: d.title || "Untitled deal",
+      leadId: d.leadId ?? null,
+      companyId: d.companyId ?? null,
+    })),
     activities: raw.activities ?? seed.activities,
     tickets: raw.tickets ?? seed.tickets,
     shifts: raw.shifts ?? seed.shifts,
@@ -164,5 +171,6 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     documents: raw.documents ?? [],
     payments: raw.payments ?? [],
     messages: raw.messages ?? [],
+    passwordResetTokens: raw.passwordResetTokens ?? [],
   };
 }

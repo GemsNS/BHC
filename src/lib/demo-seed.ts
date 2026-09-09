@@ -1130,5 +1130,6 @@ export function buildDemoSeedData(): AppData {
     documents: [] as AppData["documents"],
     payments: [] as AppData["payments"],
     messages: [] as AppData["messages"],
+    passwordResetTokens: [] as AppData["passwordResetTokens"],
   };
 }
