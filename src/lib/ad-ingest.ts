@@ -397,3 +397,51 @@ export function ensureBuiltinSource(
   data.adSources.push(src);
   return src;
 }
+
+/**
+ * Ensure an enabled IMAP ad source exists so Kijiji / Craigslist / Facebook
+ * alert emails are polled by ad_ingest. Does not import imapflow — only
+ * checks whether ADS_IMAP_* or SMTP_* credentials are present.
+ */
+export function ensureImapAdSource(
+  data: AppData,
+  ctx: IngestContext,
+): AdSource | null {
+  const disabled = (typeof process !== "undefined" ? process.env?.ADS_IMAP_ENABLED ?? "1" : "1")
+    .trim()
+    .toLowerCase();
+  if (disabled === "0" || disabled === "false" || disabled === "off") return null;
+
+  const user =
+    (typeof process !== "undefined"
+      ? process.env?.ADS_IMAP_USER?.trim() || process.env?.SMTP_USER?.trim()
+      : "") || "";
+  const pass =
+    (typeof process !== "undefined"
+      ? process.env?.ADS_IMAP_PASS?.trim() || process.env?.SMTP_PASS?.trim()
+      : "") || "";
+  const host =
+    (typeof process !== "undefined"
+      ? process.env?.ADS_IMAP_HOST?.trim() || process.env?.SMTP_HOST?.trim()
+      : "") || "";
+  if (!user || !pass || !host) return null;
+
+  const existing = data.adSources.find((s) => s.type === "imap" || s.id === "adsrc-imap");
+  if (existing) {
+    if (!existing.enabled) existing.enabled = true;
+    return existing;
+  }
+  const src = newAdSource(
+    {
+      id: "adsrc-imap",
+      name: "Mailbox alerts (Kijiji / Craigslist / Facebook)",
+      type: "imap",
+      enabled: true,
+      keywords: ["siding", "deck", "soffit", "fascia", "window", "door", "exterior"],
+      region: "Halifax Regional Municipality",
+    },
+    ctx,
+  );
+  data.adSources.push(src);
+  return src;
+}

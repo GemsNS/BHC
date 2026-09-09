@@ -16,7 +16,7 @@ type Setup = {
   ai: { configured: boolean; provider: string; model: string | null };
   email: { configured: boolean; provider: string; from: string | null };
   sms: { configured: boolean; provider: string; from: string | null };
-  imap: { configured: boolean; host: string | null; user: string | null; folder: string };
+  imap: { configured: boolean; host: string | null; user: string | null; folder: string; fromSmtpFallback?: boolean };
   inboundWebhook: boolean;
   autosend: string[];
   autosendMinScore: number;
@@ -704,7 +704,7 @@ function AdsHub() {
           </ul>
         ) : (
           <p className="cc-empty">
-            No sources yet. The fastest setup: create Kijiji saved-search alerts that email a mailbox, put that mailbox in <code>ADS_IMAP_*</code>, then add an IMAP source here. See <code>docs/OUTREACH.md</code>.
+            No sources yet. Point Kijiji / Craigslist / Facebook Marketplace saved-search alerts at your Office 365 mailbox (<code>SMTP_*</code> — IMAP is auto-wired), or set <code>ADS_IMAP_*</code>. See <code>docs/OUTREACH.md</code>.
           </p>
         )}
       </Panel>
@@ -734,14 +734,14 @@ function SetupStrip({
   if (!setup.ai.configured) needs.push("ANTHROPIC_API_KEY (Claude) — AI triage and drafting; rules-only until set");
   if (!setup.email.configured) needs.push("SMTP_* (GoDaddy mailbox) or RESEND_API_KEY — send email replies");
   if (!setup.sms.configured) needs.push("TWILIO_* — send text replies");
-  if (!setup.imap.configured && !setup.inboundWebhook) needs.push("ADS_IMAP_* (alert mailbox) or ADS_INBOUND_SECRET (webhook) — automatic ad intake");
+  if (!setup.imap.configured && !setup.inboundWebhook) needs.push("ADS_IMAP_* or SMTP_* (Office 365 mailbox for Kijiji/Craigslist/Facebook alerts) or ADS_INBOUND_SECRET");
   return (
     <Panel title="Connections">
       <div className="flex flex-wrap items-center gap-2">
         {chip(setup.ai.configured, `AI · ${setup.ai.configured ? `${setup.ai.provider} (${setup.ai.model})` : "rules only"}`, "Mainframe triage + reply drafting")}
         {chip(setup.email.configured, `Email · ${setup.email.configured ? setup.email.provider : "not connected"}`, setup.email.from ?? "")}
         {chip(setup.sms.configured, `SMS · ${setup.sms.configured ? "Twilio" : "not connected"}`, setup.sms.from ?? "")}
-        {chip(setup.imap.configured, `Alert mailbox · ${setup.imap.configured ? `${setup.imap.user} / ${setup.imap.folder}` : "not connected"}`, setup.imap.host ?? "")}
+        {chip(setup.imap.configured, `Alert mailbox · ${setup.imap.configured ? `${setup.imap.user} / ${setup.imap.folder}${setup.imap.fromSmtpFallback ? " · via SMTP" : ""}` : "not connected"}`, setup.imap.host ?? "")}
         {chip(setup.inboundWebhook, "Inbound webhook", "/api/ads/inbound")}
         <span className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-[var(--muted)]">
           auto-send: {setup.autosend.length ? `${setup.autosend.join(" + ")} (score ≥ ${setup.autosendMinScore})` : "off — you approve every reply"} · cap {setup.dailyCap}/day · SMS quiet {setup.quietHours}h · follow-up after {setup.followUpDays}d

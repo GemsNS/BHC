@@ -12,6 +12,8 @@ export type PresentationMeta = {
   customerName?: string;
   address?: string;
   email?: string;
+  /** When true, view/files routes skip the password cookie check. */
+  public?: boolean;
   passwordSha256: string;
   notes?: string;
 };
@@ -159,6 +161,7 @@ export function presentationUnlocked(
   cookieValue: string | undefined,
   meta: PresentationMeta,
 ): boolean {
+  if (meta.public) return true;
   if (!cookieValue) return false;
   // Cookie stores the password hash after successful unlock
   const a = Buffer.from(cookieValue.trim().toLowerCase(), "utf8");

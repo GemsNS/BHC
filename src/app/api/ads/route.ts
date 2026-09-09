@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { imapConfigured, imapSummary, pollImapInbox } from "@/lib/ad-imap";
-import { ensureBuiltinSource, ingestRawAds, newAdSource, parseFeed } from "@/lib/ad-ingest";
+import { ensureBuiltinSource, ensureImapAdSource, ingestRawAds, newAdSource, parseFeed } from "@/lib/ad-ingest";
 import { adMinScore, qualifyListing, runAdIngest } from "@/lib/ad-pipeline";
 import { classifyAd, companyProfile, draftReply } from "@/lib/ad-classify";
 import { getAIStatus } from "@/lib/ai-provider";
 import { requireApiEmployee } from "@/lib/api-auth";
 import { mailConfigStatus, sendEmail } from "@/lib/mail";
 import { markAdReplied, processOutreachQueue, sendPolicy } from "@/lib/outreach-send";
-import { serverSenders } from "@/lib/scheduler";
+import { serverSenders } from "@/lib/server-senders";
 import { sendSms, smsConfigStatus } from "@/lib/sms";
 import { newId, nowIso, readStore, updateStore, updateStoreAsync } from "@/lib/store";
 import type { AdListing, OutreachQueueItem } from "@/lib/types";
@@ -44,20 +44,26 @@ export async function GET(request: Request) {
   const employee = await requireApiEmployee(request);
   if (employee instanceof NextResponse) return employee;
   const data = await readStore();
-  const listings = [...data.adListings].sort((a, b) => b.fetchedAt.localeCompare(a.fetchedAt)).slice(0, 300);
+  if (imapConfigured()) {
+    await updateStore((d) => {
+      ensureImapAdSource(d, { newId, nowIso });
+    });
+  }
+  const fresh = await readStore();
+  const listings = [...fresh.adListings].sort((a, b) => b.fetchedAt.localeCompare(a.fetchedAt)).slice(0, 300);
   const adIds = new Set(listings.map((l) => l.id));
   return NextResponse.json({
-    sources: data.adSources,
+    sources: fresh.adSources,
     listings,
-    outreach: data.outreachQueue.filter((o) => o.adId && adIds.has(o.adId)),
+    outreach: fresh.outreachQueue.filter((o) => o.adId && adIds.has(o.adId)),
     setup: setupStatus(),
     stats: {
-      total: data.adListings.length,
-      new: data.adListings.filter((a) => a.status === "new").length,
-      drafted: data.adListings.filter((a) => a.status === "drafted" || a.status === "qualified").length,
-      sent: data.adListings.filter((a) => a.status === "sent").length,
-      replied: data.adListings.filter((a) => a.status === "replied" || a.status === "won").length,
-      pendingApproval: data.outreachQueue.filter((o) => o.adId && o.status === "pending_approval").length,
+      total: fresh.adListings.length,
+      new: fresh.adListings.filter((a) => a.status === "new").length,
+      drafted: fresh.adListings.filter((a) => a.status === "drafted" || a.status === "qualified").length,
+      sent: fresh.adListings.filter((a) => a.status === "sent").length,
+      replied: fresh.adListings.filter((a) => a.status === "replied" || a.status === "won").length,
+      pendingApproval: fresh.outreachQueue.filter((o) => o.adId && o.status === "pending_approval").length,
     },
   });
 }
