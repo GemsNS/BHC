@@ -43,27 +43,26 @@ function setupStatus() {
 export async function GET(request: Request) {
   const employee = await requireApiEmployee(request);
   if (employee instanceof NextResponse) return employee;
-  const data = await readStore();
   if (imapConfigured()) {
     await updateStore((d) => {
       ensureImapAdSource(d, { newId, nowIso });
     });
   }
-  const fresh = await readStore();
-  const listings = [...fresh.adListings].sort((a, b) => b.fetchedAt.localeCompare(a.fetchedAt)).slice(0, 300);
+  const data = await readStore();
+  const listings = [...data.adListings].sort((a, b) => b.fetchedAt.localeCompare(a.fetchedAt)).slice(0, 300);
   const adIds = new Set(listings.map((l) => l.id));
   return NextResponse.json({
-    sources: fresh.adSources,
+    sources: data.adSources,
     listings,
-    outreach: fresh.outreachQueue.filter((o) => o.adId && adIds.has(o.adId)),
+    outreach: data.outreachQueue.filter((o) => o.adId && adIds.has(o.adId)),
     setup: setupStatus(),
     stats: {
-      total: fresh.adListings.length,
-      new: fresh.adListings.filter((a) => a.status === "new").length,
-      drafted: fresh.adListings.filter((a) => a.status === "drafted" || a.status === "qualified").length,
-      sent: fresh.adListings.filter((a) => a.status === "sent").length,
-      replied: fresh.adListings.filter((a) => a.status === "replied" || a.status === "won").length,
-      pendingApproval: fresh.outreachQueue.filter((o) => o.adId && o.status === "pending_approval").length,
+      total: data.adListings.length,
+      new: data.adListings.filter((a) => a.status === "new").length,
+      drafted: data.adListings.filter((a) => a.status === "drafted" || a.status === "qualified").length,
+      sent: data.adListings.filter((a) => a.status === "sent").length,
+      replied: data.adListings.filter((a) => a.status === "replied" || a.status === "won").length,
+      pendingApproval: data.outreachQueue.filter((o) => o.adId && o.status === "pending_approval").length,
     },
   });
 }

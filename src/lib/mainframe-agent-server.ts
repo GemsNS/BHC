@@ -1,7 +1,4 @@
-import {
-  runAIAgentLoop,
-  type AIChatMessage,
-} from "./ai-provider";
+import { runAIAgentLoop } from "./ai-provider";
 import {
   executeMainframeTool,
   toolLookupHrmAsync,
