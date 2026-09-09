@@ -61,6 +61,10 @@ function LoginForm() {
           <h1 className="login-title">Sign in</h1>
           <p className="login-sub">
             First time? Use default PIN <strong>{DEFAULT_STAFF_PIN}</strong>, then set your password.{" "}
+            <Link href="/login/forgot-password" className="login-home-link">
+              Forgot password?
+            </Link>{" "}
+            ·{" "}
             <Link href="/" className="login-home-link">
               ← Public site
             </Link>

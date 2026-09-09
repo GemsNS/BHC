@@ -171,5 +171,6 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     documents: raw.documents ?? [],
     payments: raw.payments ?? [],
     messages: raw.messages ?? [],
+    passwordResetTokens: raw.passwordResetTokens ?? [],
   };
 }
