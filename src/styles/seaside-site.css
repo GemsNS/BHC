@@ -338,3 +338,74 @@ body .seaside-root,
 .seaside-root header .site-nav-link-muted:hover {
   color: var(--primary-aqua, #00b4d8);
 }
+
+/* ——— Snow removal marketing page ——— */
+.snow-hero-sky {
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -10%, rgba(186, 230, 253, 0.22), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 20%, rgba(0, 180, 216, 0.18), transparent 50%),
+    linear-gradient(180deg, #071018 0%, #0c2433 38%, #152a38 62%, #1a3344 100%);
+}
+
+.snow-hero-ground {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(226, 232, 240, 0.08) 28%,
+    rgba(241, 245, 249, 0.55) 72%,
+    rgba(248, 250, 252, 0.92) 100%
+  );
+}
+
+.snow-hero-drive {
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(15, 23, 42, 0.35) 18%,
+      rgba(15, 23, 42, 0.55) 50%,
+      rgba(15, 23, 42, 0.35) 82%,
+      transparent 100%
+    ),
+    linear-gradient(180deg, transparent, rgba(15, 23, 42, 0.45));
+  clip-path: polygon(8% 100%, 18% 42%, 82% 42%, 92% 100%);
+  opacity: 0.55;
+}
+
+.snow-hero-glow {
+  background:
+    radial-gradient(circle at 30% 70%, rgba(255, 255, 255, 0.08), transparent 35%),
+    linear-gradient(180deg, transparent 45%, rgba(2, 8, 14, 0.55) 100%);
+}
+
+.snow-hero-flake {
+  position: absolute;
+  top: -8%;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.35);
+  animation-name: snow-hero-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes snow-hero-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(18px, 110vh, 0);
+    opacity: 0.15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snow-hero-flake {
+    animation: none;
+    opacity: 0.35;
+  }
+}

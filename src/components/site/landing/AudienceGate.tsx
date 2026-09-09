@@ -46,12 +46,20 @@ export function AudienceGate() {
             Halifax and coastal Nova Scotia—two dedicated paths so we can speak your language from the
             first click: homes and living spaces, or commercial buildings and portfolios.
           </p>
-          <Link
-            href="/login"
-            className="mt-6 inline-flex items-center gap-2 rounded-full border border-primary-aqua/60 bg-primary-aqua/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary-aqua transition-colors hover:bg-primary-aqua/25"
-          >
-            Staff login
-          </Link>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/snow-removal"
+              className="inline-flex items-center gap-2 rounded-sm border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:border-primary-aqua/50 hover:text-primary-aqua"
+            >
+              Snow removal
+            </Link>
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-full border border-primary-aqua/60 bg-primary-aqua/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary-aqua transition-colors hover:bg-primary-aqua/25"
+            >
+              Staff login
+            </Link>
+          </div>
         </header>
 
         <div className="mt-12 flex flex-1 flex-col gap-4 lg:mt-16 lg:flex-row lg:gap-0">

@@ -32,17 +32,46 @@ function loadQuoteSummary(): string {
 
 export type QuoteType = "exterior" | "other";
 
-export function ContactForm() {
+export type ContactFormProps = {
+  defaultQuoteType?: QuoteType;
+  /** Controlled details (e.g. prefilled snow package inquiry). */
+  details?: string;
+  onDetailsChange?: (value: string) => void;
+  otherLabel?: string;
+  otherHint?: string;
+};
+
+export function ContactForm({
+  defaultQuoteType = "exterior",
+  details: controlledDetails,
+  onDetailsChange,
+  otherLabel = "Other services",
+  otherHint = "Decks, roofing, renovations, general contracting, etc. No exterior configuration required—describe your project below.",
+}: ContactFormProps = {}) {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
-  const [details, setDetails] = useState("");
-  const [quoteType, setQuoteType] = useState<QuoteType>("exterior");
+  const [uncontrolledDetails, setUncontrolledDetails] = useState("");
+  const controlled = controlledDetails !== undefined;
+  const details = controlled ? controlledDetails : uncontrolledDetails;
+
+  const setDetails = useCallback(
+    (next: string | ((prev: string) => string)) => {
+      const value =
+        typeof next === "function"
+          ? next(controlled ? controlledDetails : uncontrolledDetails)
+          : next;
+      if (onDetailsChange) onDetailsChange(value);
+      if (!controlled) setUncontrolledDetails(value);
+    },
+    [controlled, controlledDetails, onDetailsChange, uncontrolledDetails],
+  );
+  const [quoteType, setQuoteType] = useState<QuoteType>(defaultQuoteType);
 
   const applyStoredQuote = useCallback(() => {
     const block = loadQuoteSummary();
     if (!block) return;
     setDetails((prev) => (prev.trim() ? `${block}\n\n${prev}` : block));
-  }, []);
+  }, [setDetails]);
 
   useEffect(() => {
     if (quoteType === "exterior") {
@@ -50,16 +79,17 @@ export function ContactForm() {
     }
   }, [applyStoredQuote, quoteType]);
 
-  const handleQuoteTypeChange = useCallback((next: QuoteType) => {
-    setQuoteType(next);
-    if (next === "exterior") {
-      applyStoredQuote();
-    } else {
-      setDetails((d) =>
-        d.trim().startsWith("[Exterior configuration") ? "" : d,
-      );
-    }
-  }, [applyStoredQuote]);
+  const handleQuoteTypeChange = useCallback(
+    (next: QuoteType) => {
+      setQuoteType(next);
+      if (next === "exterior") {
+        applyStoredQuote();
+      } else {
+        setDetails((d) => (d.trim().startsWith("[Exterior configuration") ? "" : d));
+      }
+    },
+    [applyStoredQuote, setDetails],
+  );
 
   useEffect(() => {
     const onPrefill = () => {
@@ -168,11 +198,8 @@ export function ContactForm() {
             className="mt-1 h-4 w-4 border-base-black/20 text-primary-aqua focus:ring-primary-aqua"
           />
           <span>
-            <span className="font-medium text-base-black">Other services</span>
-            <span className="mt-0.5 block text-xs text-base-black/55">
-              Decks, roofing, renovations, general contracting, etc. No exterior configuration
-              required—describe your project below.
-            </span>
+            <span className="font-medium text-base-black">{otherLabel}</span>
+            <span className="mt-0.5 block text-xs text-base-black/55">{otherHint}</span>
           </span>
         </label>
       </fieldset>
