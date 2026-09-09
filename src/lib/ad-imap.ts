@@ -7,15 +7,17 @@ import { parseAlertEmail, type RawAd } from "./ad-ingest";
  * Marketplace and (b) replies from prospects we emailed.
  * Server-only — imported by the scheduler and API routes, never by client code.
  *
- * Env:
- *   ADS_IMAP_HOST            imap.secureserver.net (GoDaddy) / outlook.office365.com / imap.gmail.com
+ * Env (ADS_IMAP_* preferred; falls back to SMTP_* so the Office 365 mailbox
+ * already used for outbound mail also receives Kijiji/Craigslist/Facebook alerts):
+ *   ADS_IMAP_HOST            outlook.office365.com (auto from smtp.office365.com)
  *   ADS_IMAP_PORT            993
- *   ADS_IMAP_USER / ADS_IMAP_PASS
+ *   ADS_IMAP_USER / ADS_IMAP_PASS  (fallback: SMTP_USER / SMTP_PASS)
  *   ADS_IMAP_SECURE          true
  *   ADS_IMAP_FOLDER          INBOX
- *   ADS_IMAP_ALERT_SENDERS   comma list treated as listing alerts (default kijiji.ca,craigslist.org,facebookmail.com,homestars.com)
- *   ADS_IMAP_MARK_SEEN       true — mark processed mails as read
- *   ADS_IMAP_MAX             30 mails per poll
+ *   ADS_IMAP_ALERT_SENDERS   kijiji.ca,craigslist.org,facebookmail.com,homestars.com
+ *   ADS_IMAP_MARK_SEEN       true
+ *   ADS_IMAP_MAX             30
+ *   ADS_IMAP_ENABLED         set to 0 to disable even when SMTP is configured
  */
 
 export type InboundMail = {
@@ -35,22 +37,71 @@ export type ImapPollResult = {
   error: string | null;
 };
 
+export type ImapResolvedConfig = {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+  folder: string;
+  fromSmtpFallback: boolean;
+};
+
 const DEFAULT_ALERT_SENDERS = ["kijiji.ca", "craigslist.org", "facebookmail.com", "homestars.com", "nextdoor.com"];
 
-export function imapConfigured(): boolean {
-  return Boolean(
-    process.env.ADS_IMAP_HOST?.trim() &&
-      process.env.ADS_IMAP_USER?.trim() &&
-      process.env.ADS_IMAP_PASS?.trim(),
-  );
+/** Map common SMTP hosts to their IMAP counterparts. */
+export function imapHostFromSmtp(smtpHost: string | undefined | null): string | null {
+  const h = smtpHost?.trim().toLowerCase();
+  if (!h) return null;
+  if (h === "smtp.office365.com" || h === "smtp-mail.outlook.com") return "outlook.office365.com";
+  if (h === "smtp.gmail.com") return "imap.gmail.com";
+  if (h === "smtpout.secureserver.net" || h === "smtp.secureserver.net") return "imap.secureserver.net";
+  // Generic: smtp.X → imap.X when the prefix matches
+  if (h.startsWith("smtp.")) return `imap.${h.slice(5)}`;
+  return h;
 }
 
-export function imapSummary(): { configured: boolean; host: string | null; user: string | null; folder: string } {
+export function resolveImapConfig(): ImapResolvedConfig | null {
+  const disabled = (process.env.ADS_IMAP_ENABLED ?? "1").trim().toLowerCase();
+  if (disabled === "0" || disabled === "false" || disabled === "off") return null;
+
+  const user = (process.env.ADS_IMAP_USER?.trim() || process.env.SMTP_USER?.trim() || "").trim();
+  const pass = (process.env.ADS_IMAP_PASS?.trim() || process.env.SMTP_PASS?.trim() || "").trim();
+  const explicitHost = process.env.ADS_IMAP_HOST?.trim() || "";
+  const host = explicitHost || imapHostFromSmtp(process.env.SMTP_HOST) || "";
+  if (!host || !user || !pass) return null;
+
+  const fromSmtpFallback = !process.env.ADS_IMAP_HOST?.trim() || !process.env.ADS_IMAP_USER?.trim() || !process.env.ADS_IMAP_PASS?.trim();
+
   return {
-    configured: imapConfigured(),
-    host: process.env.ADS_IMAP_HOST?.trim() || null,
-    user: process.env.ADS_IMAP_USER?.trim() ? process.env.ADS_IMAP_USER.trim().replace(/^(.{2}).+(@.*)$/, "$1…$2") : null,
+    host,
+    port: Number(process.env.ADS_IMAP_PORT ?? "993") || 993,
+    secure: (process.env.ADS_IMAP_SECURE ?? "true").toLowerCase() !== "false",
+    user,
+    pass,
     folder: process.env.ADS_IMAP_FOLDER?.trim() || "INBOX",
+    fromSmtpFallback,
+  };
+}
+
+export function imapConfigured(): boolean {
+  return resolveImapConfig() !== null;
+}
+
+export function imapSummary(): {
+  configured: boolean;
+  host: string | null;
+  user: string | null;
+  folder: string;
+  fromSmtpFallback: boolean;
+} {
+  const cfg = resolveImapConfig();
+  return {
+    configured: Boolean(cfg),
+    host: cfg?.host ?? null,
+    user: cfg?.user ? cfg.user.replace(/^(.{2}).+(@.*)$/, "$1…$2") : null,
+    folder: cfg?.folder ?? "INBOX",
+    fromSmtpFallback: cfg?.fromSmtpFallback ?? false,
   };
 }
 
@@ -64,17 +115,18 @@ export function alertSenders(): string[] {
 }
 
 export async function pollImapInbox(): Promise<ImapPollResult> {
-  if (!imapConfigured()) return { raws: [], others: [], messages: 0, error: "IMAP not configured (ADS_IMAP_*)." };
-  const folder = process.env.ADS_IMAP_FOLDER?.trim() || "INBOX";
+  const cfg = resolveImapConfig();
+  if (!cfg) return { raws: [], others: [], messages: 0, error: "IMAP not configured (set ADS_IMAP_* or SMTP_*)." };
+  const folder = cfg.folder;
   const max = Math.max(1, Number(process.env.ADS_IMAP_MAX ?? "30") || 30);
   const markSeen = (process.env.ADS_IMAP_MARK_SEEN ?? "true").toLowerCase() !== "false";
   const alerts = alertSenders();
 
   const client = new ImapFlow({
-    host: process.env.ADS_IMAP_HOST!.trim(),
-    port: Number(process.env.ADS_IMAP_PORT ?? "993") || 993,
-    secure: (process.env.ADS_IMAP_SECURE ?? "true").toLowerCase() !== "false",
-    auth: { user: process.env.ADS_IMAP_USER!.trim(), pass: process.env.ADS_IMAP_PASS!.trim() },
+    host: cfg.host,
+    port: cfg.port,
+    secure: cfg.secure,
+    auth: { user: cfg.user, pass: cfg.pass },
     logger: false,
   });
 

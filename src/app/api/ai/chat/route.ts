@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApiEmployee } from "@/lib/api-auth";
-import { runMainframeTurn, type ChatMessage } from "@/lib/mainframe-agent";
+import { type ChatMessage } from "@/lib/mainframe-agent";
+import { runMainframeTurn as runMainframeTurnServer } from "@/lib/mainframe-agent-server";
 import { newId, nowIso, readStore, writeStore } from "@/lib/store";
 import {
   checkRateLimit,
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
   }
 
   const data = await readStore();
-  const result = await runMainframeTurn(data, messages, {
+  const result = await runMainframeTurnServer(data, messages, {
     authorId,
     newId,
     nowIso,

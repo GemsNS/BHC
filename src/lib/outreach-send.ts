@@ -1,6 +1,7 @@
 import { draftFollowUpLocal } from "./ad-classify";
 import { live } from "./events";
 import { enqueueNotification } from "./notifications";
+import { looksFabricatedProspect, isRealContactEmail, isPlaceholderPhone } from "./outreach-guard";
 import { toE164 } from "./sms";
 import { queueWebhook } from "./webhooks";
 import type { AppData, OptOutRecord, OutreachQueueItem } from "./types";
@@ -121,6 +122,25 @@ export async function processOutreachQueue(
   for (const item of approved) {
     if (item.channel === "call" || item.channel === "platform") {
       result.skipped += 1; // manual channels — nothing to send
+      continue;
+    }
+    if (
+      looksFabricatedProspect({
+        name: item.prospectName,
+        email: item.prospectEmail,
+        phone: item.prospectPhone,
+      }) ||
+      (item.channel === "email" && !isRealContactEmail(item.prospectEmail)) ||
+      (item.channel === "sms" && isPlaceholderPhone(item.prospectPhone))
+    ) {
+      item.status = "cancelled";
+      item.error = "Synthetic / invalid contact — blocked from send.";
+      result.skipped += 1;
+      live.system(
+        `Blocked synthetic outreach: ${item.prospectName}`,
+        item.prospectEmail || item.prospectPhone || item.id,
+        "warn",
+      );
       continue;
     }
     const sender = item.channel === "sms" ? senders.sms : senders.email;

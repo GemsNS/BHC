@@ -8,6 +8,7 @@ import { runDailyAutomations } from "./mainframe-automations";
 import { automationStatus, describeSchedule } from "./automation-engine";
 import { storeHealth } from "./store-health";
 import { findProspectsForLead, scoreLead } from "./lead-automation";
+import { purgeSyntheticOutreachAndAds } from "./outreach-guard";
 import type {
   AppData,
   AssistantCriteriaProfile,
@@ -96,6 +97,8 @@ export const MAINFRAME_TOOL_NAMES = [
   "store_health",
   "list_ads",
   "outreach_status",
+  "send_outreach",
+  "purge_synthetic_outreach",
 ] as const;
 
 export type MainframeToolName = (typeof MAINFRAME_TOOL_NAMES)[number];
@@ -166,6 +169,14 @@ export function executeMainframeTool(
       return toolListAds(data, args);
     case "outreach_status":
       return toolOutreachStatus(data);
+    case "send_outreach":
+      return {
+        ok: false,
+        summary:
+          "send_outreach requires the live server (SMTP/Twilio). Use Mainframe chat on the host, Ads → Send now, or wait for the 15-minute automation tick.",
+      };
+    case "purge_synthetic_outreach":
+      return toolPurgeSynthetic(data);
     default:
       return { ok: false, summary: `Unknown tool: ${tool}` };
   }
@@ -200,6 +211,17 @@ function toolOutreachStatus(data: AppData): ToolExecution {
     ok: true,
     summary: `Outreach: ${byStatus("pending_approval")} awaiting approval, ${byStatus("approved")} approved (send on next tick), ${byStatus("sent")} sent (${sentToday} today), ${byStatus("failed")} failed. ${adBacked} item(s) came from job ads; ${data.adListings.filter((a) => a.status === "replied" || a.status === "won").length} ad conversation(s) got a reply.`,
     data: { pending: byStatus("pending_approval"), approved: byStatus("approved"), sent: byStatus("sent"), failed: byStatus("failed"), sentToday },
+  };
+}
+
+function toolPurgeSynthetic(data: AppData): ToolExecution {
+  const r = purgeSyntheticOutreachAndAds(data);
+  return {
+    ok: true,
+    summary:
+      r.notes.join(" ") ||
+      "No synthetic outreach or junk ads found.",
+    data: { cancelledOutreach: r.cancelledOutreach, removedAds: r.removedAds },
   };
 }
 
@@ -484,7 +506,7 @@ function toolApproveOutreach(
   }
   return {
     ok: true,
-    summary: `Approved ${targets.length} outreach draft(s). Mark sent from Outreach tab when GoDaddy SMTP is wired.`,
+    summary: `Approved ${targets.length} outreach draft(s). They will send on the next automation tick, or run send_outreach / Ads → Send now. Do not mark sent manually — that skips SMTP.`,
   };
 }
 
@@ -876,3 +898,6 @@ export async function toolLookupHrmAsync(
     };
   }
 }
+
+/** Actually deliver approved outreach via SMTP/Twilio (server only). */
+

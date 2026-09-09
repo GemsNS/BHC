@@ -94,6 +94,7 @@ Commands:
   ads send                      Send approved replies now (email/SMS)
   ads test-email <to>           Send a test email through SMTP/Resend
   ads test-sms <to>             Send a test SMS through Twilio
+  ads purge-fake                Cancel synthetic outreach + remove junk search-result ads
 
   auth reset <login>            Clear password → PIN 0000; must set password next login
   auth set-password <login> --password <pw>
@@ -481,6 +482,16 @@ async function cmdAdsTest(channel: "email" | "sms", to: string) {
   if (!r.ok) process.exitCode = 1;
 }
 
+async function cmdAdsPurgeFake() {
+  const { purgeSyntheticOutreachAndAds } = await import("../src/lib/outreach-guard");
+  let summary = "";
+  await updateStoreAsync(async (d) => {
+    const r = purgeSyntheticOutreachAndAds(d);
+    summary = r.notes.join(" ") || "Nothing to purge.";
+  });
+  console.log(summary);
+}
+
 async function cmdAuthReset(login: string) {
   if (!login) {
     console.error("Usage: bhc auth reset <login>");
@@ -635,6 +646,7 @@ async function main() {
     if (sub === "send") return cmdAdsSend();
     if (sub === "test-email") return cmdAdsTest("email", args[2] ?? "");
     if (sub === "test-sms") return cmdAdsTest("sms", args[2] ?? "");
+    if (sub === "purge-fake") return cmdAdsPurgeFake();
     console.error(`Unknown ads subcommand: ${sub ?? "(none)"}`);
     process.exit(1);
   }

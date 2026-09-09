@@ -30,7 +30,7 @@ You have FULL CRM access via tools: read, create, update, and delete leads, jobs
 Contracts live on disk at /contracts/<slug> (e.g. /contracts/snow). Use register_contract and sync_contract to link them to jobs/leads in the CRM.
 When users paste customer lists or contract job info, use import_data or sync_contract.
 Use remember_knowledge / search_knowledge for operational facts. lookup_hrm for weather/geocoding.
-Be concise, command-center tone. Confirm destructive deletes. Outreach drafts are never auto-sent — approve then mark sent via update_outreach.`;
+Be concise, command-center tone. Confirm destructive deletes. Outreach drafts are never auto-sent — approve them, then call send_outreach (or wait for the 15-minute automation tick / Ads → Send now). Never invent contacts or mark outreach as sent without a real SMTP/SMS send.`;
 
 async function buildContextPrompt(data: AppData): Promise<string> {
   const profile = data.assistantProfiles.find((p) => p.enabled) ?? {};
@@ -94,9 +94,11 @@ function toolDescription(name: MainframeToolName): string {
     complete_activity: "Mark activity/task complete",
     delete_activity: "Delete an activity",
     list_outreach: "List outreach queue items",
-    approve_outreach: "Approve outreach drafts (never sends email)",
-    update_outreach: "Update outreach status (e.g. sent, cancelled)",
+    approve_outreach: "Approve outreach drafts (never sends email by itself)",
+    update_outreach: "Update outreach fields; do not use status=sent unless SMTP already delivered",
     delete_outreach: "Remove outreach draft",
+    send_outreach: "Actually send approved outreach via SMTP/Twilio now",
+    purge_synthetic_outreach: "Cancel fabricated prospect drafts and junk search-result ads",
     list_workflows: "List automation workflows",
     list_contracts: "List registered contracts and public URLs",
     register_contract: "Register a contract slug and metadata",
@@ -269,6 +271,8 @@ function toolParameters(name: MainframeToolName): Record<string, unknown> {
     case "automation_status":
     case "store_health":
     case "outreach_status":
+    case "send_outreach":
+    case "purge_synthetic_outreach":
       return { type: "object", properties: {} };
     case "list_ads":
       return {
@@ -387,6 +391,12 @@ function parseLocalIntent(text: string): Array<{ tool: MainframeToolName; args: 
   if (/approve all outreach|approve outreach/i.test(t)) {
     runs.push({ tool: "approve_outreach", args: { all: /all/.test(lower) } });
   }
+  if (/send (all )?outreach|send approved|email the leads|send the lead emails/i.test(t)) {
+    runs.push({ tool: "send_outreach", args: {} });
+  }
+  if (/purge (fake|synthetic|junk)|cancel fake|clean (fake|synthetic) outreach/i.test(t)) {
+    runs.push({ tool: "purge_synthetic_outreach", args: {} });
+  }
   if (/hunt leads|find leads|prospect hunt|run hunt/i.test(t)) {
     runs.push({ tool: "hunt_leads", args: {} });
   }
@@ -468,10 +478,12 @@ function helpText(): string {
 • "Create lead: Jane Doe in Dartmouth commercial"
 • Paste customer lists — AI uses import_data
 • "Remember: we only service HRM" — saves to assistant memory
+• "Approve all outreach"
+• "Send outreach" (SMTP/Twilio — approved drafts only)
+• "Purge synthetic outreach"
 • "HRM weather" / lookup_hrm
 • "Hunt leads" / "Find prospects for [lead name]"
 • "Create job: Roof replacement for [customer]"
-• "Approve all outreach"
 • "Run daily automations"`;
 }
 

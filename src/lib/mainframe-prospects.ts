@@ -1,65 +1,19 @@
 /**
- * HRM prospect pools for lead hunting — Nova Scotia local market.
+ * Lead hunting against the real CRM only — no invented contacts.
+ *
+ * Previous builds queued hardcoded regional "prospects" (coleharbour.ca,
+ * sackvillebp.ca, …). Those never existed. Hunt now only drafts outreach to
+ * leads already in the store that match the criteria profile and have a real
+ * email or phone.
  */
-import { findProspectsForLead, scoreLead } from "./lead-automation";
+import { isRealContactEmail, isPlaceholderPhone } from "./outreach-guard";
+import { scoreLead } from "./lead-automation";
 import type {
   AppData,
   AssistantCriteriaProfile,
   Lead,
   OutreachQueueItem,
 } from "./types";
-
-const REGION_PROSPECTS: Record<
-  string,
-  Array<{ name: string; email: string; phone: string; subject: string }>
-> = {
-  Halifax: [
-    {
-      name: "Peninsula Property Managers",
-      email: "ops@peninsulapm.ca",
-      phone: "(902) 555-4100",
-      subject: "Envelope maintenance — Halifax peninsula",
-    },
-    {
-      name: "Hydrostone Heritage HOA",
-      email: "board@hydrostonehoa.ca",
-      phone: "(902) 555-4200",
-      subject: "Heritage district exterior upgrades",
-    },
-  ],
-  Dartmouth: [
-    {
-      name: "Dartmouth Commercial Parks",
-      email: "facilities@dartmouthparks.ca",
-      phone: "(902) 555-4300",
-      subject: "Multi-tenant roof & siding programs",
-    },
-  ],
-  Bedford: [
-    {
-      name: "Bedford Residential Assoc.",
-      email: "maintenance@bedfordres.ca",
-      phone: "(902) 555-4400",
-      subject: "Storm-season roof inspections",
-    },
-  ],
-  Sackville: [
-    {
-      name: "Sackville Business Park",
-      email: "facilities@sackvillebp.ca",
-      phone: "(902) 555-4500",
-      subject: "Commercial envelope contractors",
-    },
-  ],
-  "Cole Harbour": [
-    {
-      name: "Cole Harbour Community Board",
-      email: "projects@coleharbour.ca",
-      phone: "(902) 555-4600",
-      subject: "Residential renovation partners",
-    },
-  ],
-};
 
 function defaultProfile(data: AppData): AssistantCriteriaProfile {
   return (
@@ -94,6 +48,20 @@ function leadMatchesProfile(lead: Lead, profile: AssistantCriteriaProfile): bool
   return true;
 }
 
+function leadHasReachableContact(lead: Lead): boolean {
+  if (isRealContactEmail(lead.email)) return true;
+  if (lead.phone?.trim() && !isPlaceholderPhone(lead.phone)) return true;
+  return false;
+}
+
+function alreadyQueuedForLead(data: AppData, leadId: string): boolean {
+  return data.outreachQueue.some(
+    (o) =>
+      o.leadId === leadId &&
+      (o.status === "pending_approval" || o.status === "approved" || o.status === "sent"),
+  );
+}
+
 export function huntLeadsFromCriteria(
   data: AppData,
   profileId?: string,
@@ -104,7 +72,7 @@ export function huntLeadsFromCriteria(
     : defaultProfile(data);
 
   const matchedLeads = data.leads
-    .filter((l) => leadMatchesProfile(l, profile))
+    .filter((l) => leadMatchesProfile(l, profile) && leadHasReachableContact(l))
     .sort((a, b) => b.leadScore - a.leadScore)
     .slice(0, limit);
 
@@ -113,49 +81,36 @@ export function huntLeadsFromCriteria(
   const stamp = new Date().toISOString();
 
   for (const lead of matchedLeads) {
-    const prospects = findProspectsForLead(data, lead, 2);
-    for (const p of prospects) {
-      const item: OutreachQueueItem = {
-        ...p,
-        id: `out-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
-        status: "pending_approval",
-        workflowRunId: null,
-        sentAt: null,
-        createdAt: stamp,
-        channel: p.channel ?? "email",
-        scheduledAt: stamp,
-      };
-      data.outreachQueue.unshift(item);
-      queued++;
+    if (alreadyQueuedForLead(data, lead.id)) {
+      notes.push(`${lead.name} (${lead.city}) — already has outreach queued`);
+      continue;
     }
-    notes.push(`${lead.name} (${lead.city}) score ${lead.leadScore}`);
-  }
-
-  for (const region of profile.regions) {
-    const pool = REGION_PROSPECTS[region];
-    if (!pool?.length) continue;
-    const pick = pool[queued % pool.length];
-    data.outreachQueue.unshift({
-      id: `out-region-${Date.now()}-${region}`,
-      leadId: null,
-      prospectName: pick.name,
-      prospectEmail: pick.email,
-      prospectPhone: pick.phone,
-      channel: "email",
-      subject: pick.subject,
-      message: `${profile.outreachTone}\n\nReaching out regarding ${pick.subject} in ${region}, NS.`,
+    const channel = isRealContactEmail(lead.email) ? "email" : "sms";
+    const subject = `${lead.jobType === "commercial" ? "Commercial" : "Residential"} exterior work — ${lead.city}`;
+    const item: OutreachQueueItem = {
+      id: `out-lead-${lead.id}-${Date.now()}`,
+      leadId: lead.id,
+      prospectName: lead.name,
+      prospectEmail: isRealContactEmail(lead.email) ? lead.email.trim() : "",
+      prospectPhone: lead.phone?.trim() || "",
+      channel,
+      subject,
+      message: `${profile.outreachTone}\n\nHi ${lead.name.split(" ")[0] || "there"} — following up on your ${lead.jobType} inquiry in ${lead.city}. BH Contracting LTD. can schedule a free site visit and written quote. Reply to this message or email info@bhcontracting.ca.`,
       status: "pending_approval",
       workflowRunId: null,
       scheduledAt: stamp,
       sentAt: null,
       createdAt: stamp,
-    });
-    queued++;
-    notes.push(`Regional prospect: ${pick.name} (${region})`);
+    };
+    data.outreachQueue.unshift(item);
+    queued += 1;
+    notes.push(`${lead.name} (${lead.city}) score ${lead.leadScore} → ${channel} draft`);
   }
 
-  if (!matchedLeads.length && !queued) {
-    notes.push("No matching leads — import leads via Mainframe or create manually.");
+  if (!matchedLeads.length) {
+    notes.push(
+      "No matching CRM leads with a real email/phone. Import real ads (Kijiji alerts / web discovery with listing URLs) or create leads manually — hunting no longer invents contacts.",
+    );
   }
 
   return { matchedLeads, queued, notes };
