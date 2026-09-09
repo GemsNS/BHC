@@ -315,7 +315,7 @@ describe("sending", () => {
     const d = store();
     const src = newAdSource({ name: "Kijiji", type: "manual" }, ctx);
     d.adSources.push(src);
-    const [ad] = ingestRawAds(d, src, [{ externalId: "q1", ...DEMAND_AD, contactEmail: "jane@example.com", contactPhone: "902-555-0142" }], ctx);
+    const [ad] = ingestRawAds(d, src, [{ externalId: "q1", ...DEMAND_AD, contactEmail: "jane@example.com", contactPhone: "902-809-0142" }], ctx);
     return { d, ad };
   }
 

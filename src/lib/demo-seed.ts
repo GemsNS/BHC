@@ -527,23 +527,8 @@ export function buildDemoSeedData(): AppData {
   ];
 
   const outreachQueue = [
-    {
-      id: "out-1",
-      leadId: "lead-2",
-      prospectName: "Harbor City Retail Group",
-      prospectEmail: "facilities@harborcityretail.com",
-      prospectPhone: "(555) 660-1100",
-      channel: "email" as const,
-      subject: "Envelope upgrades for multi-tenant storefronts",
-      message:
-        "Hi — we help commercial properties in Harbor City with phased envelope work. Would a brief call make sense?",
-      status: "pending_approval" as const,
-      workflowRunId: null,
-      scheduledAt: iso(0, 14),
-      sentAt: null,
-      createdAt: iso(0, 11),
-    },
-  ];
+    // Real CRM outreach only — no fabricated demo domains
+  ] as AppData["outreachQueue"];
 
   const assistantProfiles = [
     {
