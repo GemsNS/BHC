@@ -1,0 +1,70 @@
+# BH Contracting Ltd. | Walid Warehouse Two-Tone Model
+newmtl burnt_sienna
+Ka 0.22 0.09 0.035
+Kd 0.557 0.196 0.102
+Ks 0.08 0.05 0.03
+Ns 18.0
+illum 2
+
+newmtl burnt_sienna_joint
+Ka 0.12 0.04 0.02
+Kd 0.400 0.082 0.028
+Ks 0.04 0.03 0.02
+Ns 12.0
+illum 2
+
+newmtl manor_grey
+Ka 0.045 0.05 0.055
+Kd 0.145 0.157 0.169
+Ks 0.08 0.08 0.08
+Ns 22.0
+illum 2
+
+newmtl manor_shadow
+Ka 0.018 0.02 0.022
+Kd 0.055 0.063 0.071
+Ks 0.05 0.05 0.05
+Ns 18.0
+illum 2
+
+newmtl black_trim
+Ka 0.01 0.01 0.01
+Kd 0.063 0.071 0.078
+Ks 0.20 0.20 0.20
+Ns 35.0
+illum 2
+
+newmtl glazing
+Ka 0.02 0.035 0.045
+Kd 0.122 0.200 0.239
+Ks 0.30 0.30 0.30
+Ns 60.0
+illum 2
+
+newmtl doors
+Ka 0.14 0.15 0.16
+Kd 0.467 0.482 0.490
+Ks 0.12 0.12 0.12
+Ns 24.0
+illum 2
+
+newmtl concrete
+Ka 0.17 0.18 0.18
+Kd 0.545 0.557 0.549
+Ks 0.02 0.02 0.02
+Ns 8.0
+illum 2
+
+newmtl terrain
+Ka 0.12 0.12 0.11
+Kd 0.400 0.388 0.365
+Ks 0.02 0.02 0.02
+Ns 5.0
+illum 2
+
+newmtl driveway
+Ka 0.08 0.08 0.07
+Kd 0.353 0.345 0.322
+Ks 0.02 0.02 0.02
+Ns 5.0
+illum 2
