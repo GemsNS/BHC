@@ -900,37 +900,4 @@ export async function toolLookupHrmAsync(
 }
 
 /** Actually deliver approved outreach via SMTP/Twilio (server only). */
-export async function toolSendOutreachAsync(
-  data: AppData,
-  ctx: ToolContext,
-): Promise<ToolExecution> {
-  const { processOutreachQueue } = await import("./outreach-send");
-  const { serverSenders } = await import("./scheduler");
-  const senders = serverSenders();
-  if (!senders.email && !senders.sms) {
-    return {
-      ok: false,
-      summary:
-        "No email/SMS sender configured. Set SMTP_* (or RESEND_API_KEY) and/or TWILIO_* with TWILIO_ENABLED=1.",
-    };
-  }
-  const approved = data.outreachQueue.filter((o) => o.status === "approved").length;
-  if (!approved) {
-    return {
-      ok: true,
-      summary:
-        "No approved outreach to send. Approve drafts first (approve_outreach), then send_outreach.",
-    };
-  }
-  const result = await processOutreachQueue(data, ctx, senders);
-  return {
-    ok: result.failed === 0,
-    summary: result.summary || `Sent ${result.sent}, failed ${result.failed}, deferred ${result.deferred}, skipped ${result.skipped}.`,
-    data: {
-      sent: result.sent,
-      failed: result.failed,
-      deferred: result.deferred,
-      skipped: result.skipped,
-    },
-  };
-}
+

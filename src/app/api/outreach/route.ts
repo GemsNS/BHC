@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { processOutreachQueue, sendPolicy } from "@/lib/outreach-send";
-import { serverSenders } from "@/lib/scheduler";
+import { serverSenders } from "@/lib/server-senders";
 import { newId, nowIso, readStore, updateStore, updateStoreAsync } from "@/lib/store";
 import type { OutreachQueueItem, OutreachStatus } from "@/lib/types";
 

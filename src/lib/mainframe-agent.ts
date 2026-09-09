@@ -7,7 +7,6 @@ import {
   executeMainframeTool,
   MAINFRAME_TOOL_NAMES,
   toolLookupHrmAsync,
-  toolSendOutreachAsync,
   type MainframeToolName,
   type ToolContext,
 } from "./mainframe-tools";
@@ -520,10 +519,6 @@ export async function runMainframeTurn(
     executeTool: async (name, args) => {
       if (name === "lookup_hrm") {
         const result = await toolLookupHrmAsync(args);
-        return { summary: result.summary, ok: result.ok };
-      }
-      if (name === "send_outreach") {
-        const result = await toolSendOutreachAsync(data, ctx);
         return { summary: result.summary, ok: result.ok };
       }
       const result = executeMainframeTool(data, name as MainframeToolName, args, ctx);
