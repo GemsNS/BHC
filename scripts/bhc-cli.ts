@@ -94,7 +94,7 @@ Commands:
   ads send                      Send approved replies now (email/SMS)
   ads test-email <to>           Send a test email through SMTP/Resend
   ads test-sms <to>             Send a test SMS through Twilio
-  ads purge-fake                Cancel synthetic outreach + remove junk search-result ads
+  ads purge-fake                Cancel synthetic outreach + remove junk ads/leads
 
   auth reset <login>            Clear password → PIN 0000; must set password next login
   auth set-password <login> --password <pw>

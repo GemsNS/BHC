@@ -29,7 +29,7 @@ describe("outreach guard", () => {
     expect(isJunkAdTitle("Today’s search results for exterior")).toBe(true);
   });
 
-  it("purges synthetic outreach and junk ads", () => {
+  it("purges synthetic outreach, junk ads, and fake CRM leads", () => {
     const data = buildSeedData();
     data.outreachQueue = [
       {
@@ -70,16 +70,54 @@ describe("outreach guard", () => {
         summary: "",
         reasons: [],
         classifiedBy: null,
-        leadId: null,
+        leadId: "lead-junk-1",
         outreachIds: [],
         repliedAt: null,
         notes: "",
       },
     ];
+    data.leads = [
+      {
+        id: "lead-junk-1",
+        name: "Ad poster — Today's search results for siding",
+        phone: "",
+        email: "",
+        address: "See ad",
+        city: "HRM",
+        source: "Ad · x",
+        status: "new",
+        jobType: "residential",
+        notes: "Ad: Today's search results for siding\n",
+        assignedToId: null,
+        companyId: null,
+        leadScore: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: "lead-real",
+        name: "Real Client",
+        phone: "(902) 809-1234",
+        email: "client@gmail.com",
+        address: "1 Main",
+        city: "Halifax",
+        source: "Referral",
+        status: "new",
+        jobType: "residential",
+        notes: "",
+        assignedToId: null,
+        companyId: null,
+        leadScore: 50,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ];
     const r = purgeSyntheticOutreachAndAds(data);
     expect(r.cancelledOutreach).toBe(1);
     expect(r.removedAds).toBe(1);
+    expect(r.removedLeads).toBe(1);
     expect(data.outreachQueue[0].status).toBe("cancelled");
+    expect(data.leads.map((l) => l.id)).toEqual(["lead-real"]);
   });
 });
 
