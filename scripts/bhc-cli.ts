@@ -98,6 +98,8 @@ Commands:
 
   walid ensure                  Upsert SOI Trade / Walid Uniacke job into CRM
                                 (company, won lead, job, deal, contract)
+  walid progress                Import Day 1 field photos onto job-walid
+                                (from field-photos/walid-day-1/)
 
   auth reset <login>            Clear password → PIN 0000; must set password next login
   auth set-password <login> --password <pw>
@@ -515,6 +517,24 @@ async function cmdWalidEnsure() {
   );
 }
 
+async function cmdWalidProgress() {
+  const { ensureWalidInCrm, importWalidDay1Progress, WALID_CRM } = await import("../src/lib/walid-crm");
+  let out: Record<string, unknown> = {};
+  await updateStoreAsync(async (d) => {
+    ensureWalidInCrm(d);
+    const imported = await importWalidDay1Progress(d, { authorId: "emp-field" });
+    const job = d.jobs.find((j) => j.id === WALID_CRM.jobId);
+    out = {
+      jobId: WALID_CRM.jobId,
+      status: job?.status,
+      photos: imported.photoUrls.length,
+      progressEntries: imported.entryIds,
+      media: imported.photoUrls,
+    };
+  });
+  console.log(JSON.stringify(out, null, 2));
+}
+
 async function cmdAuthReset(login: string) {
   if (!login) {
     console.error("Usage: bhc auth reset <login>");
@@ -676,7 +696,8 @@ async function main() {
 
   if (cmd === "walid") {
     if (sub === "ensure") return cmdWalidEnsure();
-    console.error(`Unknown walid subcommand: ${sub ?? "(none)"} — try: walid ensure`);
+    if (sub === "progress") return cmdWalidProgress();
+    console.error(`Unknown walid subcommand: ${sub ?? "(none)"} — try: walid ensure | walid progress`);
     process.exit(1);
   }
 

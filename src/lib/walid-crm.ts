@@ -8,7 +8,10 @@
  *   src/lib/fuel-travel.ts (WALID_JOB_TRAVEL)
  */
 
+import { readFile } from "fs/promises";
+import path from "path";
 import { WALID_JOB_TRAVEL } from "./fuel-travel";
+import { storeNamedMedia } from "./media-store";
 import type {
   ActivityType,
   AppData,
@@ -17,6 +20,7 @@ import type {
   CrmActivity,
   Deal,
   Job,
+  JobProgressEntry,
   Lead,
 } from "./types";
 
@@ -28,6 +32,7 @@ export const WALID_CRM = {
   contractId: "ctr-walid",
   contractSlug: "walid",
   activityId: "act-walid-seed",
+  day1ProgressIds: ["prog-walid-day1-a", "prog-walid-day1-b"] as const,
   customerLegalName: "SOI Trade Inc.",
   attention: "Walid Sallam",
   leadDisplayName: "Walid Sallam — SOI Trade Inc.",
@@ -40,6 +45,7 @@ export const WALID_CRM = {
   doors: 2,
   presentationPath: "/presentations/walid",
   presentationV2Path: "/presentations/walid/v2",
+  fieldPhotosDay1Dir: "field-photos/walid-day-1",
   contractPackageNote:
     "Warehouse extension exterior: ~30 squares charcoal/cedar-tone siding, 2 exterior doors, crew fuel/travel (20 RT Dartmouth↔Uniacke). Presentation: /presentations/walid · 3D model: /presentations/walid/v2 · Contract package under presentations/walid/package/03_Contract/.",
 } as const;
@@ -216,5 +222,98 @@ export function ensureWalidInCrm(
     companyId: WALID_CRM.companyId,
     leadId: WALID_CRM.leadId,
     jobId: WALID_CRM.jobId,
+  };
+}
+
+type Day1Manifest = {
+  day: number;
+  date?: string;
+  title?: string;
+  notes?: string[];
+  photos: Array<{ file: string; source?: string; caption?: string }>;
+};
+
+export type ImportWalidDay1Result = {
+  photoUrls: string[];
+  entryIds: string[];
+  jobStatus: string;
+};
+
+/**
+ * Copy compressed Day 1 field photos into data/media and attach JobProgressEntry
+ * rows on job-walid. Idempotent — reuses stable media filenames and progress ids.
+ * Server-only (filesystem).
+ */
+export async function importWalidDay1Progress(
+  data: AppData,
+  opts: { authorId?: string; nowIso?: string; photosDir?: string } = {},
+): Promise<ImportWalidDay1Result> {
+  ensureWalidInCrm(data, { nowIso: opts.nowIso, authorId: opts.authorId });
+
+  const now = opts.nowIso ?? new Date().toISOString();
+  const authorId = opts.authorId ?? "emp-field";
+  const dir = path.resolve(process.cwd(), opts.photosDir ?? WALID_CRM.fieldPhotosDay1Dir);
+  const raw = await readFile(path.join(dir, "manifest.json"), "utf8");
+  const manifest = JSON.parse(raw) as Day1Manifest;
+  const dayLabel = manifest.title ?? "Day 1 — site progress";
+  const dayDate = manifest.date ?? "2026-09-09";
+  const noteLines = manifest.notes?.length
+    ? manifest.notes
+    : [
+        "Day 1 on site at 9 Alicia Scott Ave., Mount Uniacke (SOI Trade / Walid warehouse extension).",
+        "Field photos from the first work day.",
+      ];
+
+  const photoUrls: string[] = [];
+  for (const photo of manifest.photos) {
+    const buf = await readFile(path.join(dir, photo.file));
+    const mediaName = `walid-day1-${photo.file.replace(/\.jpeg$/i, ".jpg")}`;
+    photoUrls.push(await storeNamedMedia(buf, mediaName));
+  }
+
+  // API/UI caps at 6 photos per entry — split Day 1 into two updates.
+  const chunks: Array<{ id: string; urls: string[]; label: string }> = [
+    {
+      id: WALID_CRM.day1ProgressIds[0],
+      urls: photoUrls.slice(0, 6),
+      label: `${dayLabel} (photos 1–${Math.min(6, photoUrls.length)})`,
+    },
+    {
+      id: WALID_CRM.day1ProgressIds[1],
+      urls: photoUrls.slice(6),
+      label: `${dayLabel} (photos 7–${photoUrls.length})`,
+    },
+  ].filter((c) => c.urls.length > 0);
+
+  const entryIds: string[] = [];
+  for (const chunk of chunks) {
+    const entry: JobProgressEntry = {
+      id: chunk.id,
+      jobId: WALID_CRM.jobId,
+      authorId,
+      notes: [`${chunk.label} — ${dayDate}`, ...noteLines].join("\n"),
+      imageDataUrls: chunk.urls,
+      aiSummary: null,
+      createdAt:
+        data.jobProgress.find((p) => p.id === chunk.id)?.createdAt ?? `${dayDate}T18:00:00.000Z`,
+    };
+    const idx = data.jobProgress.findIndex((p) => p.id === chunk.id);
+    if (idx >= 0) data.jobProgress[idx] = entry;
+    else data.jobProgress.unshift(entry);
+    entryIds.push(chunk.id);
+  }
+
+  const job = data.jobs.find((j) => j.id === WALID_CRM.jobId);
+  if (job && job.status !== "completed" && job.status !== "invoiced") {
+    job.status = "in_progress";
+    if (!job.notes.includes("Progress: Day 1")) {
+      job.notes = `${job.notes}\n\nProgress: Day 1 (${dayDate}) — ${photoUrls.length} field photo(s) attached.`.trim();
+    }
+  }
+
+  return {
+    photoUrls,
+    entryIds,
+    jobStatus: job?.status ?? "in_progress",
   };
 }
