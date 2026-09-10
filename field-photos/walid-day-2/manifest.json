@@ -1,0 +1,32 @@
+{
+  "day": 2,
+  "jobId": "job-walid",
+  "date": "2026-09-10",
+  "title": "Day 2 — house wrap / windows",
+  "crew": ["Rylee", "Chris", "Cameron"],
+  "hours": { "start": "10:30", "end": "18:30" },
+  "notes": [
+    "Day 2 on site at 9 Alicia Scott Ave., Mount Uniacke (SOI Trade / Walid warehouse extension).",
+    "Crew: Rylee, Chris & Cameron · 10:30–18:30.",
+    "Back wall complete with NovaWrap / house wrap (Tyvek) except the window on the right side — still needs to be cut out and wrapped.",
+    "Right side elevation about half complete with house wrap.",
+    "Window install underway (Castle Building Centres / Extreme Window unit) with 3M flashing on OSB."
+  ],
+  "photos": [
+    {
+      "file": "01.jpg",
+      "source": "F39900B7-6A9E-4267-9795-B2F17A14208B_L0_001.jpg",
+      "caption": "Right-side window installed — flashing on OSB; wrap cut-in still needed"
+    },
+    {
+      "file": "02.jpg",
+      "source": "F42C9C29-F5C6-4B84-8A53-10765E40DA18_L0_001.jpg",
+      "caption": "Back wall NovaWrap complete; garage openings; upper window in"
+    },
+    {
+      "file": "03.jpg",
+      "source": "5F560B03-D39B-435F-B3C7-BF5841D64851_L0_001.jpg",
+      "caption": "Right elevation half-wrapped; rear window still under wrap to cut/open"
+    }
+  ]
+}
