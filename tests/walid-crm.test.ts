@@ -3,7 +3,8 @@ import { mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
 import { buildSeedData } from "../src/lib/seed";
-import { ensureWalidInCrm, importWalidDay1Progress, WALID_CRM } from "../src/lib/walid-crm";
+import { ensureWalidInCrm, WALID_CRM } from "../src/lib/walid-crm";
+import { importWalidDay1Progress } from "../src/lib/walid-progress";
 
 describe("walid CRM", () => {
   it("seeds the Uniacke warehouse job into production data", () => {

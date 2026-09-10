@@ -518,7 +518,8 @@ async function cmdWalidEnsure() {
 }
 
 async function cmdWalidProgress() {
-  const { ensureWalidInCrm, importWalidDay1Progress, WALID_CRM } = await import("../src/lib/walid-crm");
+  const { ensureWalidInCrm, WALID_CRM } = await import("../src/lib/walid-crm");
+  const { importWalidDay1Progress } = await import("../src/lib/walid-progress");
   let out: Record<string, unknown> = {};
   await updateStoreAsync(async (d) => {
     ensureWalidInCrm(d);
