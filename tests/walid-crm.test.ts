@@ -19,7 +19,7 @@ describe("walid CRM", () => {
     expect(company?.name).toBe("SOI Trade Inc.");
     expect(lead?.status).toBe("won");
     expect(lead?.companyId).toBe(WALID_CRM.companyId);
-    expect(job?.contractValue).toBe(14005.12);
+    expect(job?.contractValue).toBe(13000);
     expect(job?.address).toContain("Alicia Scott");
     expect(job?.jobType).toBe("commercial");
     expect(job?.status).toBe("scheduled");

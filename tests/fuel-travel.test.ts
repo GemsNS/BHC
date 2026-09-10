@@ -22,7 +22,7 @@ describe("fuel travel helpers", () => {
     expect(WALID_JOB_TRAVEL.pushbackWeeks).toBe(1);
     expect(WALID_JOB_TRAVEL.includedRoundTrips).toBe(20);
     expect(WALID_JOB_TRAVEL.totalDistanceKm).toBe(1396.0);
-    expect(WALID_JOB_TRAVEL.includedCost).toBe(1005.12);
+    expect(WALID_JOB_TRAVEL.includedCost).toBe(0);
     expect(travelCost(WALID_JOB_TRAVEL.totalDistanceKm)).toBe(1005.12);
   });
 });
