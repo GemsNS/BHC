@@ -1,6 +1,5 @@
 import { queueWebhook } from "./webhooks";
 import {
-  hasReachableAdContact,
   isJunkAdTitle,
   isRealHttpUrl,
 } from "./outreach-guard";
@@ -253,23 +252,15 @@ export function parseAlertEmail(input: AlertEmailInput): RawAd[] {
     const senderIsPlatform = !input.from || SYSTEM_SENDER_RE.test(input.from);
     const title = cleanTitle(input.subject) || text.slice(0, 80);
     // Skip alert digests with no listing URL (e.g. "Today's search results for exterior")
-    const contactEmail =
-      contacts.email || (senderIsPlatform ? "" : input.from?.match(EMAIL_RE)?.[0] ?? "");
-    const contactPhone = contacts.phone;
-    if (
-      !isJunkAdTitle(title) &&
-      !JUNK_SEARCH_TITLE_RE.test(title) &&
-      hasReachableAdContact({ contactEmail, contactPhone })
-    ) {
-      // Empty URL fallback only when a real person contact is present on the mail.
+    if (!isJunkAdTitle(title) && !JUNK_SEARCH_TITLE_RE.test(title)) {
       ads.push({
         externalId: input.messageId ? `mail:${input.messageId}` : hashText(input.subject + text),
         url: "",
         title,
         body: text.slice(0, 4000),
         postedAt: input.receivedAt ?? null,
-        contactEmail,
-        contactPhone,
+        contactEmail: contacts.email || (senderIsPlatform ? "" : input.from?.match(EMAIL_RE)?.[0] ?? ""),
+        contactPhone: contacts.phone,
         contactName: senderIsPlatform ? "" : input.from?.replace(/<.*>/, "").replace(/["']/g, "").trim() || "",
       });
     }
@@ -319,11 +310,10 @@ export function ingestRawAds(
   const created: AdListing[] = [];
   for (const raw of raws) {
     if (!adMatchesSource(source, raw)) continue;
-    // Discovery / webhook candidates must have a real listing URL (or a real contact).
     // Empty-URL alert digests like "Today's search results for siding" are junk.
+    // Discovery candidates still require a real listing URL.
     const urlOk = isRealHttpUrl(raw.url);
     if ((isJunkAdTitle(raw.title) || JUNK_SEARCH_TITLE_RE.test(raw.title)) && !urlOk) continue;
-    if (!urlOk && !hasReachableAdContact(raw)) continue;
     if (source.id === "adsrc-discovery" && !urlOk) continue;
     const externalId = raw.externalId || (raw.url ? canonicalUrl(raw.url) : hashText(raw.title + raw.body));
     const url = raw.url ? canonicalUrl(raw.url) : "";

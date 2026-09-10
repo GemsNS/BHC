@@ -2,7 +2,6 @@ import { classifyAd, draftReply } from "./ad-classify";
 import { ingestRawAds, parseFeed, type RawAd } from "./ad-ingest";
 import { live } from "./events";
 import {
-  hasReachableAdContact,
   isJunkAdTitle,
   isJunkDigestAd,
   isRealHttpUrl,
@@ -173,11 +172,9 @@ export async function qualifyListing(
     ad.status = "skipped";
     live.ad(
       `Skipped junk listing: ${ad.title.slice(0, 70)}`,
-      isJunkAdTitle(ad.title)
-        ? "search-result digest / no listing URL"
-        : !isRealHttpUrl(ad.url) && !hasReachableAdContact(ad)
-          ? "no listing URL or reachable contact"
-          : "not actionable",
+      isJunkAdTitle(ad.title) || !isRealHttpUrl(ad.url)
+        ? "search-result digest / fabricated contact without listing URL"
+        : "not actionable",
       { adId: ad.id },
       "info",
     );

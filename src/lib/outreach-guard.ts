@@ -94,24 +94,26 @@ export function hasReachableAdContact(input: {
   return phone.replace(/\D/g, "").length >= 10;
 }
 
-/** Alert digests / empty listings that must never become CRM leads. */
+/** Alert digests that must never become CRM leads (search-result subjects / fabricated contacts). */
 export function isJunkDigestAd(ad: {
   title?: string | null;
   url?: string | null;
   contactEmail?: string | null;
   contactPhone?: string | null;
-}): boolean {
+} | null | undefined): boolean {
+  if (!ad) return true;
   const urlOk = isRealHttpUrl(ad.url);
   if (isJunkAdTitle(ad.title) && !urlOk) return true;
-  if (!urlOk && !hasReachableAdContact(ad)) return true;
-  if (
-    !urlOk &&
-    looksFabricatedProspect({
-      email: ad.contactEmail,
-      phone: ad.contactPhone,
-    })
-  ) {
-    return true;
+  // Fabricated demo contacts with no listing URL (keep real emails even if phone is 555 in fixtures)
+  if (!urlOk && !isRealContactEmail(ad.contactEmail)) {
+    if (
+      looksFabricatedProspect({
+        email: ad.contactEmail,
+        phone: ad.contactPhone,
+      })
+    ) {
+      return true;
+    }
   }
   return false;
 }
