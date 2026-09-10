@@ -41,9 +41,10 @@ export const WALID_CRM = {
   doors: 2,
   presentationPath: "/presentations/walid",
   presentationV2Path: "/presentations/walid/v2",
+  presentationV3Path: "/presentations/walid/v3",
   fieldPhotosDay1Dir: "field-photos/walid-day-1",
   contractPackageNote:
-    "Warehouse extension exterior: ~30 squares charcoal/cedar-tone siding, 2 exterior doors, crew fuel/travel (20 RT Dartmouth↔Uniacke). Presentation: /presentations/walid · 3D model: /presentations/walid/v2 · Contract package under presentations/walid/package/03_Contract/.",
+    "Warehouse extension exterior: ~30 squares charcoal/cedar-tone siding, 2 exterior doors, crew fuel/travel (20 RT Dartmouth↔Uniacke). Presentation: /presentations/walid · 3D model (current Oreo v3): /presentations/walid/v3 · prior Oreo v2: /presentations/walid/v2 · Contract package under presentations/walid/package/03_Contract/.",
 } as const;
 
 export type EnsureWalidResult = {
@@ -181,7 +182,7 @@ export function ensureWalidInCrm(
     customerName: WALID_CRM.leadDisplayName,
     contractValue: WALID_CRM.contractValue,
     status: existingContract?.status ?? "active",
-    notes: `Canonical contract MD in presentations/walid/package/03_Contract/. Live presentation ${WALID_CRM.presentationPath} (password-gated).`,
+    notes: `Canonical contract MD in presentations/walid/package/03_Contract/. Live presentation ${WALID_CRM.presentationPath} (password-gated). Public 3D Oreo v3: ${WALID_CRM.presentationV3Path} (prior v2: ${WALID_CRM.presentationV2Path}).`,
     syncedAt: now,
     createdAt: existingContract?.createdAt ?? now,
     updatedAt: now,

@@ -38,6 +38,8 @@
   "exclude": [
     "node_modules",
     "presentations/walid/source/**",
-    "Walid_Private_Web_Presentation/**"
+    "Walid_Private_Web_Presentation/**",
+    "Walid_Two_Tone_Standalone_Model_Oreo/**",
+    "Walid_Two_Tone_Standalone_Model_Oreov3/**"
   ]
 }
