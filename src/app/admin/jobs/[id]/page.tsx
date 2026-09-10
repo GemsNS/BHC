@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { MetricStrip, PageFrame, Panel } from "@/components/cc";
@@ -41,6 +41,8 @@ function JobHubInner() {
   const [tab, setTab] = useState<"overview" | "quote" | "money" | "site" | "docs" | "messages" | "timeline">("overview");
   const [editingQuote, setEditingQuote] = useState<QuoteWithTotals | null>(null);
   const [paying, setPaying] = useState<{ invoiceId: string; amount: number; method: string; note: string } | null>(null);
+  const [uploadKind, setUploadKind] = useState<"contract" | "invoice" | "quote" | "receipt" | "job_report">("contract");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -74,6 +76,18 @@ function JobHubInner() {
   }
 
   const post = <T,>(path: string, body: Record<string, unknown>) => fetchJson<T>(path, { method: "POST", body: JSON.stringify(body) });
+
+  async function uploadJobDocument(file: File) {
+    const form = new FormData();
+    form.set("action", "upload");
+    form.set("jobId", id);
+    form.set("kind", uploadKind);
+    form.set("file", file);
+    const res = await fetch("/api/documents", { method: "POST", body: form, credentials: "include" });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || json.message || "Upload failed");
+    return json.document as { title: string; number: string };
+  }
 
   if (!hub) {
     return (
@@ -154,6 +168,8 @@ function JobHubInner() {
               <div className="flex flex-wrap gap-2 text-xs">
                 <button type="button" className="btn-primary !py-1 !text-xs" disabled={busy !== null} onClick={() => act("newquote", async () => { const r = await post<{ quote: QuoteWithTotals }>("/api/quotes", { action: "create", quote: { jobId: id } }); setTab("quote"); setEditingQuote({ ...r.quote, totals: { subtotal: 0, tax: 0, total: 0, deposit: 0, balance: 0 }, publicUrl: "" }); return `Quote ${r.quote.number} created.`; })}>New quote</button>
                 <button type="button" className="btn-secondary !py-1 !text-xs" disabled={busy !== null} onClick={() => act("contract", async () => { const r = await post<{ document: { number: string }; delivery: { email: string; sms: string } | null }>("/api/documents", { action: "generate", kind: "contract", jobId: id }); return `Contract ${r.document.number} generated${r.delivery?.email === "sent" ? " and emailed" : ""}.`; })}>Generate contract</button>
+                <button type="button" className="btn-secondary !py-1 !text-xs" disabled={busy !== null} onClick={() => { setUploadKind("contract"); setTab("docs"); }}>Upload contract</button>
+                <button type="button" className="btn-secondary !py-1 !text-xs" disabled={busy !== null} onClick={() => { setUploadKind("invoice"); setTab("docs"); }}>Upload invoice</button>
                 <button type="button" className="btn-secondary !py-1 !text-xs" disabled={busy !== null} onClick={() => act("report", async () => { const r = await post<{ document: { number: string }; delivery: { email: string; sms: string } | null }>("/api/documents", { action: "generate", kind: "job_report", jobId: id }); return `Job report ${r.document.number} generated${r.delivery?.email === "sent" ? " and sent" : ""}.`; })}>Generate job report</button>
                 <button type="button" className="btn-secondary !py-1 !text-xs" disabled={busy !== null} onClick={() => act("invoice", async () => { const r = await fetchJson<{ invoice: { id: string } }>("/api/invoices", { method: "POST", body: JSON.stringify({ jobId: id, kind: "invoice", createdById: crewLead?.id ?? "emp-admin", autoLinesFromMaterials: true }) }); await post("/api/documents", { action: "generate", kind: "invoice", invoiceId: r.invoice.id }); setTab("money"); return "Invoice drafted from contract + materials."; })}>Draft final invoice</button>
                 <Link href="/admin/schedule" className="btn-secondary !py-1 !text-xs">Schedule crew</Link>
@@ -299,6 +315,49 @@ function JobHubInner() {
 
       {tab === "docs" ? (
         <Panel title="Documents">
+          <div className="mb-4 flex flex-wrap items-end gap-2 rounded-md border border-white/10 bg-white/5 px-3 py-3 text-sm">
+            <label className="flex flex-col gap-1 text-xs text-[var(--muted)]">
+              Upload type
+              <select
+                className="rounded border border-white/15 bg-transparent px-2 py-1 text-sm text-[var(--ink)]"
+                value={uploadKind}
+                onChange={(e) => setUploadKind(e.target.value as typeof uploadKind)}
+                disabled={busy !== null}
+              >
+                <option value="contract">Contract</option>
+                <option value="invoice">Invoice</option>
+                <option value="quote">Quote</option>
+                <option value="receipt">Receipt</option>
+                <option value="job_report">Job report</option>
+              </select>
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                void act(`upload:${uploadKind}`, async () => {
+                  const doc = await uploadJobDocument(file);
+                  return `Uploaded ${doc.title} (${doc.number}). Logged on job timeline.`;
+                });
+              }}
+            />
+            <button
+              type="button"
+              className="btn-primary !py-1 !text-xs"
+              disabled={busy !== null}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Upload {uploadKind.replace("_", " ")}
+            </button>
+            <p className="basis-full text-xs text-[var(--muted)]">
+              Upload a signed contract or invoice PDF (or image). Generate still works from Quick actions; uploads and deletes are audited on the Timeline tab.
+            </p>
+          </div>
           {documents.length ? (
             <ul className="space-y-2 text-sm">
               {documents.map((d) => (
@@ -310,12 +369,26 @@ function JobHubInner() {
                   <div className="flex gap-2 text-xs">
                     <a href={d.fileUrl} target="_blank" rel="noreferrer" className="linkish">Open PDF</a>
                     <button type="button" className="btn-primary !py-0.5 !text-[11px]" disabled={busy !== null} onClick={() => act(`senddoc:${d.id}`, async () => { const r = await post<{ delivery: { email: string; sms: string; errors: string[] } }>("/api/documents", { action: "send", id: d.id }); return r.delivery.email === "sent" || r.delivery.sms === "sent" ? "Sent to customer." : `Not sent: ${r.delivery.errors.join("; ") || "no contact on file"}`; })}>{d.sentAt ? "Resend" : "Send to customer"}</button>
+                    <button
+                      type="button"
+                      className="btn-secondary !py-0.5 !text-[11px] text-rose-300"
+                      disabled={busy !== null}
+                      onClick={() => {
+                        if (!window.confirm(`Delete “${d.title}”? This removes the file and writes an audit note on the timeline.`)) return;
+                        void act(`deldoc:${d.id}`, async () => {
+                          await post("/api/documents", { action: "delete", id: d.id });
+                          return `Deleted ${d.title}.`;
+                        });
+                      }}
+                    >
+                      Delete
+                    </button>
                   </div>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="cc-empty">No documents yet. Quotes, contracts, invoices, receipts and job reports appear here as PDFs.</p>
+            <p className="cc-empty">No documents yet. Upload a contract/invoice PDF above, or generate from Quick actions.</p>
           )}
         </Panel>
       ) : null}

@@ -1,10 +1,10 @@
 import PDFDocument from "pdfkit";
 import { live } from "./events";
-import { readMedia, storeBuffer } from "./media-store";
+import { deleteMedia, readMedia, storeBuffer } from "./media-store";
 import { nextNumber } from "./numbering";
 import { companyForDocuments, quoteTotals } from "./quotes";
 import { invoiceTotal, money } from "./customer-touches";
-import type { AppData, DocumentKind, InvoiceDoc, Job, JobDocument, Quote } from "./types";
+import type { ActivityType, AppData, CrmActivity, DocumentKind, InvoiceDoc, Job, JobDocument, Quote } from "./types";
 
 /**
  * PDF generation (pdfkit, standard Helvetica — no font files needed) for
@@ -374,6 +374,152 @@ export async function generateDocument(data: AppData, input: GenerateInput, ctx:
     if (q) q.pdfUrl = fileUrl;
   }
   if (data.documents.length > 2000) data.documents.length = 2000;
+  auditDocument(data, {
+    jobId,
+    authorId: ctx.createdById,
+    subject: `Document generated: ${title}`,
+    body: `${input.kind} · ${number} · ${Math.round(buffer.length / 1024)} KB`,
+    nowIso: doc.createdAt,
+    newId: ctx.newId,
+  });
   live.document(`${title} generated`, `${Math.round(buffer.length / 1024)} KB`, { jobId: jobId ?? undefined, leadId: leadId ?? undefined, invoiceId: invoiceId ?? undefined });
   return doc;
+}
+
+
+/* ----------------------------- upload / delete / audit ----------------------------- */
+
+function mediaFileFromUrl(fileUrl: string): string | null {
+  const m = fileUrl.match(/\/api\/media\/([a-z0-9_-]+\.(?:jpg|png|webp|gif|pdf))$/i);
+  return m ? m[1] : null;
+}
+
+function auditDocument(
+  data: AppData,
+  opts: {
+    jobId: string | null;
+    authorId: string;
+    subject: string;
+    body: string;
+    nowIso: string;
+    newId: () => string;
+  },
+) {
+  if (!opts.jobId) return;
+  const activity: CrmActivity = {
+    id: opts.newId(),
+    type: "note" as ActivityType,
+    subject: opts.subject,
+    body: opts.body,
+    relatedType: "job",
+    relatedId: opts.jobId,
+    authorId: opts.authorId,
+    dueAt: null,
+    completedAt: null,
+    createdAt: opts.nowIso,
+  };
+  data.activities.unshift(activity);
+  if (data.activities.length > 2000) data.activities.length = 2000;
+}
+
+export type UploadDocumentInput = {
+  jobId: string;
+  kind: Extract<DocumentKind, "contract" | "invoice" | "quote" | "receipt" | "job_report">;
+  title?: string;
+  buffer: Buffer;
+  fileName: string;
+  mimeType: string;
+  invoiceId?: string | null;
+};
+
+/** Attach an uploaded PDF (or image) to a job as a JobDocument + timeline audit. */
+export async function uploadDocument(
+  data: AppData,
+  input: UploadDocumentInput,
+  ctx: Ctx & { createdById: string },
+): Promise<JobDocument> {
+  const job = data.jobs.find((j) => j.id === input.jobId);
+  if (!job) throw new Error("Job not found");
+
+  const mime = (input.mimeType || "").toLowerCase();
+  let ext: "pdf" | "jpg" | "png" | "webp";
+  if (mime.includes("pdf") || input.fileName.toLowerCase().endsWith(".pdf")) ext = "pdf";
+  else if (mime.includes("png") || input.fileName.toLowerCase().endsWith(".png")) ext = "png";
+  else if (mime.includes("webp") || input.fileName.toLowerCase().endsWith(".webp")) ext = "webp";
+  else if (mime.includes("jpeg") || mime.includes("jpg") || /\.jpe?g$/i.test(input.fileName)) ext = "jpg";
+  else throw new Error("Only PDF or image uploads are supported for job documents.");
+
+  if (input.buffer.length > 12 * 1024 * 1024) {
+    throw new Error("File exceeds 12 MB limit.");
+  }
+
+  const number = nextNumber(data, input.kind === "job_report" ? "report" : input.kind);
+  const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 80) || `upload.${ext}`;
+  const title =
+    input.title?.trim() ||
+    `Uploaded ${input.kind.replace("_", " ")} — ${safeName}`;
+
+  const fileUrl = await storeBuffer(input.buffer, ext, `upload-${input.kind}`);
+  const doc: JobDocument = {
+    id: ctx.newId(),
+    kind: input.kind,
+    title,
+    number,
+    jobId: job.id,
+    leadId: job.leadId,
+    quoteId: null,
+    invoiceId: input.invoiceId ?? null,
+    fileUrl,
+    bytes: input.buffer.length,
+    sentAt: null,
+    sentTo: null,
+    sentVia: null,
+    createdById: ctx.createdById,
+    createdAt: ctx.nowIso(),
+  };
+  data.documents.unshift(doc);
+  if (data.documents.length > 2000) data.documents.length = 2000;
+
+  auditDocument(data, {
+    jobId: job.id,
+    authorId: ctx.createdById,
+    subject: `Document uploaded: ${title}`,
+    body: `${input.kind} · ${safeName} · ${Math.round(input.buffer.length / 1024)} KB · ${fileUrl}`,
+    nowIso: doc.createdAt,
+    newId: ctx.newId,
+  });
+  live.document(`${title} uploaded`, `${Math.round(input.buffer.length / 1024)} KB`, {
+    jobId: job.id,
+    leadId: job.leadId ?? undefined,
+    invoiceId: input.invoiceId ?? undefined,
+  });
+  return doc;
+}
+
+/** Remove a job document, delete media when possible, and write a timeline audit. */
+export async function deleteDocument(
+  data: AppData,
+  documentId: string,
+  ctx: Ctx & { createdById: string },
+): Promise<{ deleted: JobDocument }> {
+  const idx = data.documents.findIndex((d) => d.id === documentId);
+  if (idx < 0) throw new Error("Document not found");
+  const [doc] = data.documents.splice(idx, 1);
+  const file = mediaFileFromUrl(doc.fileUrl);
+  if (file) await deleteMedia(file);
+
+  auditDocument(data, {
+    jobId: doc.jobId,
+    authorId: ctx.createdById,
+    subject: `Document deleted: ${doc.title}`,
+    body: `${doc.kind} · ${doc.number} · removed by staff`,
+    nowIso: ctx.nowIso(),
+    newId: ctx.newId,
+  });
+  live.document(`${doc.title} deleted`, doc.number, {
+    jobId: doc.jobId ?? undefined,
+    leadId: doc.leadId ?? undefined,
+    invoiceId: doc.invoiceId ?? undefined,
+  });
+  return { deleted: doc };
 }
