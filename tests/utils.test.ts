@@ -27,8 +27,9 @@ describe("production seed data", () => {
   it("includes HRM production starter collections", () => {
     const seed = buildSeedData();
     expect(seed.employees.length).toBe(7);
-    expect(seed.leads.length).toBe(0);
-    expect(seed.jobs.length).toBe(0);
+    expect(seed.leads.map((l) => l.id)).toEqual(["lead-walid"]);
+    expect(seed.jobs.map((j) => j.id)).toEqual(["job-walid"]);
+    expect(seed.companies.some((c) => c.id === "co-soi-trade")).toBe(true);
     expect(seed.zones.length).toBeGreaterThan(0);
     expect(seed.assistantMemory.length).toBeGreaterThan(0);
     expect(seed.assistantProfiles[0]?.regions).toContain("Halifax");

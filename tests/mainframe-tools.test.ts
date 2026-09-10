@@ -36,9 +36,11 @@ describe("mainframe tools", () => {
 
   it("syncs snow contract into CRM", () => {
     const data = buildSeedData();
+    const contractsBefore = data.contracts.length;
     const result = executeMainframeTool(data, "sync_contract", { slug: "snow" }, ctx);
     expect(result.ok).toBe(true);
-    expect(data.contracts.length).toBe(1);
+    expect(data.contracts.length).toBe(contractsBefore + 1);
+    expect(data.contracts.some((c) => c.slug === "snow")).toBe(true);
     expect(data.jobs.length).toBeGreaterThan(0);
   });
 
