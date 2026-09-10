@@ -4,7 +4,11 @@ import { tmpdir } from "os";
 import path from "path";
 import { buildSeedData } from "../src/lib/seed";
 import { ensureWalidInCrm, WALID_CRM } from "../src/lib/walid-crm";
-import { importWalidDay1Progress } from "../src/lib/walid-progress";
+import {
+  importWalidCrewHours,
+  importWalidDay1Progress,
+  importWalidDay2Progress,
+} from "../src/lib/walid-progress";
 
 describe("walid CRM", () => {
   it("seeds the Uniacke warehouse job into production data", () => {
@@ -59,6 +63,63 @@ describe("walid CRM", () => {
       );
       await importWalidDay1Progress(data);
       expect(data.jobProgress.filter((p) => p.jobId === WALID_CRM.jobId)).toHaveLength(2);
+    } finally {
+      delete process.env.MEDIA_DIR;
+      rmSync(media, { recursive: true, force: true });
+    }
+  });
+
+  it("imports Day 2 house-wrap photos and Day 1+2 crew hours", async () => {
+    const media = mkdtempSync(path.join(tmpdir(), "bhc-media-"));
+    process.env.MEDIA_DIR = media;
+    try {
+      const data = buildSeedData();
+      const day2Import = await importWalidDay2Progress(data, { authorId: "emp-cameron-field" });
+      expect(day2Import.photoUrls).toHaveLength(3);
+      expect(day2Import.entryIds).toEqual(["prog-walid-day2"]);
+      expect(data.jobProgress.some((p) => p.id === "prog-walid-day2")).toBe(true);
+      expect(data.jobs.find((j) => j.id === WALID_CRM.jobId)?.notes).toMatch(/Day 2/);
+      expect(data.jobs.find((j) => j.id === WALID_CRM.jobId)?.notes).toMatch(/half/i);
+
+      const hours = importWalidCrewHours(data);
+      expect(hours.employeeIds.sort()).toEqual(
+        ["emp-cameron-field", "emp-chris", "emp-rylee"].sort(),
+      );
+      expect(hours.timeEntryIds).toHaveLength(5); // Day1×2 + Day2×3
+      expect(hours.hoursPerShift).toBe(8);
+      expect(data.employees.filter((e) => hours.employeeIds.includes(e.id))).toHaveLength(3);
+      const jobEntries = data.timeEntries.filter((t) => t.jobId === WALID_CRM.jobId);
+      expect(jobEntries).toHaveLength(5);
+      const day1Entries = jobEntries.filter((t) => t.id.includes("-day1-"));
+      const day2Entries = jobEntries.filter((t) => t.id.includes("-day2-"));
+      expect(day1Entries).toHaveLength(2);
+      expect(day2Entries).toHaveLength(3);
+      expect(
+        day1Entries.every((t) => t.clockIn.includes("T08:00") && t.clockOut?.includes("T14:00")),
+      ).toBe(true);
+      expect(
+        day2Entries.every((t) => t.clockIn.includes("T10:30") && t.clockOut?.includes("T18:30")),
+      ).toBe(true);
+      expect(day1Entries.map((t) => t.employeeId).sort()).toEqual(["emp-cameron-field", "emp-chris"]);
+      expect(data.timeEntries.some((t) => t.id === "time-walid-day1-rylee")).toBe(false);
+      expect(data.jobs.find((j) => j.id === WALID_CRM.jobId)?.notes).toMatch(
+        /Crew hours: Day 1 .*Christopher & Cameron 08:00–14:00/,
+      );
+
+      // Idempotent — also clears a stale Day 1 Rylee row if reintroduced
+      data.timeEntries.unshift({
+        id: "time-walid-day1-rylee",
+        employeeId: "emp-rylee",
+        clockIn: "2026-09-09T10:30:00.000-03:00",
+        clockOut: "2026-09-09T18:30:00.000-03:00",
+        jobId: WALID_CRM.jobId,
+        notes: "stale",
+      });
+      importWalidCrewHours(data);
+      await importWalidDay2Progress(data);
+      expect(data.timeEntries.filter((t) => t.jobId === WALID_CRM.jobId)).toHaveLength(5);
+      expect(data.timeEntries.some((t) => t.id === "time-walid-day1-rylee")).toBe(false);
+      expect(data.jobProgress.filter((p) => p.id === "prog-walid-day2")).toHaveLength(1);
     } finally {
       delete process.env.MEDIA_DIR;
       rmSync(media, { recursive: true, force: true });

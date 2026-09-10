@@ -98,8 +98,10 @@ Commands:
 
   walid ensure                  Upsert SOI Trade / Walid Uniacke job into CRM
                                 (company, won lead, job, deal, contract)
-  walid progress                Import Day 1 field photos onto job-walid
-                                (from field-photos/walid-day-1/)
+  walid progress                Import Day 1+2 photos + crew hours onto job-walid
+                                (field-photos/walid-day-1/ and walid-day-2/)
+  walid hours                   Record crew shifts on job-walid
+                                (Day1 Christopher+Cameron 8–2; Day2 Rylee+Christopher+Cameron 10:30–18:30)
 
   auth reset <login>            Clear password → PIN 0000; must set password next login
   auth set-password <login> --password <pw>
@@ -519,18 +521,46 @@ async function cmdWalidEnsure() {
 
 async function cmdWalidProgress() {
   const { ensureWalidInCrm, WALID_CRM } = await import("../src/lib/walid-crm");
-  const { importWalidDay1Progress } = await import("../src/lib/walid-progress");
+  const { importWalidDay1Progress, importWalidDay2Progress, importWalidCrewHours } =
+    await import("../src/lib/walid-progress");
   let out: Record<string, unknown> = {};
   await updateStoreAsync(async (d) => {
     ensureWalidInCrm(d);
-    const imported = await importWalidDay1Progress(d, { authorId: "emp-field" });
+    const day1 = await importWalidDay1Progress(d, { authorId: "emp-field" });
+    const day2 = await importWalidDay2Progress(d, { authorId: "emp-cameron-field" });
+    const hours = importWalidCrewHours(d);
     const job = d.jobs.find((j) => j.id === WALID_CRM.jobId);
     out = {
       jobId: WALID_CRM.jobId,
       status: job?.status,
-      photos: imported.photoUrls.length,
-      progressEntries: imported.entryIds,
-      media: imported.photoUrls,
+      day1: { photos: day1.photoUrls.length, progressEntries: day1.entryIds },
+      day2: { photos: day2.photoUrls.length, progressEntries: day2.entryIds },
+      hours: {
+        employees: hours.employeeIds,
+        timeEntries: hours.timeEntryIds,
+        days: hours.days,
+        hoursPerShift: hours.hoursPerShift,
+      },
+      notesPreview: job?.notes?.slice(-500),
+    };
+  });
+  console.log(JSON.stringify(out, null, 2));
+}
+
+async function cmdWalidHours() {
+  const { ensureWalidInCrm, WALID_CRM } = await import("../src/lib/walid-crm");
+  const { importWalidCrewHours } = await import("../src/lib/walid-progress");
+  let out: Record<string, unknown> = {};
+  await updateStoreAsync(async (d) => {
+    ensureWalidInCrm(d);
+    const hours = importWalidCrewHours(d);
+    const job = d.jobs.find((j) => j.id === WALID_CRM.jobId);
+    const entries = d.timeEntries.filter((t) => t.jobId === WALID_CRM.jobId);
+    out = {
+      jobId: WALID_CRM.jobId,
+      ...hours,
+      timeEntriesOnJob: entries.length,
+      jobNotesTail: job?.notes?.slice(-400),
     };
   });
   console.log(JSON.stringify(out, null, 2));
@@ -698,7 +728,8 @@ async function main() {
   if (cmd === "walid") {
     if (sub === "ensure") return cmdWalidEnsure();
     if (sub === "progress") return cmdWalidProgress();
-    console.error(`Unknown walid subcommand: ${sub ?? "(none)"} — try: walid ensure | walid progress`);
+    if (sub === "hours") return cmdWalidHours();
+    console.error(`Unknown walid subcommand: ${sub ?? "(none)"} — try: walid ensure | walid progress | walid hours`);
     process.exit(1);
   }
 

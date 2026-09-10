@@ -29,6 +29,23 @@ export const WALID_CRM = {
   contractSlug: "walid",
   activityId: "act-walid-seed",
   day1ProgressIds: ["prog-walid-day1-a", "prog-walid-day1-b"] as const,
+  day2ProgressIds: ["prog-walid-day2"] as const,
+  day1Date: "2026-09-09",
+  day2Date: "2026-09-10",
+  /** Day 1 on-site shift (Atlantic) — Christopher & Cameron only. */
+  day1ShiftStart: "08:00",
+  day1ShiftEnd: "14:00",
+  /** Day 2 on-site shift (Atlantic) — Rylee, Christopher & Cameron. */
+  day2ShiftStart: "10:30",
+  day2ShiftEnd: "18:30",
+  crew: [
+    { id: "emp-rylee", name: "Rylee", login: "rylee" },
+    { id: "emp-chris", name: "Christopher", login: "chris" },
+    { id: "emp-cameron-field", name: "Cameron", login: "cameron" },
+  ] as const,
+  /** Who worked which day (employee ids from `crew`). */
+  day1CrewIds: ["emp-chris", "emp-cameron-field"] as const,
+  day2CrewIds: ["emp-rylee", "emp-chris", "emp-cameron-field"] as const,
   customerLegalName: "SOI Trade Inc.",
   attention: "Walid Sallam",
   leadDisplayName: "Walid Sallam — SOI Trade Inc.",
@@ -43,6 +60,7 @@ export const WALID_CRM = {
   presentationV2Path: "/presentations/walid/v2",
   presentationV3Path: "/presentations/walid/v3",
   fieldPhotosDay1Dir: "field-photos/walid-day-1",
+  fieldPhotosDay2Dir: "field-photos/walid-day-2",
   contractPackageNote:
     "Warehouse extension exterior: ~30 squares charcoal/cedar-tone siding, 2 exterior doors, crew fuel/travel (20 RT Dartmouth↔Uniacke). Presentation: /presentations/walid · 3D model (current Oreo v3): /presentations/walid/v3 · prior Oreo v2: /presentations/walid/v2 · Contract package under presentations/walid/package/03_Contract/.",
 } as const;
