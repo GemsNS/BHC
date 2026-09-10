@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readdir, readFile, stat, unlink, utimes } from "fs/promises";
+import { access, constants, copyFile, mkdir, readdir, readFile, stat, unlink, utimes, writeFile } from "fs/promises";
 import path from "path";
 import { normalizeStore } from "./normalize";
 import { storePaths, writeStore } from "./store";
@@ -39,6 +39,13 @@ function stampForFile(d = new Date()): string {
   return d.toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, 19);
 }
 
+function eaccesHint(dir: string, err: unknown): Error {
+  const msg = err instanceof Error ? err.message : String(err);
+  return new Error(
+    `${msg} — ensure ${dir} is writable by the app user (production: chown -R bhc:bhc /opt/bhc/data). Deploy as root must not leave root-owned backups.`,
+  );
+}
+
 export async function listBackups(dataDir?: string): Promise<BackupInfo[]> {
   const dir = backupDir(dataDir);
   try {
@@ -68,7 +75,16 @@ export async function createBackup(opts: BackupOptions = {}): Promise<BackupInfo
   const { dataDir, storePath, backend } = storePaths();
   const src = opts.storePath ?? storePath;
   const dir = backupDir(opts.dataDir ?? dataDir);
-  await mkdir(dir, { recursive: true });
+  try {
+    await mkdir(dir, { recursive: true });
+  } catch (err) {
+    throw eaccesHint(dir, err);
+  }
+  try {
+    await access(dir, constants.W_OK);
+  } catch (err) {
+    throw eaccesHint(dir, err);
+  }
   const now = new Date();
   const name = `${opts.label ?? "store"}-${stampForFile(now)}.json`;
   const dest = path.join(dir, name);
@@ -76,15 +92,28 @@ export async function createBackup(opts: BackupOptions = {}): Promise<BackupInfo
     // SQLite mode: snapshots are still plain JSON so they restore anywhere
     const { readStore } = await import("./store");
     const data = await readStore();
-    const { writeFile } = await import("fs/promises");
-    await writeFile(dest, JSON.stringify(data), "utf8");
+    try {
+      await writeFile(dest, JSON.stringify(data), "utf8");
+    } catch (err) {
+      throw eaccesHint(dir, err);
+    }
   } else {
     try {
       await stat(src);
     } catch {
       return null; // nothing to back up yet
     }
-    await copyFile(src, dest);
+    try {
+      await copyFile(src, dest);
+    } catch (err) {
+      // Fallback: read + write (same permission requirement, clearer errors)
+      try {
+        const raw = await readFile(src);
+        await writeFile(dest, raw);
+      } catch (err2) {
+        throw eaccesHint(dir, err2 ?? err);
+      }
+    }
   }
   // copyFile may preserve the source mtime on some platforms — stamp the snapshot time explicitly
   await utimes(dest, now, now).catch(() => undefined);

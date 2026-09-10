@@ -1,4 +1,8 @@
 import { queueWebhook } from "./webhooks";
+import {
+  isJunkAdTitle,
+  isRealHttpUrl,
+} from "./outreach-guard";
 import type { AdListing, AdSource, AppData } from "./types";
 
 /**
@@ -246,19 +250,26 @@ export function parseAlertEmail(input: AlertEmailInput): RawAd[] {
     const contacts = extractContacts(`${input.subject}\n${text}`);
     // Only trust the sender as the contact when it is a person, not a platform / no-reply address
     const senderIsPlatform = !input.from || SYSTEM_SENDER_RE.test(input.from);
-    ads.push({
-      externalId: input.messageId ? `mail:${input.messageId}` : hashText(input.subject + text),
-      url: "",
-      title: cleanTitle(input.subject) || text.slice(0, 80),
-      body: text.slice(0, 4000),
-      postedAt: input.receivedAt ?? null,
-      contactEmail: contacts.email || (senderIsPlatform ? "" : input.from?.match(EMAIL_RE)?.[0] ?? ""),
-      contactPhone: contacts.phone,
-      contactName: senderIsPlatform ? "" : input.from?.replace(/<.*>/, "").replace(/["']/g, "").trim() || "",
-    });
+    const title = cleanTitle(input.subject) || text.slice(0, 80);
+    // Skip alert digests with no listing URL (e.g. "Today's search results for exterior")
+    if (!isJunkAdTitle(title) && !JUNK_SEARCH_TITLE_RE.test(title)) {
+      ads.push({
+        externalId: input.messageId ? `mail:${input.messageId}` : hashText(input.subject + text),
+        url: "",
+        title,
+        body: text.slice(0, 4000),
+        postedAt: input.receivedAt ?? null,
+        contactEmail: contacts.email || (senderIsPlatform ? "" : input.from?.match(EMAIL_RE)?.[0] ?? ""),
+        contactPhone: contacts.phone,
+        contactName: senderIsPlatform ? "" : input.from?.replace(/<.*>/, "").replace(/["']/g, "").trim() || "",
+      });
+    }
   }
   return ads;
 }
+
+const JUNK_SEARCH_TITLE_RE =
+  /today[\u2019']?s search results for|search results for|google alert|new results for your|saved search|kijiji alerts?:?\s*$|new matches for/i;
 
 const SYSTEM_SENDER_RE =
   /kijiji|craigslist|facebook|homestars|nextdoor|no-?reply|donotreply|notifications?@|alerts?@|mailer|postmaster|newsletter/i;
@@ -299,6 +310,11 @@ export function ingestRawAds(
   const created: AdListing[] = [];
   for (const raw of raws) {
     if (!adMatchesSource(source, raw)) continue;
+    // Empty-URL alert digests like "Today's search results for siding" are junk.
+    // Discovery candidates still require a real listing URL.
+    const urlOk = isRealHttpUrl(raw.url);
+    if ((isJunkAdTitle(raw.title) || JUNK_SEARCH_TITLE_RE.test(raw.title)) && !urlOk) continue;
+    if (source.id === "adsrc-discovery" && !urlOk) continue;
     const externalId = raw.externalId || (raw.url ? canonicalUrl(raw.url) : hashText(raw.title + raw.body));
     const url = raw.url ? canonicalUrl(raw.url) : "";
     if (known.has(externalId) || (url && known.has(url))) continue;
@@ -378,6 +394,54 @@ export function ensureBuiltinSource(
       id: type === "webhook" ? "adsrc-webhook" : "adsrc-manual",
       name: type === "webhook" ? "Inbound webhook" : "Manual paste",
       type,
+    },
+    ctx,
+  );
+  data.adSources.push(src);
+  return src;
+}
+
+/**
+ * Ensure an enabled IMAP ad source exists so Kijiji / Craigslist / Facebook
+ * alert emails are polled by ad_ingest. Does not import imapflow — only
+ * checks whether ADS_IMAP_* or SMTP_* credentials are present.
+ */
+export function ensureImapAdSource(
+  data: AppData,
+  ctx: IngestContext,
+): AdSource | null {
+  const disabled = (typeof process !== "undefined" ? process.env?.ADS_IMAP_ENABLED ?? "1" : "1")
+    .trim()
+    .toLowerCase();
+  if (disabled === "0" || disabled === "false" || disabled === "off") return null;
+
+  const user =
+    (typeof process !== "undefined"
+      ? process.env?.ADS_IMAP_USER?.trim() || process.env?.SMTP_USER?.trim()
+      : "") || "";
+  const pass =
+    (typeof process !== "undefined"
+      ? process.env?.ADS_IMAP_PASS?.trim() || process.env?.SMTP_PASS?.trim()
+      : "") || "";
+  const host =
+    (typeof process !== "undefined"
+      ? process.env?.ADS_IMAP_HOST?.trim() || process.env?.SMTP_HOST?.trim()
+      : "") || "";
+  if (!user || !pass || !host) return null;
+
+  const existing = data.adSources.find((s) => s.type === "imap" || s.id === "adsrc-imap");
+  if (existing) {
+    if (!existing.enabled) existing.enabled = true;
+    return existing;
+  }
+  const src = newAdSource(
+    {
+      id: "adsrc-imap",
+      name: "Mailbox alerts (Kijiji / Craigslist / Facebook)",
+      type: "imap",
+      enabled: true,
+      keywords: ["siding", "deck", "soffit", "fascia", "window", "door", "exterior"],
+      region: "Halifax Regional Municipality",
     },
     ctx,
   );

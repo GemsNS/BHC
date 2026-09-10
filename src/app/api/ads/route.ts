@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { imapConfigured, imapSummary, pollImapInbox } from "@/lib/ad-imap";
-import { ensureBuiltinSource, ingestRawAds, newAdSource, parseFeed } from "@/lib/ad-ingest";
+import { ensureBuiltinSource, ensureImapAdSource, ingestRawAds, newAdSource, parseFeed } from "@/lib/ad-ingest";
 import { adMinScore, qualifyListing, runAdIngest } from "@/lib/ad-pipeline";
 import { classifyAd, companyProfile, draftReply } from "@/lib/ad-classify";
 import { getAIStatus } from "@/lib/ai-provider";
 import { requireApiEmployee } from "@/lib/api-auth";
 import { mailConfigStatus, sendEmail } from "@/lib/mail";
 import { markAdReplied, processOutreachQueue, sendPolicy } from "@/lib/outreach-send";
-import { serverSenders } from "@/lib/scheduler";
+import { serverSenders } from "@/lib/server-senders";
 import { sendSms, smsConfigStatus } from "@/lib/sms";
 import { newId, nowIso, readStore, updateStore, updateStoreAsync } from "@/lib/store";
 import type { AdListing, OutreachQueueItem } from "@/lib/types";
@@ -43,6 +43,11 @@ function setupStatus() {
 export async function GET(request: Request) {
   const employee = await requireApiEmployee(request);
   if (employee instanceof NextResponse) return employee;
+  if (imapConfigured()) {
+    await updateStore((d) => {
+      ensureImapAdSource(d, { newId, nowIso });
+    });
+  }
   const data = await readStore();
   const listings = [...data.adListings].sort((a, b) => b.fetchedAt.localeCompare(a.fetchedAt)).slice(0, 300);
   const adIds = new Set(listings.map((l) => l.id));

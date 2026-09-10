@@ -1,4 +1,9 @@
 import type { AppData } from "./types";
+import {
+  isJunkDigestAd,
+  isSyntheticLead,
+  looksFabricatedProspect,
+} from "./outreach-guard";
 
 /**
  * Pure integrity report for an `AppData` document. Works on the server
@@ -168,6 +173,44 @@ export function storeHealth(data: AppData): StoreHealthReport {
       code: "duplicate_logins",
       message: `${dupes} login name(s) are used by more than one employee.`,
       count: dupes,
+    });
+  }
+
+  const syntheticOutreach = data.outreachQueue.filter(
+    (o) =>
+      o.status !== "cancelled" &&
+      o.status !== "sent" &&
+      (o.id.startsWith("out-region-") ||
+        looksFabricatedProspect({
+          name: o.prospectName,
+          email: o.prospectEmail,
+          phone: o.prospectPhone,
+        })),
+  ).length;
+  if (syntheticOutreach) {
+    issues.push({
+      level: "warn",
+      code: "synthetic_outreach",
+      message: `${syntheticOutreach} outreach draft(s) look fabricated (hardcoded/demo contacts). Run purge_synthetic_outreach or: npm run bhc -- ads purge-fake`,
+      count: syntheticOutreach,
+    });
+  }
+  const junkAds = data.adListings.filter((a) => isJunkDigestAd(a)).length;
+  if (junkAds) {
+    issues.push({
+      level: "warn",
+      code: "junk_ad_listings",
+      message: `${junkAds} ad listing(s) look like search-result digests with no listing URL. Run: npm run bhc -- ads purge-fake`,
+      count: junkAds,
+    });
+  }
+  const syntheticLeads = data.leads.filter((l) => isSyntheticLead(l)).length;
+  if (syntheticLeads) {
+    issues.push({
+      level: "warn",
+      code: "synthetic_leads",
+      message: `${syntheticLeads} CRM lead(s) look fabricated or were created from junk ads. Run: npm run bhc -- ads purge-fake`,
+      count: syntheticLeads,
     });
   }
 

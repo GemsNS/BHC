@@ -130,12 +130,20 @@ export async function runAutomationTick(
           nowIso: opts.nowIso,
           now: started,
         });
+        const { purgeSyntheticOutreachAndAds } = await import("./outreach-guard");
+        const purged = purgeSyntheticOutreachAndAds(data);
         auto.lastRunAt = startedIso;
         counters.automationsRun += 1;
         counters.tasksCreated += 0;
-        results.push(`[${auto.name}] ${r.summary}`);
+        const purgeNote =
+          purged.removedAds || purged.removedLeads || purged.cancelledOutreach
+            ? ` · purged ${purged.removedAds} junk ad(s), ${purged.removedLeads} fake lead(s), ${purged.cancelledOutreach} draft(s)`
+            : "";
+        results.push(`[${auto.name}] ${r.summary}${purgeNote}`);
         for (const e of r.errors) errors.push(`${auto.name}: ${e}`);
-        if (r.created || r.qualified) audit(data, "ad_ingest", r.summary, opts.newId);
+        if (r.created || r.qualified || purged.removedAds || purged.removedLeads) {
+          audit(data, "ad_ingest", `${r.summary}${purgeNote}`, opts.newId);
+        }
         continue;
       }
 

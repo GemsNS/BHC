@@ -2,6 +2,7 @@ import { ensureBuiltinSource, ingestRawAds, type RawAd } from "./ad-ingest";
 import { qualifyListing } from "./ad-pipeline";
 import { getAnthropicModel } from "./ai-provider";
 import { live } from "./events";
+import { isJunkAdTitle, isRealContactEmail, isRealHttpUrl } from "./outreach-guard";
 import type { AdSource, AppData } from "./types";
 
 /**
@@ -24,11 +25,23 @@ export function discoveryConfigured(): boolean {
 }
 
 const DEFAULT_QUERIES = [
-  "looking for siding contractor Halifax",
+  "site:kijiji.ca looking for siding OR deck OR soffit Halifax OR Dartmouth",
+  "site:craigslist.org Halifax siding OR deck contractor wanted",
+  "site:facebook.com/marketplace Halifax siding OR deck OR windows",
+  "looking for siding contractor Halifax Kijiji OR Craigslist OR Marketplace",
   "need deck built quote Dartmouth OR Bedford OR Sackville",
   "recommend exterior contractor HRM Nova Scotia",
   "window replacement quotes Halifax homeowner",
   "soffit fascia repair needed Halifax",
+];
+
+const DEFAULT_ALLOWED_DOMAINS = [
+  "kijiji.ca",
+  "craigslist.org",
+  "facebook.com",
+  "homestars.com",
+  "reddit.com",
+  "nextdoor.com",
 ];
 
 type Candidate = {
@@ -65,16 +78,22 @@ export async function discoverLeadsOnline(
   const maxSearches = Math.max(1, Number(process.env.DISCOVERY_MAX_SEARCHES ?? "8") || 8);
   const extra = (process.env.DISCOVERY_QUERIES ?? "").split("|").map((s) => s.trim()).filter(Boolean);
   const queries = [...DEFAULT_QUERIES, ...extra];
-  const allowed = (process.env.DISCOVERY_ALLOWED_DOMAINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const allowedRaw = (process.env.DISCOVERY_ALLOWED_DOMAINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const allowed = allowedRaw.length ? allowedRaw : DEFAULT_ALLOWED_DOMAINS;
   const model = process.env.DISCOVERY_MODEL?.trim() || getAnthropicModel();
   const known = new Set(data.adListings.map((a) => a.url).filter(Boolean));
 
-  live.discovery("Scanning the web for new job requests", `${region} · up to ${maxSearches} searches · ${model}`);
+  live.discovery("Scanning Kijiji / Craigslist / Facebook for job requests", `${region} · up to ${maxSearches} searches · ${model}`);
 
-  const tool: Record<string, unknown> = { type: "web_search_20260209", name: "web_search", max_uses: maxSearches, user_location: { type: "approximate", city: "Halifax", region: "Nova Scotia", country: "CA", timezone: "America/Halifax" } };
-  if (allowed.length) tool.allowed_domains = allowed;
+  const tool: Record<string, unknown> = {
+    type: "web_search_20260209",
+    name: "web_search",
+    max_uses: maxSearches,
+    user_location: { type: "approximate", city: "Halifax", region: "Nova Scotia", country: "CA", timezone: "America/Halifax" },
+    allowed_domains: allowed,
+  };
 
-  const system = `You find people who are ASKING for exterior contracting work (siding, soffit/fascia, decks, windows & doors, exterior trim, building envelope) in ${region}, posted in the last 14 days on classifieds, community boards, forums, Facebook groups, Reddit, Nextdoor, HomeStars-style request boards, or local news/social posts. Ignore contractors advertising services, job postings for employees, and anything outside the region. Search several of these angles: ${queries.join("; ")}. Then respond with ONLY a JSON array (no prose) of up to 15 objects: {"title": string, "url": string, "snippet": "what they want, in one or two sentences", "location": "town", "postedAt": "ISO date or empty", "contactEmail": "", "contactPhone": "", "confidence": 0-100}. Skip URLs you have seen before: ${[...known].slice(-40).join(", ") || "none"}.`;
+  const system = `You find people who are ASKING for exterior contracting work (siding, soffit/fascia, decks, windows & doors, exterior trim, building envelope) in ${region}, posted in the last 14 days on classifieds, community boards, forums, Facebook groups, Reddit, Nextdoor, HomeStars-style request boards, or local news/social posts. Ignore contractors advertising services, job postings for employees, and anything outside the region. Search several of these angles: ${queries.join("; ")}. Then respond with ONLY a JSON array (no prose) of up to 15 objects: {"title": string, "url": "https://… REQUIRED live listing URL", "snippet": "what they want, in one or two sentences", "location": "town", "postedAt": "ISO date or empty", "contactEmail": "only if visible on the page — otherwise empty", "contactPhone": "only if visible — otherwise empty", "confidence": 0-100}. NEVER invent emails, phones, or URLs. Skip Google/Bing search-result pages and "Today's search results" titles. Skip URLs you have seen before: ${[...known].slice(-40).join(", ") || "none"}.`;
 
   const errors: string[] = [];
   let text = "";
@@ -105,7 +124,25 @@ export async function discoverLeadsOnline(
     return { summary: `Lead discovery: failed — ${msg}`, created: 0, qualified: 0, errors };
   }
 
-  const candidates = extractJsonArray(text).filter((c) => (c.confidence ?? 50) >= 40);
+  const candidates = extractJsonArray(text)
+    .filter((c) => (c.confidence ?? 50) >= 40)
+    .filter((c) => isRealHttpUrl(c.url))
+    .filter((c) => !isJunkAdTitle(c.title))
+    .map((c) => ({
+      ...c,
+      // Never trust model-invented contacts unless they look like real emails;
+      // prefer empty and let the listing page / alert supply contact later.
+      contactEmail: isRealContactEmail(c.contactEmail) ? c.contactEmail!.trim() : "",
+      contactPhone: c.contactPhone?.trim() || "",
+    }));
+  const rejected = extractJsonArray(text).length - candidates.length;
+  if (rejected > 0) {
+    live.discovery(
+      `Dropped ${rejected} discovery candidate(s) without a real https URL or with junk titles`,
+      undefined,
+      "warn",
+    );
+  }
   const source: AdSource = ensureBuiltinSource(data, "webhook", ctx);
   let discoverySource = data.adSources.find((s) => s.id === "adsrc-discovery");
   if (!discoverySource) {
