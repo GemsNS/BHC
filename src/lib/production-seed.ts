@@ -15,6 +15,7 @@ import type {
   WorkflowDefinition,
 } from "./types";
 import { DEFAULT_KNOCK_COLORS } from "./knocker/colors";
+import { ensureWalidInCrm } from "./walid-crm";
 
 export const HRM_LAT = 44.6488;
 export const HRM_LON = -63.5752;
@@ -122,7 +123,7 @@ export function buildProductionSeed(): AppData {
     },
   ];
 
-  return {
+  const data: AppData = {
     employees,
     leads: [],
     jobs: [],
@@ -230,4 +231,7 @@ export function buildProductionSeed(): AppData {
     messages: [],
     passwordResetTokens: [],
   };
+
+  ensureWalidInCrm(data, { nowIso: now, authorId: "emp-admin" });
+  return data;
 }

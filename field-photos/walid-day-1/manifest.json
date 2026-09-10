@@ -1,0 +1,22 @@
+{
+  "day": 1,
+  "jobId": "job-walid",
+  "date": "2026-09-09",
+  "title": "Day 1 — site progress",
+  "notes": [
+    "Day 1 on site at 9 Alicia Scott Ave., Mount Uniacke (SOI Trade / Walid warehouse extension).",
+    "Field photos from iPhone — elevations, openings, and site conditions at start of cladding work.",
+    "Screenshots included for field notes / coordination references."
+  ],
+  "photos": [
+    { "file": "01.jpg", "source": "IMG_5485.jpeg", "caption": "Site / elevation overview" },
+    { "file": "02.jpg", "source": "IMG_5486.jpeg", "caption": "Elevation detail" },
+    { "file": "03.jpg", "source": "IMG_5487.jpeg", "caption": "Elevation detail" },
+    { "file": "04.jpg", "source": "IMG_5488.jpeg", "caption": "Wall / opening condition" },
+    { "file": "05.jpg", "source": "IMG_5490.jpeg", "caption": "Wall / opening condition" },
+    { "file": "06.jpg", "source": "IMG_5491.jpeg", "caption": "Wall / opening condition" },
+    { "file": "07.jpg", "source": "IMG_6540.png", "caption": "Field note / reference screenshot" },
+    { "file": "08.jpg", "source": "IMG_6541.png", "caption": "Field note / reference screenshot" },
+    { "file": "09.jpg", "source": "IMG_6542.png", "caption": "Field note / reference screenshot" }
+  ]
+}

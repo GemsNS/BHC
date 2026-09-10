@@ -74,6 +74,17 @@ export async function storeBuffer(buf: Buffer, ext: "jpg" | "png" | "webp" | "pd
   return `/api/media/${name}`;
 }
 
+/** Persist a buffer under a stable filename (idempotent overwrite). */
+export async function storeNamedMedia(buf: Buffer, fileName: string): Promise<string> {
+  if (!/^[a-z0-9][a-z0-9._-]{0,120}\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(fileName)) {
+    throw new Error(`Invalid media file name: ${fileName}`);
+  }
+  const safe = fileName.replace(/\.jpeg$/i, ".jpg");
+  await mkdir(mediaDir(), { recursive: true });
+  await writeFile(path.join(mediaDir(), safe), buf);
+  return `/api/media/${safe}`;
+}
+
 export async function readMedia(file: string): Promise<{ buffer: Buffer; mime: string } | null> {
   if (!/^[a-z0-9_-]+\.(jpg|png|webp|gif|pdf)$/i.test(file)) return null;
   try {
