@@ -96,6 +96,9 @@ Commands:
   ads test-sms <to>             Send a test SMS through Twilio
   ads purge-fake                Cancel synthetic outreach + remove junk ads/leads
 
+  walid ensure                  Upsert SOI Trade / Walid Uniacke job into CRM
+                                (company, won lead, job, deal, contract)
+
   auth reset <login>            Clear password → PIN 0000; must set password next login
   auth set-password <login> --password <pw>
                                 Set a password directly (ops recovery)
@@ -492,6 +495,26 @@ async function cmdAdsPurgeFake() {
   console.log(summary);
 }
 
+async function cmdWalidEnsure() {
+  const { ensureWalidInCrm, WALID_CRM } = await import("../src/lib/walid-crm");
+  let result = { created: [] as string[], updated: [] as string[], jobId: "", leadId: "", companyId: "" };
+  await updateStoreAsync(async (d) => {
+    result = ensureWalidInCrm(d);
+  });
+  console.log(
+    JSON.stringify(
+      {
+        ...result,
+        title: WALID_CRM.jobTitle,
+        address: WALID_CRM.address,
+        contractValue: WALID_CRM.contractValue,
+      },
+      null,
+      2,
+    ),
+  );
+}
+
 async function cmdAuthReset(login: string) {
   if (!login) {
     console.error("Usage: bhc auth reset <login>");
@@ -648,6 +671,12 @@ async function main() {
     if (sub === "test-sms") return cmdAdsTest("sms", args[2] ?? "");
     if (sub === "purge-fake") return cmdAdsPurgeFake();
     console.error(`Unknown ads subcommand: ${sub ?? "(none)"}`);
+    process.exit(1);
+  }
+
+  if (cmd === "walid") {
+    if (sub === "ensure") return cmdWalidEnsure();
+    console.error(`Unknown walid subcommand: ${sub ?? "(none)"} — try: walid ensure`);
     process.exit(1);
   }
 
