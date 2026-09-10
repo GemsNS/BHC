@@ -1,0 +1,123 @@
+{
+  "source": "walid_warehouse_two_tone.3mf",
+  "glb": "walid_warehouse_two_tone.glb",
+  "geometry_count": 11,
+  "triangle_count": 5428,
+  "vertex_count": 16284,
+  "bounds_min_m": [
+    -4.4,
+    -0.14,
+    -14.78
+  ],
+  "bounds_max_m": [
+    17.82,
+    9.26,
+    2.4
+  ],
+  "extents_m": [
+    22.22,
+    9.4,
+    17.18
+  ],
+  "embedded_materials": [
+    {
+      "name": "black_trim",
+      "rgba": [
+        16,
+        18,
+        20,
+        255
+      ]
+    },
+    {
+      "name": "manor_shadow",
+      "rgba": [
+        23,
+        25,
+        27,
+        255
+      ]
+    },
+    {
+      "name": "glazing",
+      "rgba": [
+        31,
+        51,
+        61,
+        199
+      ]
+    },
+    {
+      "name": "manor_grey",
+      "rgba": [
+        37,
+        40,
+        43,
+        255
+      ]
+    },
+    {
+      "name": "driveway",
+      "rgba": [
+        90,
+        88,
+        82,
+        255
+      ]
+    },
+    {
+      "name": "burnt_sienna_joint",
+      "rgba": [
+        102,
+        53,
+        29,
+        255
+      ]
+    },
+    {
+      "name": "terrain",
+      "rgba": [
+        102,
+        99,
+        93,
+        255
+      ]
+    },
+    {
+      "name": "doors",
+      "rgba": [
+        119,
+        123,
+        125,
+        255
+      ]
+    },
+    {
+      "name": "concrete",
+      "rgba": [
+        139,
+        142,
+        140,
+        255
+      ]
+    },
+    {
+      "name": "burnt_sienna",
+      "rgba": [
+        142,
+        79,
+        42,
+        255
+      ]
+    },
+    {
+      "name": "warm_light",
+      "rgba": [
+        255,
+        163,
+        107,
+        255
+      ]
+    }
+  ]
+}
