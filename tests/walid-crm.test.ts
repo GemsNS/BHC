@@ -19,6 +19,11 @@ describe("walid CRM", () => {
     expect(job?.address).toContain("Alicia Scott");
     expect(job?.jobType).toBe("commercial");
     expect(job?.status).toBe("scheduled");
+    expect(job?.notes).toContain("/presentations/walid/v3");
+    expect(lead?.notes).toContain("/presentations/walid/v3");
+    expect(data.contracts.find((c) => c.slug === "walid")?.notes).toContain(
+      "/presentations/walid/v3",
+    );
     expect(data.contracts.some((c) => c.slug === "walid")).toBe(true);
     expect(data.deals.some((d) => d.id === WALID_CRM.dealId && d.stage === "closed_won")).toBe(
       true,

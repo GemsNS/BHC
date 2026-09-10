@@ -21,6 +21,7 @@ const eslintConfig = [
       "presentations/**",
       // Standalone JSCAD/OpenSCAD model packages (not app code)
       "Walid_Two_Tone_Standalone_Model_Oreo/**",
+      "Walid_Two_Tone_Standalone_Model_Oreov3/**",
       "out/**",
       "build/**",
       "next-env.d.ts",
