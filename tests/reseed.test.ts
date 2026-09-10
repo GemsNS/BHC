@@ -25,10 +25,10 @@ describe("reseed", () => {
     expect(r.data.employees.find((e) => e.login === "walid")?.role).toBe("field");
     expect(r.keptOptOuts).toBe(1);
     expect(r.data.optOuts[0].address).toBe("+19025550142");
-    // business data is gone (seed has no leads/jobs)
+    // business data wiped; production seed keeps the durable Walid job
     expect(leadsBefore).toBeGreaterThan(0);
-    expect(r.data.leads).toEqual([]);
-    expect(r.data.jobs).toEqual([]);
+    expect(r.data.leads.map((l) => l.id)).toEqual(["lead-walid"]);
+    expect(r.data.jobs.map((j) => j.id)).toEqual(["job-walid"]);
     expect(r.data.adListings).toEqual([]);
     expect(r.data.messages).toEqual([]);
     expect(r.data.assistantAutomations.length).toBeGreaterThan(10);
