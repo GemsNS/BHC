@@ -32,14 +32,20 @@ export const WALID_CRM = {
   day2ProgressIds: ["prog-walid-day2"] as const,
   day1Date: "2026-09-09",
   day2Date: "2026-09-10",
-  /** On-site shift for Day 1 and Day 2 (local Atlantic time). */
-  shiftStart: "10:30",
-  shiftEnd: "18:30",
+  /** Day 1 on-site shift (Atlantic) — Christopher & Cameron only. */
+  day1ShiftStart: "08:00",
+  day1ShiftEnd: "14:00",
+  /** Day 2 on-site shift (Atlantic) — Rylee, Christopher & Cameron. */
+  day2ShiftStart: "10:30",
+  day2ShiftEnd: "18:30",
   crew: [
     { id: "emp-rylee", name: "Rylee", login: "rylee" },
-    { id: "emp-chris", name: "Chris", login: "chris" },
+    { id: "emp-chris", name: "Christopher", login: "chris" },
     { id: "emp-cameron-field", name: "Cameron", login: "cameron" },
   ] as const,
+  /** Who worked which day (employee ids from `crew`). */
+  day1CrewIds: ["emp-chris", "emp-cameron-field"] as const,
+  day2CrewIds: ["emp-rylee", "emp-chris", "emp-cameron-field"] as const,
   customerLegalName: "SOI Trade Inc.",
   attention: "Walid Sallam",
   leadDisplayName: "Walid Sallam — SOI Trade Inc.",

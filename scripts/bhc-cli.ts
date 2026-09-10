@@ -100,7 +100,8 @@ Commands:
                                 (company, won lead, job, deal, contract)
   walid progress                Import Day 1+2 photos + crew hours onto job-walid
                                 (field-photos/walid-day-1/ and walid-day-2/)
-  walid hours                   Record Rylee/Chris/Cameron Day 1+2 shifts only
+  walid hours                   Record crew shifts on job-walid
+                                (Day1 Christopher+Cameron 8–2; Day2 Rylee+Christopher+Cameron 10:30–18:30)
 
   auth reset <login>            Clear password → PIN 0000; must set password next login
   auth set-password <login> --password <pw>

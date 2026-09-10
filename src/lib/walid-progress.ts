@@ -49,7 +49,7 @@ function shiftHours(start: string, end: string): number {
   return (eh * 60 + em - (sh * 60 + sm)) / 60;
 }
 
-/** Ensure Rylee / Chris / Cameron exist as active field staff (idempotent). */
+/** Ensure Rylee / Christopher / Cameron exist as active field staff (idempotent). */
 export function ensureWalidCrew(data: AppData, nowIso?: string): string[] {
   const hireDate = (nowIso ?? new Date().toISOString()).slice(0, 10);
   const ids: string[] = [];
@@ -217,7 +217,7 @@ export async function importWalidDay2Progress(
   if (job && job.status !== "completed" && job.status !== "invoiced") {
     job.status = "in_progress";
     const progressBlurb =
-      `Progress: Day 2 (${dayDate}) — Crew Rylee, Chris & Cameron 10:30–18:30. ` +
+      `Progress: Day 2 (${dayDate}) — Crew Rylee, Christopher & Cameron 10:30–18:30. ` +
       `Back wall NovaWrap complete except right-side window still needs cut/wrap. Right elevation ~half wrapped.`;
     if (!job.notes.includes("Progress: Day 2")) {
       job.notes = `${job.notes}\n\n${progressBlurb}`.trim();
@@ -233,38 +233,58 @@ export async function importWalidDay2Progress(
   };
 }
 
+type WalidDayKey = "day1" | "day2";
+
+function crewForDay(dayKey: WalidDayKey) {
+  const ids = dayKey === "day1" ? WALID_CRM.day1CrewIds : WALID_CRM.day2CrewIds;
+  return WALID_CRM.crew.filter((m) => (ids as readonly string[]).includes(m.id));
+}
+
+function shiftForDay(dayKey: WalidDayKey): { start: string; end: string } {
+  return dayKey === "day1"
+    ? { start: WALID_CRM.day1ShiftStart, end: WALID_CRM.day1ShiftEnd }
+    : { start: WALID_CRM.day2ShiftStart, end: WALID_CRM.day2ShiftEnd };
+}
+
 /**
- * Clock Rylee / Chris / Cameron onto job-walid for Day 1 and Day 2 (10:30–18:30).
- * Idempotent stable time-entry ids.
+ * Clock crew onto job-walid:
+ *   Day 1 — Christopher & Cameron 08:00–14:00
+ *   Day 2 — Rylee, Christopher & Cameron 10:30–18:30
+ * Idempotent stable time-entry ids. Removes stale Day 1 Rylee row if present.
  */
 export function importWalidCrewHours(
   data: AppData,
-  opts: { nowIso?: string; days?: Array<"day1" | "day2"> } = {},
+  opts: { nowIso?: string; days?: WalidDayKey[] } = {},
 ): ImportWalidHoursResult {
   ensureWalidInCrm(data, { nowIso: opts.nowIso });
-  const employeeIds = ensureWalidCrew(data, opts.nowIso);
-  const days = opts.days?.length ? opts.days : (["day1", "day2"] as const);
-  const dayDates: Record<"day1" | "day2", string> = {
+  ensureWalidCrew(data, opts.nowIso);
+  const days = opts.days?.length ? opts.days : (["day1", "day2"] as WalidDayKey[]);
+  const dayDates: Record<WalidDayKey, string> = {
     day1: WALID_CRM.day1Date,
     day2: WALID_CRM.day2Date,
   };
-  const hoursPerShift = shiftHours(WALID_CRM.shiftStart, WALID_CRM.shiftEnd);
   const timeEntryIds: string[] = [];
   const recordedDays: string[] = [];
+  const employeeIdSet = new Set<string>();
+
+  // Drop incorrect Day 1 Rylee entry from the earlier all-crew import.
+  data.timeEntries = data.timeEntries.filter((t) => t.id !== "time-walid-day1-rylee");
 
   for (const dayKey of days) {
     const date = dayDates[dayKey];
     recordedDays.push(date);
-    for (const member of WALID_CRM.crew) {
+    const shift = shiftForDay(dayKey);
+    for (const member of crewForDay(dayKey)) {
+      employeeIdSet.add(member.id);
       const id = `time-walid-${dayKey}-${member.id.replace(/^emp-/, "")}`;
       timeEntryIds.push(id);
       const entry: TimeEntry = {
         id,
         employeeId: member.id,
-        clockIn: atlanticIso(date, WALID_CRM.shiftStart),
-        clockOut: atlanticIso(date, WALID_CRM.shiftEnd),
+        clockIn: atlanticIso(date, shift.start),
+        clockOut: atlanticIso(date, shift.end),
         jobId: WALID_CRM.jobId,
-        notes: `Walid / SOI Trade Uniacke — ${dayKey === "day1" ? "Day 1" : "Day 2"} field shift (${WALID_CRM.shiftStart}–${WALID_CRM.shiftEnd}).`,
+        notes: `Walid / SOI Trade Uniacke — ${dayKey === "day1" ? "Day 1" : "Day 2"} field shift (${shift.start}–${shift.end}).`,
       };
       const idx = data.timeEntries.findIndex((t) => t.id === id);
       if (idx >= 0) data.timeEntries[idx] = entry;
@@ -272,15 +292,26 @@ export function importWalidCrewHours(
     }
   }
 
+  const day1Hours = shiftHours(WALID_CRM.day1ShiftStart, WALID_CRM.day1ShiftEnd);
+  const day2Hours = shiftHours(WALID_CRM.day2ShiftStart, WALID_CRM.day2ShiftEnd);
   const job = data.jobs.find((j) => j.id === WALID_CRM.jobId);
   if (job) {
     const hoursNote =
-      `Crew hours: Rylee, Chris & Cameron · Day 1 (${WALID_CRM.day1Date}) and Day 2 (${WALID_CRM.day2Date}) · ` +
-      `${WALID_CRM.shiftStart}–${WALID_CRM.shiftEnd} (${hoursPerShift}h each / ${hoursPerShift * WALID_CRM.crew.length}h crew-day).`;
-    if (!job.notes.includes("Crew hours: Rylee")) {
+      `Crew hours: Day 1 (${WALID_CRM.day1Date}) Christopher & Cameron ${WALID_CRM.day1ShiftStart}–${WALID_CRM.day1ShiftEnd} (${day1Hours}h each). ` +
+      `Day 2 (${WALID_CRM.day2Date}) Rylee, Christopher & Cameron ${WALID_CRM.day2ShiftStart}–${WALID_CRM.day2ShiftEnd} (${day2Hours}h each).`;
+    if (!job.notes.includes("Crew hours:")) {
       job.notes = `${job.notes}\n\n${hoursNote}`.trim();
+    } else {
+      job.notes = job.notes
+        .replace(/Crew hours:[\s\S]*?(?=\n\n[A-Z]|$)/, hoursNote)
+        .trim();
     }
   }
 
-  return { employeeIds, timeEntryIds, days: recordedDays, hoursPerShift };
+  return {
+    employeeIds: [...employeeIdSet],
+    timeEntryIds,
+    days: recordedDays,
+    hoursPerShift: day2Hours,
+  };
 }
