@@ -220,8 +220,12 @@ function toolPurgeSynthetic(data: AppData): ToolExecution {
     ok: true,
     summary:
       r.notes.join(" ") ||
-      "No synthetic outreach or junk ads found.",
-    data: { cancelledOutreach: r.cancelledOutreach, removedAds: r.removedAds },
+      "No synthetic outreach, junk ads, or fake CRM leads found.",
+    data: {
+      cancelledOutreach: r.cancelledOutreach,
+      removedAds: r.removedAds,
+      removedLeads: r.removedLeads,
+    },
   };
 }
 

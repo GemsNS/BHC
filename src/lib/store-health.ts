@@ -1,7 +1,7 @@
 import type { AppData } from "./types";
 import {
-  isJunkAdTitle,
-  isRealHttpUrl,
+  isJunkDigestAd,
+  isSyntheticLead,
   looksFabricatedProspect,
 } from "./outreach-guard";
 
@@ -195,15 +195,22 @@ export function storeHealth(data: AppData): StoreHealthReport {
       count: syntheticOutreach,
     });
   }
-  const junkAds = data.adListings.filter(
-    (a) => isJunkAdTitle(a.title) && !isRealHttpUrl(a.url),
-  ).length;
+  const junkAds = data.adListings.filter((a) => isJunkDigestAd(a)).length;
   if (junkAds) {
     issues.push({
       level: "warn",
       code: "junk_ad_listings",
-      message: `${junkAds} ad listing(s) look like search-result digests with no listing URL.`,
+      message: `${junkAds} ad listing(s) look like search-result digests with no listing URL. Run: npm run bhc -- ads purge-fake`,
       count: junkAds,
+    });
+  }
+  const syntheticLeads = data.leads.filter((l) => isSyntheticLead(l)).length;
+  if (syntheticLeads) {
+    issues.push({
+      level: "warn",
+      code: "synthetic_leads",
+      message: `${syntheticLeads} CRM lead(s) look fabricated or were created from junk ads. Run: npm run bhc -- ads purge-fake`,
+      count: syntheticLeads,
     });
   }
 

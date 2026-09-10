@@ -1,6 +1,12 @@
 import { classifyAd, draftReply } from "./ad-classify";
 import { ingestRawAds, parseFeed, type RawAd } from "./ad-ingest";
 import { live } from "./events";
+import {
+  hasReachableAdContact,
+  isJunkAdTitle,
+  isJunkDigestAd,
+  isRealHttpUrl,
+} from "./outreach-guard";
 import { applyPayment, detectEtransfer, matchEtransferToInvoice } from "./payments";
 import { handleInboundReply, sendPolicy, type SendPolicy } from "./outreach-send";
 import { queueWebhook } from "./webhooks";
@@ -162,6 +168,21 @@ export async function qualifyListing(
 ): Promise<{ qualified: boolean; lead: Lead | null; drafts: OutreachQueueItem[]; autoApproved: number }> {
   const policy = hooks.policy ?? sendPolicy();
   const minScore = opts.minScore ?? adMinScore();
+
+  if (!opts.force && isJunkDigestAd(ad)) {
+    ad.status = "skipped";
+    live.ad(
+      `Skipped junk listing: ${ad.title.slice(0, 70)}`,
+      isJunkAdTitle(ad.title)
+        ? "search-result digest / no listing URL"
+        : !isRealHttpUrl(ad.url) && !hasReachableAdContact(ad)
+          ? "no listing URL or reachable contact"
+          : "not actionable",
+      { adId: ad.id },
+      "info",
+    );
+    return { qualified: false, lead: null, drafts: [], autoApproved: 0 };
+  }
 
   const c = await classifyAd(ad, { ai: hooks.ai !== false });
   ad.score = c.score;

@@ -6,20 +6,27 @@
 #   bash deploy/production/deploy.sh --rollback                # go back to the previous release
 #   bash deploy/production/deploy.sh --no-restart              # build only
 #
+# Env (optional): BHC_APP_DIR=/opt/bhc  BHC_SERVICE=bhc  BHC_APP_USER=bhc
+#                 BHC_HEALTH_URL=http://127.0.0.1:3000/api/health
+#                 BHC_HEALTH_TIMEOUT=90  BHC_NO_SUDO=1
+#
 # What it does, in order:
-#   1. Snapshot data/store.json → data/backups/pre-deploy-*.json
+#   1. Snapshot data/store.json → data/backups/pre-deploy-*.json (as app user)
 #   2. git fetch + checkout the target ref (records the previous SHA for rollback)
 #   3. npm ci only when package-lock.json changed
 #   4. next build into .next-build, then swap into .next (atomic-ish)
 #   5. systemctl restart bhc, wait for GET /api/health to return 200
-#   6. On health failure: automatic rollback to the previous SHA
-#
-# Env (optional): BHC_APP_DIR=/opt/bhc  BHC_SERVICE=bhc  BHC_HEALTH_URL=http://127.0.0.1:3000/api/health
-#                 BHC_HEALTH_TIMEOUT=90  BHC_NO_SUDO=1
+#   6. chown data/ to BHC_APP_USER so nightly store_backup can write
+#   7. post-deploy automation tick as BHC_APP_USER
+#   On health failure: automatic rollback to the previous SHA
 set -euo pipefail
 
 APP_DIR="${BHC_APP_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 SERVICE="${BHC_SERVICE:-bhc}"
+# App runs as this user (see deploy/production/bhc.service). Keep data/ owned by them
+# so nightly store_backup can write data/backups/*.json.
+APP_USER="${BHC_APP_USER:-bhc}"
+APP_GROUP="${BHC_APP_GROUP:-$APP_USER}"
 HEALTH_URL="${BHC_HEALTH_URL:-http://127.0.0.1:3000/api/health}"
 HEALTH_TIMEOUT="${BHC_HEALTH_TIMEOUT:-90}"
 STATE_DIR="$APP_DIR/data/deploy"
@@ -31,6 +38,32 @@ ROLLBACK=0
 
 SUDO="sudo"
 if [ "${BHC_NO_SUDO:-0}" = "1" ] || [ "$(id -u)" = "0" ]; then SUDO=""; fi
+
+fix_data_ownership() {
+  # Root deploys often mkdir/cp into data/backups as root → EACCES for User=bhc.
+  if ! id -u "$APP_USER" >/dev/null 2>&1; then
+    log "skip chown (user $APP_USER not found)"
+    return 0
+  fi
+  if [ "$(id -u)" = "0" ]; then
+    chown -R "$APP_USER:$APP_GROUP" "$APP_DIR/data" 2>/dev/null || true
+  elif [ -n "$SUDO" ]; then
+    $SUDO chown -R "$APP_USER:$APP_GROUP" "$APP_DIR/data" 2>/dev/null || true
+  fi
+  log "data ownership → $APP_USER:$APP_GROUP"
+}
+
+run_as_app() {
+  if [ "$(id -u)" = "0" ]; then
+    runuser -u "$APP_USER" -- "$@"
+  elif [ "$(id -un)" = "$APP_USER" ]; then
+    "$@"
+  elif [ -n "$SUDO" ] && id -u "$APP_USER" >/dev/null 2>&1; then
+    $SUDO -u "$APP_USER" -- "$@"
+  else
+    "$@"
+  fi
+}
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -109,10 +142,15 @@ fi
 CURRENT_SHA="$(git rev-parse HEAD)"
 log "=== deploy start (current $(git rev-parse --short HEAD) → $REF)"
 
-# 1. store snapshot
+# 1. store snapshot (as app user when possible so backups/ stays writable)
+mkdir -p data/backups
+fix_data_ownership
 if [ -f data/store.json ]; then
   SNAP="data/backups/pre-deploy-$(date -u +%Y-%m-%d_%H-%M-%S).json"
-  cp data/store.json "$SNAP"
+  if ! run_as_app cp data/store.json "$SNAP" 2>/dev/null; then
+    cp data/store.json "$SNAP"
+    fix_data_ownership
+  fi
   log "store snapshot → $SNAP"
   # keep the 10 most recent pre-deploy snapshots
   ls -1t data/backups/pre-deploy-*.json 2>/dev/null | tail -n +11 | xargs -r rm -f
@@ -165,10 +203,13 @@ if ! restart_and_check; then
   exit 1
 fi
 
-# 6. warm the automation engine once so the new code's checks/backup run immediately
+# 6. ensure data stays owned by the systemd user before the next backup tick
+fix_data_ownership
+
+# 7. warm the automation engine once so the new code's checks/backup run immediately
 if command -v npx >/dev/null 2>&1; then
-  log "post-deploy automation tick"
-  (npx --yes tsx scripts/bhc-cli.ts automations tick >>"$LOG_FILE" 2>&1 || log "tick reported errors (non-fatal)")
+  log "post-deploy automation tick (as $APP_USER)"
+  (run_as_app npx --yes tsx scripts/bhc-cli.ts automations tick >>"$LOG_FILE" 2>&1 || log "tick reported errors (non-fatal)")
 fi
 
 rm -rf .next-prev

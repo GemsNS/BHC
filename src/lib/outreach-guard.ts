@@ -3,6 +3,8 @@
  * Synthetic prospects (hardcoded pools, 555 phones, invent-domains) must never send.
  */
 
+import type { AdListing, AppData, Lead, OutreachQueueItem } from "./types";
+
 const FABRICATED_EMAIL_DOMAINS = new Set([
   "peninsulapm.ca",
   "hydrostonehoa.ca",
@@ -20,8 +22,9 @@ const FABRICATED_EMAIL_DOMAINS = new Set([
 const FABRICATED_NAME_RE =
   /community board|business park|residential assoc|commercial parks|property managers|homeowners assoc|neighborhood group|retail group|property mgmt|heritage hoa/i;
 
-const JUNK_AD_TITLE_RE =
-  /today[\u2019']?s search results for|search results for|google alert|new results for your|saved search|kijiji alerts?:?\s*$/i;
+/** Shared junk digest / alert-email subject patterns (ingest + purge + health). */
+export const JUNK_AD_TITLE_RE =
+  /today[\u2019']?s search results for|search results for|google alert|new results for your|saved search|kijiji alerts?:?\s*$|new matches for|your kijiji alert|craigslist alert|facebook marketplace alert/i;
 
 export function emailDomain(email: string): string {
   const at = email.trim().toLowerCase().lastIndexOf("@");
@@ -79,40 +82,106 @@ export function looksFabricatedProspect(input: {
   return false;
 }
 
+export function hasReachableAdContact(input: {
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  email?: string | null;
+  phone?: string | null;
+}): boolean {
+  if (isRealContactEmail(input.contactEmail ?? input.email)) return true;
+  const phone = (input.contactPhone ?? input.phone ?? "").trim();
+  if (!phone || isPlaceholderPhone(phone)) return false;
+  return phone.replace(/\D/g, "").length >= 10;
+}
+
+/** Alert digests / empty listings that must never become CRM leads. */
+export function isJunkDigestAd(ad: {
+  title?: string | null;
+  url?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+}): boolean {
+  const urlOk = isRealHttpUrl(ad.url);
+  if (isJunkAdTitle(ad.title) && !urlOk) return true;
+  if (!urlOk && !hasReachableAdContact(ad)) return true;
+  if (
+    !urlOk &&
+    looksFabricatedProspect({
+      email: ad.contactEmail,
+      phone: ad.contactPhone,
+    })
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function isSyntheticLead(lead: {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  source?: string | null;
+}): boolean {
+  if (
+    looksFabricatedProspect({
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+    })
+  ) {
+    return true;
+  }
+  const name = lead.name ?? "";
+  const notes = lead.notes ?? "";
+  if (/^Ad poster\s*[—–-]/i.test(name) && isJunkAdTitle(name.replace(/^Ad poster\s*[—–-]\s*/i, ""))) {
+    return true;
+  }
+  if (/^Ad poster\s*[—–-]/i.test(name) && isJunkAdTitle(notes)) {
+    return true;
+  }
+  if (
+    /^Ad poster\s*[—–-]/i.test(name) &&
+    (!lead.address || /^see ad$/i.test(lead.address.trim())) &&
+    !isRealContactEmail(lead.email) &&
+    !isRealHttpUrl(lead.address)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export type PurgeSyntheticResult = {
   cancelledOutreach: number;
   removedAds: number;
+  removedLeads: number;
   notes: string[];
 };
 
 /**
- * Cancel synthetic outreach drafts and drop junk alert listings (no real URL /
- * "Today's search results for …" titles). Safe to run repeatedly.
+ * Cancel synthetic outreach drafts, drop junk alert listings, and remove CRM
+ * leads created from those digests / fabricated contacts. Safe to run repeatedly.
  */
 export function purgeSyntheticOutreachAndAds(
-  data: {
-    outreachQueue: Array<{
-      id: string;
-      prospectName: string;
-      prospectEmail: string;
-      prospectPhone?: string;
-      status: string;
-      message?: string;
-      leadId?: string | null;
-    }>;
-    adListings: Array<{
-      id: string;
-      title: string;
-      url: string;
-      contactEmail?: string;
-      contactPhone?: string;
-      status: string;
-      notes?: string;
-    }>;
+  data: Pick<AppData, "outreachQueue" | "adListings" | "leads"> & {
+    outreachQueue: OutreachQueueItem[];
+    adListings: AdListing[];
+    leads: Lead[];
   },
 ): PurgeSyntheticResult {
   const notes: string[] = [];
   let cancelledOutreach = 0;
+
+  const junkAdIds = new Set(
+    data.adListings.filter((ad) => isJunkDigestAd(ad)).map((ad) => ad.id),
+  );
+  const junkLeadIds = new Set(
+    data.adListings
+      .filter((ad) => junkAdIds.has(ad.id) && ad.leadId)
+      .map((ad) => ad.leadId as string),
+  );
+
   for (const o of data.outreachQueue) {
     if (o.status === "sent" || o.status === "cancelled") continue;
     const synthetic =
@@ -122,7 +191,9 @@ export function purgeSyntheticOutreachAndAds(
         email: o.prospectEmail,
         phone: o.prospectPhone,
       }) ||
-      /reaching out regarding .* in .*, ns/i.test(o.message ?? "");
+      /reaching out regarding .* in .*, ns/i.test(o.message ?? "") ||
+      Boolean(o.adId && junkAdIds.has(o.adId)) ||
+      Boolean(o.leadId && junkLeadIds.has(o.leadId));
     if (!synthetic) continue;
     o.status = "cancelled";
     cancelledOutreach += 1;
@@ -131,22 +202,19 @@ export function purgeSyntheticOutreachAndAds(
     notes.push(`Cancelled ${cancelledOutreach} synthetic outreach draft(s).`);
   }
 
-  const before = data.adListings.length;
-  data.adListings = data.adListings.filter((ad) => {
-    if (isJunkAdTitle(ad.title) && !isRealHttpUrl(ad.url)) return false;
-    if (
-      !isRealHttpUrl(ad.url) &&
-      looksFabricatedProspect({
-        email: ad.contactEmail,
-        phone: ad.contactPhone,
-      })
-    ) {
-      return false;
-    }
-    return true;
-  }) as typeof data.adListings;
-  const removedAds = before - data.adListings.length;
+  const beforeAds = data.adListings.length;
+  data.adListings = data.adListings.filter((ad) => !junkAdIds.has(ad.id)) as typeof data.adListings;
+  const removedAds = beforeAds - data.adListings.length;
   if (removedAds) notes.push(`Removed ${removedAds} junk ad listing(s).`);
 
-  return { cancelledOutreach, removedAds, notes };
+  const beforeLeads = data.leads.length;
+  data.leads = data.leads.filter((lead) => {
+    if (junkLeadIds.has(lead.id)) return false;
+    if (isSyntheticLead(lead)) return false;
+    return true;
+  }) as typeof data.leads;
+  const removedLeads = beforeLeads - data.leads.length;
+  if (removedLeads) notes.push(`Removed ${removedLeads} synthetic CRM lead(s).`);
+
+  return { cancelledOutreach, removedAds, removedLeads, notes };
 }
