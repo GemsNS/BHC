@@ -22,5 +22,6 @@ export const WALID_JOB_TRAVEL = {
   workdaysPerWeek: 5,
   includedRoundTrips: 20,
   totalDistanceKm: 1396.0,
-  includedCost: 1005.12,
+  /** Agreed with customer: no fuel/travel charge on this job. */
+  includedCost: 0,
 } as const;

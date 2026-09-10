@@ -52,8 +52,8 @@ export const WALID_CRM = {
   jobTitle: "Uniacke warehouse siding — SOI Trade / Walid Sallam",
   address: "9 Alicia Scott Ave., Mount Uniacke, Nova Scotia B0N 1Z0",
   city: "Mount Uniacke, NS",
-  /** Pre-HST: $12,000 siding + $1,000 doors + $1,005.12 fuel/travel */
-  contractValue: 14005.12,
+  /** Pre-HST: $12,000 siding + $1,000 doors (fuel/travel waived) */
+  contractValue: 13000,
   sidingSquares: 30,
   doors: 2,
   presentationPath: "/presentations/walid",
@@ -62,7 +62,7 @@ export const WALID_CRM = {
   fieldPhotosDay1Dir: "field-photos/walid-day-1",
   fieldPhotosDay2Dir: "field-photos/walid-day-2",
   contractPackageNote:
-    "Warehouse extension exterior: ~30 squares charcoal/cedar-tone siding, 2 exterior doors, crew fuel/travel (20 RT Dartmouth↔Uniacke). Presentation: /presentations/walid · 3D model (current Oreo v3): /presentations/walid/v3 · prior Oreo v2: /presentations/walid/v2 · Contract package under presentations/walid/package/03_Contract/.",
+    "Warehouse extension exterior: ~30 squares charcoal/cedar-tone siding, 2 exterior doors (crew fuel/travel waived by agreement). Presentation: /presentations/walid · 3D model (current Oreo v3): /presentations/walid/v3 · prior Oreo v2: /presentations/walid/v2 · Contract package under presentations/walid/package/03_Contract/.",
 } as const;
 
 export type EnsureWalidResult = {
@@ -123,7 +123,7 @@ export function ensureWalidInCrm(
     notes: [
       WALID_CRM.contractPackageNote,
       `Contract price (pre-HST): $${WALID_CRM.contractValue.toFixed(2)}`,
-      `Fuel/travel included: ${WALID_JOB_TRAVEL.includedRoundTrips} RT × ${WALID_JOB_TRAVEL.totalDistanceKm / WALID_JOB_TRAVEL.includedRoundTrips} km = $${WALID_JOB_TRAVEL.includedCost.toFixed(2)}`,
+      `Fuel/travel: waived by agreement (was ${WALID_JOB_TRAVEL.includedRoundTrips} RT / ${WALID_JOB_TRAVEL.totalDistanceKm} km @ CRA rate).`,
       existingLead?.notes?.includes("Progress:") ? existingLead.notes : "",
     ]
       .filter(Boolean)
@@ -155,7 +155,7 @@ export function ensureWalidInCrm(
     contractValue: WALID_CRM.contractValue,
     notes: [
       WALID_CRM.contractPackageNote,
-      "Payment milestones (pre-HST): mobilization+fuel $4,255.12 · ~50% siding $6,500 · substantial $3,250.",
+      "Payment milestones (pre-HST): mobilization $3,250 · ~50% siding $6,500 · substantial $3,250.",
       "Statutory holdback 10% per NS Builders' Lien Act.",
       existingJob?.notes?.includes("Progress:") ? existingJob.notes : "",
     ]
@@ -219,7 +219,7 @@ export function ensureWalidInCrm(
       id: WALID_CRM.activityId,
       type: "note" as ActivityType,
       subject: "Walid job loaded into CRM",
-      body: `Imported from presentation/contract package. Scope: ${WALID_CRM.sidingSquares} squares + ${WALID_CRM.doors} doors + included fuel/travel. Value $${WALID_CRM.contractValue.toFixed(2)} pre-HST.`,
+      body: `Imported from presentation/contract package. Scope: ${WALID_CRM.sidingSquares} squares + ${WALID_CRM.doors} doors (fuel/travel waived). Value $${WALID_CRM.contractValue.toFixed(2)} pre-HST.`,
       relatedType: "job",
       relatedId: WALID_CRM.jobId,
       authorId,

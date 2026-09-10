@@ -272,7 +272,7 @@ Lib: `src/lib/presentations.ts`.
 - Slug: `walid` · Password: `walid`  
 - Site: Mount Uniacke warehouse extension siding package  
 - **Geometry rule:** permit plate / openings / ground slope are **locked** — concepts are cladding **application** only (Cedar Datum, Full Battens, Split Storey, Framed Bays), not building redesign  
-- Fuel math: `src/lib/fuel-travel.ts` — Dartmouth ↔ Uniacke RT 69.8 km @ CRA $0.72/km; 3 weeks + 1 week pushback × 5 days = 20 RTs → **$1,005.12** included fuel  
+- Fuel math: `src/lib/fuel-travel.ts` — Dartmouth ↔ Uniacke RT 69.8 km @ CRA $0.72/km; 3 weeks + 1 week pushback × 5 days = fuel/travel **waived** on Walid job (CRA math retained for change orders)  
 - Deploy notes: `docs/WALID_PRESENTATION_DEPLOY.md`  
 - Tests: `tests/walid-presentation.test.ts`, `tests/fuel-travel.test.ts`
 

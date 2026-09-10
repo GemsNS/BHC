@@ -34,7 +34,7 @@ describe("walid presentation package", () => {
     expect(manifest.files.length).toBeGreaterThanOrEqual(45);
   });
 
-  it("prices 3-week job + 1-week pushback fuel into the siding contract", () => {
+  it("prices siding + doors at $13,000 with fuel/travel waived", () => {
     const contract = readFileSync(
       "presentations/walid/package/03_Contract/Walid_Siding_Contract.md",
       "utf8",
@@ -43,9 +43,10 @@ describe("walid presentation package", () => {
     expect(contract).toContain("3-week");
     expect(contract).toContain("1-week");
     expect(contract).toContain("1,396.0 km");
-    expect(contract).toContain("$1,005.12");
-    expect(contract).toContain("$14,005.12");
-    expect(contract).not.toMatch(/\$13,000\.00/);
+    expect(contract).toMatch(/not charged|waived/i);
+    expect(contract).not.toContain("$1,005.12");
+    expect(contract).toContain("$13,000.00");
+    expect(contract).not.toMatch(/\$14,005\.12/);
   });
 
   it("clean presentation has no Manus/AI/draft banners and reflects scaled contract", () => {
@@ -61,7 +62,8 @@ describe("walid presentation package", () => {
     expect(js).not.toMatch(/I'm an AI/i);
     expect(js).not.toMatch(/WORKING DRAFT/i);
     expect(js).toContain('base:"/presentations/walid/view"');
-    expect(js).toContain("$14,005.12");
+    expect(js).toContain("$13,000.00");
+    expect(js).not.toContain("$14,005.12");
     expect(js).toContain("walid_system_01_cedar-datum.png");
   });
 });
