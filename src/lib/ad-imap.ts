@@ -147,17 +147,18 @@ export async function pollImapInbox(): Promise<ImapPollResult> {
         const fromAddress = parsed.from?.value?.[0]?.address?.toLowerCase() ?? "";
         messages += 1;
         const isAlert = alerts.some((a) => fromAddress.includes(a) || from.toLowerCase().includes(a));
+        let parsedAds = 0;
         if (isAlert) {
-          raws.push(
-            ...parseAlertEmail({
-              subject: parsed.subject ?? "",
-              text: parsed.text ?? undefined,
-              html: typeof parsed.html === "string" ? parsed.html : undefined,
-              from,
-              messageId: parsed.messageId ?? undefined,
-              receivedAt: parsed.date?.toISOString(),
-            }),
-          );
+          const ads = parseAlertEmail({
+            subject: parsed.subject ?? "",
+            text: parsed.text ?? undefined,
+            html: typeof parsed.html === "string" ? parsed.html : undefined,
+            from,
+            messageId: parsed.messageId ?? undefined,
+            receivedAt: parsed.date?.toISOString(),
+          });
+          parsedAds = ads.length;
+          raws.push(...ads);
         } else {
           others.push({
             from,
@@ -168,7 +169,13 @@ export async function pollImapInbox(): Promise<ImapPollResult> {
             date: parsed.date?.toISOString(),
           });
         }
-        if (markSeen) await client.messageFlagsAdd(String(uid), ["\\Seen"], { uid: true });
+        // Never mark Kijiji digests as Seen when we extracted 0 listing URLs —
+        // otherwise a broken parse permanently burns the alert.
+        const markEmptyAlerts =
+          (process.env.ADS_IMAP_MARK_EMPTY_ALERTS ?? "false").toLowerCase() === "true";
+        if (markSeen && (!isAlert || parsedAds > 0 || markEmptyAlerts)) {
+          await client.messageFlagsAdd(String(uid), ["\\Seen"], { uid: true });
+        }
       }
     } finally {
       lock.release();

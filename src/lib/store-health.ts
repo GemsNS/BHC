@@ -204,6 +204,21 @@ export function storeHealth(data: AppData): StoreHealthReport {
       count: junkAds,
     });
   }
+  const imapBroken = data.adSources.filter(
+    (s) =>
+      s.type === "imap" &&
+      s.enabled &&
+      s.lastError &&
+      /login is disabled|authentication failed|invalid credentials|auth/i.test(s.lastError),
+  );
+  if (imapBroken.length) {
+    issues.push({
+      level: "error",
+      code: "imap_login_disabled",
+      message: `Mailbox alert IMAP cannot log in (${imapBroken.map((s) => s.lastError).join("; ")}). Office 365 often blocks basic IMAP — use an app password, Graph/OAuth, or forward Kijiji alerts to POST /api/ads/inbound. Until fixed, Kijiji emails will never become listings.`,
+      count: imapBroken.length,
+    });
+  }
   const syntheticLeads = data.leads.filter((l) => isSyntheticLead(l)).length;
   if (syntheticLeads) {
     issues.push({

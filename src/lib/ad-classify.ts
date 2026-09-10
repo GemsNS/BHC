@@ -1,4 +1,5 @@
 import { completeChat } from "./ai-provider";
+import { looksLikeRealEstateNoise } from "./lead-search-recipes";
 import type { AdCategory, AdListing, JobType } from "./types";
 
 /**
@@ -110,7 +111,10 @@ export function classifyAdLocal(ad: Pick<AdListing, "title" | "body" | "location
     score -= 45;
     reasons.push("reads like a contractor advertising services");
   }
-  if (/\bfor sale\b|\$\s?\d+\s*(obo|firm)\b/i.test(text) && !DEMAND_RE.test(text)) {
+  if (looksLikeRealEstateNoise(text)) {
+    score -= 50;
+    reasons.push("looks like a real-estate / for-sale listing");
+  } else if (/\bfor sale\b|\$\s?\d+\s*(obo|firm)\b/i.test(text) && !DEMAND_RE.test(text)) {
     score -= 20;
     reasons.push("looks like an item for sale");
   }
