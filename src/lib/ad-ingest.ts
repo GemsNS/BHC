@@ -1,5 +1,10 @@
 import { queueWebhook } from "./webhooks";
 import {
+  DEFAULT_AD_EXCLUDE_KEYWORDS,
+  DEFAULT_AD_KEEP_KEYWORDS,
+  looksLikeRealEstateNoise,
+} from "./lead-search-recipes";
+import {
   isJunkAdTitle,
   isRealHttpUrl,
 } from "./outreach-guard";
@@ -287,6 +292,8 @@ export function cleanTitle(subject: string): string {
 export function adMatchesSource(source: AdSource, ad: RawAd): boolean {
   const hay = `${ad.title}\n${ad.body}`.toLowerCase();
   if (source.excludeKeywords.some((k) => k && hay.includes(k.toLowerCase()))) return false;
+  // Broad Kijiji alerts often include house-for-sale posts that mention a deck/windows.
+  if (looksLikeRealEstateNoise(`${ad.title}\n${ad.body}`)) return false;
   if (!source.keywords.length) return true;
   return source.keywords.some((k) => k && hay.includes(k.toLowerCase()));
 }
@@ -432,6 +439,9 @@ export function ensureImapAdSource(
   const existing = data.adSources.find((s) => s.type === "imap" || s.id === "adsrc-imap");
   if (existing) {
     if (!existing.enabled) existing.enabled = true;
+    // Refresh keep/drop lists so broad terms like bare "deck" get replaced by demand recipes.
+    existing.keywords = [...DEFAULT_AD_KEEP_KEYWORDS];
+    existing.excludeKeywords = [...DEFAULT_AD_EXCLUDE_KEYWORDS];
     return existing;
   }
   const src = newAdSource(
@@ -440,7 +450,8 @@ export function ensureImapAdSource(
       name: "Mailbox alerts (Kijiji / Craigslist / Facebook)",
       type: "imap",
       enabled: true,
-      keywords: ["siding", "deck", "soffit", "fascia", "window", "door", "exterior"],
+      keywords: [...DEFAULT_AD_KEEP_KEYWORDS],
+      excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS],
       region: "Halifax Regional Municipality",
     },
     ctx,

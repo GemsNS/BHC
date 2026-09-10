@@ -4,6 +4,13 @@ import { getAnthropicModel } from "./ai-provider";
 import { live } from "./events";
 import { isJunkAdTitle, isRealContactEmail, isRealHttpUrl } from "./outreach-guard";
 import type { AdSource, AppData } from "./types";
+import {
+  DEFAULT_DISCOVERY_DOMAINS,
+  DEFAULT_DISCOVERY_QUERIES,
+} from "./lead-search-recipes";
+
+const DEFAULT_QUERIES = DEFAULT_DISCOVERY_QUERIES;
+const DEFAULT_ALLOWED_DOMAINS = DEFAULT_DISCOVERY_DOMAINS;
 
 /**
  * Internet lead discovery: Claude (with the server-side web_search tool)
@@ -23,26 +30,6 @@ import type { AdSource, AppData } from "./types";
 export function discoveryConfigured(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY?.trim() || process.env.ANTHROPIC_AUTH_TOKEN?.trim() || process.env.CLAUDE_API_KEY?.trim()) && process.env.DISCOVERY_ENABLED !== "0";
 }
-
-const DEFAULT_QUERIES = [
-  "site:kijiji.ca looking for siding OR deck OR soffit Halifax OR Dartmouth",
-  "site:craigslist.org Halifax siding OR deck contractor wanted",
-  "site:facebook.com/marketplace Halifax siding OR deck OR windows",
-  "looking for siding contractor Halifax Kijiji OR Craigslist OR Marketplace",
-  "need deck built quote Dartmouth OR Bedford OR Sackville",
-  "recommend exterior contractor HRM Nova Scotia",
-  "window replacement quotes Halifax homeowner",
-  "soffit fascia repair needed Halifax",
-];
-
-const DEFAULT_ALLOWED_DOMAINS = [
-  "kijiji.ca",
-  "craigslist.org",
-  "facebook.com",
-  "homestars.com",
-  "reddit.com",
-  "nextdoor.com",
-];
 
 type Candidate = {
   title: string;
@@ -93,7 +80,7 @@ export async function discoverLeadsOnline(
     allowed_domains: allowed,
   };
 
-  const system = `You find people who are ASKING for exterior contracting work (siding, soffit/fascia, decks, windows & doors, exterior trim, building envelope) in ${region}, posted in the last 14 days on classifieds, community boards, forums, Facebook groups, Reddit, Nextdoor, HomeStars-style request boards, or local news/social posts. Ignore contractors advertising services, job postings for employees, and anything outside the region. Search several of these angles: ${queries.join("; ")}. Then respond with ONLY a JSON array (no prose) of up to 15 objects: {"title": string, "url": "https://… REQUIRED live listing URL", "snippet": "what they want, in one or two sentences", "location": "town", "postedAt": "ISO date or empty", "contactEmail": "only if visible on the page — otherwise empty", "contactPhone": "only if visible — otherwise empty", "confidence": 0-100}. NEVER invent emails, phones, or URLs. Skip Google/Bing search-result pages and "Today's search results" titles. Skip URLs you have seen before: ${[...known].slice(-40).join(", ") || "none"}.`;
+  const system = `You find people who are ASKING for exterior contracting work (siding, soffit/fascia, decks, windows & doors, exterior trim, building envelope) in ${region}, posted in the last 14 days on Kijiji Services Wanted / Skilled Trades, Craigslist services/wanted, Facebook Marketplace service requests, Facebook homeowner groups, Reddit (r/halifax), Nextdoor, HomeStars-style request boards, or local community posts. Ignore: contractors advertising services, employee job postings, and REAL-ESTATE / for-sale house listings that merely mention a deck, windows, or siding. Prefer posts with intent language ("looking for", "need a quote", "anyone recommend", "contractor needed"). Search several of these angles: ${queries.join("; ")}. Then respond with ONLY a JSON array (no prose) of up to 15 objects: {"title": string, "url": "https://… REQUIRED live listing URL", "snippet": "what they want, in one or two sentences", "location": "town", "postedAt": "ISO date or empty", "contactEmail": "only if visible on the page — otherwise empty", "contactPhone": "only if visible — otherwise empty", "confidence": 0-100}. NEVER invent emails, phones, or URLs. Skip Google/Bing search-result pages and "Today's search results" titles. Skip URLs you have seen before: ${[...known].slice(-40).join(", ") || "none"}.`;
 
   const errors: string[] = [];
   let text = "";

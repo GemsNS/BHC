@@ -657,11 +657,11 @@ function AdsHub() {
             </label>
             <label className="field">
               <span>Keep only ads containing (comma-separated, empty = all)</span>
-              <input name="keywords" className="field-input" placeholder="siding, deck, soffit, fascia, windows, contractor, quote" />
+              <input name="keywords" className="field-input" placeholder="looking for, need a quote, siding, soffit, deck repair, window replacement" />
             </label>
             <label className="field">
               <span>Drop ads containing</span>
-              <input name="excludeKeywords" className="field-input" placeholder="for sale, we offer, free estimates, hiring" />
+              <input name="excludeKeywords" className="field-input" placeholder="for sale, MLS, realtor, bedroom, we offer, hiring" />
             </label>
             <label className="field">
               <span>Region label</span>
