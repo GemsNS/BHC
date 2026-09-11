@@ -40,8 +40,8 @@ export const WALID_CRM = {
   day2ShiftEnd: "18:30",
   /**
    * Field crew for Walid hours.
-   * `id` is only used when no existing employee matches — prefer live users
-   * (e.g. Christopher Ryan Scott) over minting a stub named "Christopher".
+   * First-name references always bind to an existing employee when one matches
+   * (Rylee / Christopher / Cameron → live users). `id` is only a create fallback.
    */
   crew: [
     { id: "emp-rylee", name: "Rylee", login: "rylee", matchNames: ["Rylee"] },
@@ -49,10 +49,16 @@ export const WALID_CRM = {
       id: "emp-chris",
       name: "Christopher Ryan Scott",
       login: "chris",
-      matchNames: ["Christopher Ryan Scott", "Christopher Scott"],
+      matchNames: ["Christopher Ryan Scott", "Christopher Scott", "Christopher"],
       matchLogins: ["chris", "christopher", "cscott", "christopher.scott"],
     },
-    { id: "emp-cameron-field", name: "Cameron", login: "cameron", matchNames: ["Cameron"] },
+    {
+      id: "emp-cameron-field",
+      name: "Cameron",
+      login: "cameron",
+      matchNames: ["Cameron"],
+      matchLogins: ["cameron"],
+    },
   ] satisfies ReadonlyArray<{
     id: string;
     name: string;

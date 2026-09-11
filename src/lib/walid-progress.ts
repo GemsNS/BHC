@@ -55,64 +55,144 @@ function normName(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-/** Prefer an existing live employee over minting a Walid stub id. */
+function firstName(s: string): string {
+  return normName(s).split(" ")[0] ?? "";
+}
+
+/** First names / aliases we treat as referring to an existing employee. */
+function referredFirstNames(row: WalidCrewRow): string[] {
+  const names = new Set<string>();
+  const add = (raw: string) => {
+    const f = firstName(raw);
+    if (f) names.add(f);
+  };
+  add(row.name);
+  for (const n of row.matchNames) add(n);
+  return [...names];
+}
+
+/**
+ * Prefer an existing DB employee when the operator used a first name.
+ * Match order: exact full name → first-name hit → login alias → preferred stub id.
+ */
 function findExistingCrewMember(data: AppData, row: WalidCrewRow): Employee | undefined {
   const matchNames = row.matchNames.map(normName);
   const matchLogins = new Set(
     [row.login, ...(row.matchLogins ?? [])].map((l) => l.toLowerCase()),
   );
+  const firstNames = referredFirstNames(row);
+  const stubIds = new Set(WALID_CRM.crew.map((c) => c.id));
 
-  // Exact full-name match first (e.g. Christopher Ryan Scott).
+  const rank = (e: Employee): number => {
+    let score = 0;
+    if (e.active) score += 100;
+    if (e.id !== row.id && !stubIds.has(e.id)) score += 50; // prefer live rows over Walid stubs
+    if (e.role === "field") score += 10;
+    score += Math.min(normName(e.name).split(" ").length, 5); // fuller legal names win
+    return score;
+  };
+
+  const bestOf = (candidates: Employee[]): Employee | undefined => {
+    if (!candidates.length) return undefined;
+    return [...candidates].sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name))[0];
+  };
+
+  // 1) Exact full-name match (Christopher Ryan Scott, etc.).
   for (const needle of matchNames) {
-    const hit = data.employees.find((e) => normName(e.name) === needle);
+    const hits = data.employees.filter((e) => normName(e.name) === needle);
+    const hit = bestOf(hits);
     if (hit) return hit;
   }
 
-  // All significant tokens present (christopher + ryan + scott, or christopher + scott).
+  // 2) Multi-token containment (christopher + scott).
   for (const needle of matchNames) {
     const tokens = needle.split(" ").filter((t) => t.length > 2);
     if (tokens.length < 2) continue;
-    const hit = data.employees.find((e) => {
+    const hits = data.employees.filter((e) => {
       const n = normName(e.name);
       return tokens.every((t) => n.includes(t));
     });
+    const hit = bestOf(hits);
     if (hit) return hit;
   }
 
-  // Already created under the preferred Walid stub id.
-  const byId = data.employees.find((e) => e.id === row.id);
-  if (byId) return byId;
-
-  // Login aliases only for multi-word identities (avoid binding "cameron" → Cameron Brown).
-  const canonicalTokens = normName(row.name).split(" ").filter((t) => t.length > 2);
-  if (canonicalTokens.length >= 2) {
-    const byLogin = data.employees.find((e) => matchLogins.has(e.login.toLowerCase()));
-    if (byLogin) return byLogin;
+  // 3) First-name match — "Cameron" → existing Cameron Brown / Cameron …, etc.
+  {
+    const hits = data.employees.filter((e) => {
+      if (e.id === row.id) return false; // don't treat the stub as the live match
+      return firstNames.includes(firstName(e.name));
+    });
+    const hit = bestOf(hits);
+    if (hit) return hit;
   }
 
-  return undefined;
+  // 4) Login aliases (chris / christopher.scott / cameron).
+  {
+    const hits = data.employees.filter(
+      (e) => e.id !== row.id && matchLogins.has(e.login.toLowerCase()),
+    );
+    const hit = bestOf(hits);
+    if (hit) return hit;
+  }
+
+  // 5) Preferred stub id already present (only when no live person matched).
+  return data.employees.find((e) => e.id === row.id);
 }
 
+/** Remap every known employee-id foreign key, then delete the duplicate stub. */
 function remappingEmployeeId(data: AppData, fromId: string, toId: string) {
   if (fromId === toId) return;
+
+  const rewrite = (value: string | null | undefined): string | null | undefined => {
+    if (value === fromId) return toId;
+    return value;
+  };
+
   for (const t of data.timeEntries) {
     if (t.employeeId === fromId) t.employeeId = toId;
   }
   for (const p of data.jobProgress) {
     if (p.authorId === fromId) p.authorId = toId;
   }
-  const stub = data.employees.find((e) => e.id === fromId);
-  if (stub) {
-    stub.active = false;
-    // Free login collision if the real user already owns a different login.
-    if (!stub.login.endsWith(".stub")) stub.login = `${stub.login}.stub`;
+  for (const a of data.activities) {
+    if (a.authorId === fromId) a.authorId = toId;
   }
+  for (const j of data.jobs) {
+    if (j.crewLeadId === fromId) j.crewLeadId = toId;
+  }
+  for (const l of data.leads) {
+    if (l.assignedToId === fromId) l.assignedToId = toId;
+  }
+  for (const d of data.deals) {
+    if (d.ownerId === fromId) d.ownerId = toId;
+  }
+  for (const s of data.shifts) {
+    if (s.employeeId === fromId) s.employeeId = toId;
+    if (s.postedById === fromId) s.postedById = toId;
+    if (s.claimedById === fromId) s.claimedById = toId;
+  }
+  for (const k of data.knocks) {
+    if (k.knockerId === fromId) k.knockerId = toId;
+    if (Array.isArray(k.visitedByIds)) {
+      k.visitedByIds = k.visitedByIds.map((id) => (id === fromId ? toId : id));
+    }
+  }
+  for (const t of data.tickets) {
+    if (t.assigneeId === fromId) t.assigneeId = toId;
+  }
+  for (const tok of data.passwordResetTokens) {
+    if (tok.employeeId === fromId) tok.employeeId = toId;
+  }
+
+  // Delete the duplicate stub account entirely (do not leave an inactive twin).
+  data.employees = data.employees.filter((e) => e.id !== fromId);
+  void rewrite;
 }
 
 /**
- * Resolve Rylee / Christopher Ryan Scott / Cameron to real employee ids.
- * Prefers existing users (by name/login) over creating Walid stub accounts.
- * Idempotent — remaps hours off a mistaken `emp-chris` stub onto the live user.
+ * Resolve Rylee / Christopher / Cameron to real employee ids.
+ * If the operator named someone by first name and that person already exists,
+ * bind hours to them — never mint a parallel stub. Idempotent: remaps + deletes stubs.
  */
 export function ensureWalidCrew(data: AppData, nowIso?: string): string[] {
   const hireDate = (nowIso ?? new Date().toISOString()).slice(0, 10);
@@ -120,21 +200,15 @@ export function ensureWalidCrew(data: AppData, nowIso?: string): string[] {
   for (const row of WALID_CRM.crew) {
     let emp = findExistingCrewMember(data, row);
 
-    // Stub was created earlier under the fallback id with a short name — prefer
-    // a fuller live match when both exist.
+    // Stub present alongside a live first-name match — always prefer the live user.
     if (emp && emp.id === row.id) {
-      const better = data.employees.find((e) => {
-        if (e.id === row.id) return false;
-        const n = normName(e.name);
-        return row.matchNames.map(normName).some((needle) => {
-          if (n === needle) return true;
-          const tokens = needle.split(" ").filter((t) => t.length > 2);
-          return tokens.length >= 2 && tokens.every((t) => n.includes(t));
-        });
-      });
-      if (better) {
-        remappingEmployeeId(data, row.id, better.id);
-        emp = better;
+      const live = findExistingCrewMember(
+        { ...data, employees: data.employees.filter((e) => e.id !== row.id) },
+        row,
+      );
+      if (live) {
+        remappingEmployeeId(data, row.id, live.id);
+        emp = live;
       }
     }
 
@@ -158,16 +232,16 @@ export function ensureWalidCrew(data: AppData, nowIso?: string): string[] {
         emp.email = `${row.login}.field@bhcontracting.ca`;
       }
       data.employees.push(emp);
+    } else if (emp.id !== row.id) {
+      // Live person matched — fold any leftover stub into them and delete it.
+      remappingEmployeeId(data, row.id, emp.id);
     } else {
-      // Keep the live person's name; only fill blank role / ensure active for hours.
+      // Only the stub exists (no live person with this first name yet).
       emp.active = true;
       if (!emp.role) emp.role = "field";
-      if (emp.id === row.id && normName(emp.name) !== normName(row.name)) {
-        // Only rewrite the stub account name to the canonical full name.
-        emp.name = row.name;
-      }
-      if (emp.id !== row.id) {
-        remappingEmployeeId(data, row.id, emp.id);
+      if (normName(emp.name) !== normName(row.name) && firstName(emp.name) === firstName(row.name)) {
+        // Keep short first-name stubs as-is unless canonical name is richer.
+        if (normName(row.name).split(" ").length > 1) emp.name = row.name;
       }
     }
 
