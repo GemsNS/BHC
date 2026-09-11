@@ -2,6 +2,7 @@ import { queueWebhook } from "./webhooks";
 import {
   DEFAULT_AD_EXCLUDE_KEYWORDS,
   DEFAULT_AD_KEEP_KEYWORDS,
+  DEFAULT_PUBLIC_AD_SOURCES,
   looksLikeRealEstateNoise,
 } from "./lead-search-recipes";
 import {
@@ -156,7 +157,7 @@ export function parseFeed(xml: string): RawAd[] {
 /* ----------------------------- alert emails ----------------------------- */
 
 const LISTING_URL_RE =
-  /https?:\/\/(?:www\.)?(?:kijiji\.ca\/v-[^\s"'<>)\]]+|[a-z0-9-]+\.craigslist\.org\/[a-z]{3}\/[^\s"'<>)\]]+|(?:www\.)?facebook\.com\/marketplace\/item\/\d+[^\s"'<>)\]]*|(?:www\.)?homestars\.com\/[^\s"'<>)\]]+|(?:www\.)?nextdoor\.com\/[^\s"'<>)\]]+)/gi;
+  /https?:\/\/(?:www\.)?(?:kijiji\.ca\/v-[^\s"'<>)\]]+|[a-z0-9-]+\.craigslist\.org\/[a-z]{3}\/[^\s"'<>)\]]+|(?:www\.)?facebook\.com\/marketplace\/item\/\d+[^\s"'<>)\]]*|(?:www\.)?homestars\.com\/[^\s"'<>)\]]+|(?:www\.)?nextdoor\.com\/[^\s"'<>)\]]+|(?:www\.)?reddit\.com\/r\/[^\s"'<>)\]]+)/gi;
 
 export function listingIdFromUrl(url: string): string {
   const kijiji = url.match(/kijiji\.ca\/v-[^/]+\/[^/]+\/[^/]+\/(\d+)/i);
@@ -165,7 +166,118 @@ export function listingIdFromUrl(url: string): string {
   if (cl) return `craigslist:${cl[1]}`;
   const fb = url.match(/marketplace\/item\/(\d+)/i);
   if (fb) return `facebook:${fb[1]}`;
+  const reddit = url.match(/reddit\.com\/r\/[^/]+\/comments\/([a-z0-9]+)/i);
+  if (reddit) return `reddit:${reddit[1]}`;
   return canonicalUrl(url);
+}
+
+/* ---------------------- Kijiji / public HTML search --------------------- */
+
+type KijijiListingLike = {
+  __typename?: string;
+  id?: string | number;
+  title?: string;
+  description?: string;
+  url?: string;
+  activationDate?: string;
+  sortingDate?: string;
+  location?: { name?: string; address?: string };
+};
+
+/**
+ * Parse Kijiji search-result HTML (__NEXT_DATA__ Apollo StandardListing cards).
+ * Falls back to scraping /v-… listing anchors when the JSON blob is missing.
+ */
+export function parseKijijiSearchHtml(html: string): RawAd[] {
+  const out: RawAd[] = [];
+  const seen = new Set<string>();
+
+  const next = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i);
+  if (next?.[1]) {
+    try {
+      const data = JSON.parse(next[1]) as {
+        props?: { pageProps?: { __APOLLO_STATE__?: Record<string, KijijiListingLike> } };
+      };
+      const state = data.props?.pageProps?.__APOLLO_STATE__ ?? {};
+      for (const [key, node] of Object.entries(state)) {
+        if (!node || typeof node !== "object") continue;
+        if (node.__typename !== "StandardListing" && !key.startsWith("StandardListing:")) continue;
+        const title = String(node.title ?? "").trim();
+        const url = String(node.url ?? "").trim();
+        if (!title || !url) continue;
+        const id = listingIdFromUrl(url);
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const body = stripHtml(String(node.description ?? "")).slice(0, 4000);
+        const contacts = extractContacts(`${title}\n${body}`);
+        const posted =
+          node.sortingDate || node.activationDate
+            ? new Date(String(node.sortingDate || node.activationDate)).toISOString()
+            : null;
+        out.push({
+          externalId: id,
+          url: canonicalUrl(url),
+          title: title.slice(0, 200),
+          body,
+          postedAt: posted && !Number.isNaN(Date.parse(posted)) ? posted : null,
+          location: node.location?.name || node.location?.address || "",
+          contactEmail: contacts.email,
+          contactPhone: contacts.phone,
+        });
+      }
+    } catch {
+      /* fall through to anchor scrape */
+    }
+  }
+
+  if (!out.length) {
+    const anchorRe = /<a\b[^>]*href=["'](https?:\/\/(?:www\.)?kijiji\.ca\/v-[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    let m: RegExpExecArray | null;
+    while ((m = anchorRe.exec(html))) {
+      const url = canonicalUrl(m[1]);
+      const id = listingIdFromUrl(url);
+      if (seen.has(id)) continue;
+      const title = stripHtml(m[2]);
+      if (title.length < 4 || /^(view|see|open|more|details|photo)/i.test(title)) continue;
+      seen.add(id);
+      out.push({
+        externalId: id,
+        url,
+        title: title.slice(0, 200),
+        body: "",
+        postedAt: null,
+      });
+    }
+  }
+  return out;
+}
+
+/** Detect HTML vs feed XML and parse accordingly (Kijiji search pages, etc.). */
+export function parseFetchedAdDocument(body: string, sourceUrl = ""): RawAd[] {
+  const trimmed = body.trim();
+  const looksHtml =
+    /^<!DOCTYPE html/i.test(trimmed) ||
+    /^<html[\s>]/i.test(trimmed) ||
+    /<script id="__NEXT_DATA__"/i.test(trimmed);
+  if (looksHtml || /kijiji\.ca/i.test(sourceUrl)) {
+    const kijiji = parseKijijiSearchHtml(body);
+    if (kijiji.length) return kijiji;
+  }
+  if (/<(rss|feed|item|entry)\b/i.test(trimmed)) {
+    return parseFeed(body);
+  }
+  // Last resort: any listing URLs in a non-feed document
+  if (looksHtml) {
+    const urls = [...new Set((body.match(LISTING_URL_RE) ?? []).map(canonicalUrl))];
+    return urls.map((url) => ({
+      externalId: listingIdFromUrl(url),
+      url,
+      title: cleanTitle(url.split("/").filter(Boolean).pop() ?? url).replace(/-/g, " ").slice(0, 120),
+      body: "",
+      postedAt: null,
+    }));
+  }
+  return parseFeed(body);
 }
 
 export type AlertEmailInput = {
@@ -458,4 +570,68 @@ export function ensureImapAdSource(
   );
   data.adSources.push(src);
   return src;
+}
+
+/**
+ * Ensure public RSS/HTML ad sources exist (Reddit, Kijiji search pages, Craigslist).
+ * These keep the pipeline discovering listings when IMAP auth is broken.
+ * Set ADS_PUBLIC_SOURCES=0 to disable auto-wiring.
+ */
+export function ensurePublicAdSources(
+  data: AppData,
+  ctx: IngestContext,
+): AdSource[] {
+  const disabled = (typeof process !== "undefined" ? process.env?.ADS_PUBLIC_SOURCES ?? "1" : "1")
+    .trim()
+    .toLowerCase();
+  if (disabled === "0" || disabled === "false" || disabled === "off") return [];
+
+  const created: AdSource[] = [];
+  for (const def of DEFAULT_PUBLIC_AD_SOURCES) {
+    const existing = data.adSources.find((s) => s.id === def.id);
+    if (existing) {
+      // Refresh URL / filters from code defaults so ops pick up recipe fixes.
+      // Do not force-enable — operator may have toggled a blocked source off.
+      existing.url = def.url;
+      existing.type = def.type;
+      existing.name = def.name;
+      existing.keywords = [...def.keywords];
+      existing.excludeKeywords = [...def.excludeKeywords];
+      existing.region = def.region;
+      created.push(existing);
+      continue;
+    }
+    const src = newAdSource(
+      {
+        id: def.id,
+        name: def.name,
+        type: def.type,
+        url: def.url,
+        enabled: true,
+        keywords: [...def.keywords],
+        excludeKeywords: [...def.excludeKeywords],
+        region: def.region,
+      },
+      ctx,
+    );
+    data.adSources.push(src);
+    created.push(src);
+  }
+  // Retire noisy auto-sources that were replaced (broad "looking for" Kijiji page).
+  for (const obsolete of ["adsrc-kijiji-html-looking"]) {
+    const s = data.adSources.find((x) => x.id === obsolete);
+    if (s) s.enabled = false;
+  }
+  return created;
+}
+
+/** Wire IMAP (when creds exist) + public scrape sources before every ingest. */
+export function ensureAdIntakeSources(
+  data: AppData,
+  ctx: IngestContext,
+): { imap: AdSource | null; public: AdSource[] } {
+  return {
+    imap: ensureImapAdSource(data, ctx),
+    public: ensurePublicAdSources(data, ctx),
+  };
 }

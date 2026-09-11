@@ -19,7 +19,7 @@ import { runMainframeTurn, type ChatMessage } from "../src/lib/mainframe-agent";
 import { automationsDue, runAutomation, runDailyAutomations } from "../src/lib/mainframe-automations";
 import { executeMainframeTool } from "../src/lib/mainframe-tools";
 import { imapConfigured, imapSummary, pollImapInbox } from "../src/lib/ad-imap";
-import { ensureBuiltinSource, ingestRawAds } from "../src/lib/ad-ingest";
+import { ensureAdIntakeSources, ensureBuiltinSource, ingestRawAds } from "../src/lib/ad-ingest";
 import { qualifyListing, runAdIngest } from "../src/lib/ad-pipeline";
 import { companyProfile } from "../src/lib/ad-classify";
 import { mailConfigStatus, sendEmail } from "../src/lib/mail";
@@ -87,6 +87,7 @@ Commands:
   webhooks retry                Retry the backlog now
 
   ads status                    Job-ad outreach: connections, sources, inbox counts
+  ads ensure-sources            Wire IMAP + public Reddit/Kijiji/Craigslist sources
   ads ingest                    Poll sources, triage new ads, create leads + drafts
   ads add "<title>" [options]   Add one ad by hand and triage it
     --body "<text>" --url <u> --email <e> --phone <p> --name <n> --location <l>
@@ -364,6 +365,9 @@ async function cmdWebhooksRetry() {
 }
 
 async function cmdAdsStatus() {
+  await updateStoreAsync(async (d) => {
+    ensureAdIntakeSources(d, { newId, nowIso });
+  });
   const data = await readStore();
   const ai = getAIStatus();
   const mail = mailConfigStatus();
@@ -371,12 +375,14 @@ async function cmdAdsStatus() {
   const imap = imapSummary();
   const policy = sendPolicy();
   const on = (b: boolean) => (b ? "●" : "○");
+  const publicOn = (process.env.ADS_PUBLIC_SOURCES ?? "1").trim().toLowerCase() !== "0";
   console.log("Connections:");
   console.log(`  ${on(ai.configured)} AI        ${ai.configured ? `${ai.provider} · ${ai.model}` : "not configured (rules-only triage) — set ANTHROPIC_API_KEY"}`);
   console.log(`  ${on(mail.configured)} Email     ${mail.configured ? `${mail.provider} · from ${mail.from}` : "not configured — SMTP_* or RESEND_API_KEY"}`);
   console.log(`  ${on(sms.configured)} SMS       ${sms.configured ? `twilio · ${sms.from}` : "not configured — TWILIO_*"}`);
   console.log(`  ${on(imap.configured)} Mailbox   ${imap.configured ? `${imap.user} · ${imap.host} · ${imap.folder}` : "not configured — ADS_IMAP_*"}`);
   console.log(`  ${on(Boolean(process.env.ADS_INBOUND_SECRET))} Webhook   POST /api/ads/inbound ${process.env.ADS_INBOUND_SECRET ? "enabled" : "(set ADS_INBOUND_SECRET)"}`);
+  console.log(`  ${on(publicOn)} Public    Reddit/Kijiji/Craigslist auto-sources ${publicOn ? "enabled" : "disabled (ADS_PUBLIC_SOURCES=0)"}`);
   console.log(
     `\nPolicy: auto-send ${policy.autosend.size ? [...policy.autosend].join("+") + ` (score ≥ ${policy.autosendMinScore})` : "OFF (approve each reply)"} · cap ${policy.dailyCap}/day · SMS quiet ${policy.quietStart}-${policy.quietEnd}h · follow-up after ${policy.followUpDays}d`,
   );
@@ -397,12 +403,23 @@ async function cmdAdsIngest() {
   let summary = "";
   let errors: string[] = [];
   await updateStoreAsync(async (d) => {
+    ensureAdIntakeSources(d, { newId, nowIso });
     const r = await runAdIngest(d, { newId, nowIso, pollImap: imapConfigured() ? pollImapInbox : undefined });
     summary = r.summary;
     errors = r.errors;
   });
   console.log(summary);
   for (const e of errors) console.log(`  ! ${e}`);
+}
+
+async function cmdAdsEnsureSources() {
+  let n = 0;
+  await updateStoreAsync(async (d) => {
+    const r = ensureAdIntakeSources(d, { newId, nowIso });
+    n = (r.imap ? 1 : 0) + r.public.length;
+  });
+  console.log(`Ensured ${n} ad source(s) (IMAP when creds present + public Reddit/Kijiji/Craigslist).`);
+  await cmdAdsStatus();
 }
 
 async function cmdAdsAdd(title: string) {
@@ -715,6 +732,7 @@ async function main() {
   if (cmd === "ads") {
     if (sub === "status") return cmdAdsStatus();
     if (sub === "ingest") return cmdAdsIngest();
+    if (sub === "ensure-sources" || sub === "ensure") return cmdAdsEnsureSources();
     if (sub === "add") return cmdAdsAdd(args[2] ?? "");
     if (sub === "list") return cmdAdsList();
     if (sub === "send") return cmdAdsSend();

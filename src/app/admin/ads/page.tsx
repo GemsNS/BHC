@@ -646,14 +646,15 @@ function AdsHub() {
               <span>Type</span>
               <select name="type" className="field-input" defaultValue="rss">
                 <option value="rss">RSS / Atom feed URL</option>
+                <option value="html">Public search page (Kijiji HTML)</option>
                 <option value="imap">Alert mailbox (IMAP — configured in .env)</option>
                 <option value="webhook">Inbound webhook (Zapier / Cloudflare)</option>
                 <option value="manual">Manual paste</option>
               </select>
             </label>
             <label className="field md:col-span-2">
-              <span>Feed URL (RSS only)</span>
-              <input name="url" className="field-input" placeholder="https://…/rss" />
+              <span>URL (RSS feed or Kijiji / search page)</span>
+              <input name="url" className="field-input" placeholder="https://…/rss or https://www.kijiji.ca/b-services/…" />
             </label>
             <label className="field">
               <span>Keep only ads containing (comma-separated, empty = all)</span>

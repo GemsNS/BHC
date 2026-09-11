@@ -140,7 +140,15 @@ export async function runAutomationTick(
             ? ` · purged ${purged.removedAds} junk ad(s), ${purged.removedLeads} fake lead(s), ${purged.cancelledOutreach} draft(s)`
             : "";
         results.push(`[${auto.name}] ${r.summary}${purgeNote}`);
-        for (const e of r.errors) errors.push(`${auto.name}: ${e}`);
+        // Soft network failures from optional public sources are already filtered
+        // in pollSource. Remaining errors only fail the tick when nothing landed.
+        if (r.errors.length) {
+          if (r.created === 0) {
+            for (const e of r.errors) errors.push(`${auto.name}: ${e}`);
+          } else {
+            for (const e of r.errors) results.push(`[${auto.name}] warning: ${e}`);
+          }
+        }
         if (r.created || r.qualified || purged.removedAds || purged.removedLeads) {
           audit(data, "ad_ingest", `${r.summary}${purgeNote}`, opts.newId);
         }

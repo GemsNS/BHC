@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { imapConfigured, imapSummary, pollImapInbox } from "@/lib/ad-imap";
-import { ensureBuiltinSource, ensureImapAdSource, ingestRawAds, newAdSource, parseFeed } from "@/lib/ad-ingest";
+import { ensureAdIntakeSources, ensureBuiltinSource, ingestRawAds, newAdSource, parseFetchedAdDocument } from "@/lib/ad-ingest";
 import { adMinScore, qualifyListing, runAdIngest } from "@/lib/ad-pipeline";
 import { classifyAd, companyProfile, draftReply } from "@/lib/ad-classify";
 import { getAIStatus } from "@/lib/ai-provider";
@@ -30,6 +30,7 @@ function setupStatus() {
     sms: { configured: sms.configured, provider: sms.provider, from: sms.from },
     imap: imapSummary(),
     inboundWebhook: Boolean(process.env.ADS_INBOUND_SECRET?.trim()),
+    publicSources: (process.env.ADS_PUBLIC_SOURCES ?? "1").trim().toLowerCase() !== "0",
     autosend: [...policy.autosend],
     autosendMinScore: policy.autosendMinScore,
     dailyCap: policy.dailyCap,
@@ -43,11 +44,9 @@ function setupStatus() {
 export async function GET(request: Request) {
   const employee = await requireApiEmployee(request);
   if (employee instanceof NextResponse) return employee;
-  if (imapConfigured()) {
-    await updateStore((d) => {
-      ensureImapAdSource(d, { newId, nowIso });
-    });
-  }
+  await updateStore((d) => {
+    ensureAdIntakeSources(d, { newId, nowIso });
+  });
   const data = await readStore();
   const listings = [...data.adListings].sort((a, b) => b.fetchedAt.localeCompare(a.fetchedAt)).slice(0, 300);
   const adIds = new Set(listings.map((l) => l.id));
@@ -70,7 +69,7 @@ export async function GET(request: Request) {
 const sourceSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
-  type: z.enum(["rss", "imap", "webhook", "manual"]),
+  type: z.enum(["rss", "html", "imap", "webhook", "manual"]),
   url: z.string().optional(),
   enabled: z.boolean().optional(),
   keywords: z.array(z.string()).optional(),
@@ -159,6 +158,7 @@ export async function POST(request: Request) {
     case "ingest": {
       let result: Awaited<ReturnType<typeof runAdIngest>> | null = null;
       await updateStoreAsync(async (d) => {
+        ensureAdIntakeSources(d, { newId, nowIso });
         result = await runAdIngest(d, hooks());
       });
       return NextResponse.json({ ok: true, result });
@@ -335,15 +335,21 @@ export async function POST(request: Request) {
   }
 }
 
-/** Preview: parse an RSS URL without saving (used by the source form). */
+/** Preview: parse an RSS / HTML search URL without saving (used by the source form). */
 export async function PUT(request: Request) {
   const employee = await requireApiEmployee(request);
   if (employee instanceof NextResponse) return employee;
   const { url } = z.object({ url: z.string().url() }).parse(await request.json());
   try {
-    const res = await fetch(url, { headers: { "User-Agent": "BHC-CRM/1.0" } });
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; BHC-CRM/1.0; +https://bhcontracting.ca)",
+        Accept: "application/rss+xml, application/atom+xml, text/html;q=0.9, */*;q=0.5",
+      },
+      redirect: "follow",
+    });
     if (!res.ok) return NextResponse.json({ error: `HTTP ${res.status}` }, { status: 502 });
-    const items = parseFeed(await res.text());
+    const items = parseFetchedAdDocument(await res.text(), url);
     return NextResponse.json({ ok: true, count: items.length, sample: items.slice(0, 5) });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "fetch failed" }, { status: 502 });
