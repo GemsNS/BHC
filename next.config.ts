@@ -1,5 +1,6 @@
 import path from "path";
 import type { NextConfig } from "next";
+import { securityHeaders } from "./src/lib/security-headers";
 
 const isStatic = process.env.NEXT_PUBLIC_STATIC_DEMO === "1";
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -12,6 +13,16 @@ const distDir = process.env.NEXT_DIST_DIR?.trim() || undefined;
 
 const nextConfig: NextConfig = {
   ...(distDir ? { distDir } : {}),
+  // Hide X-Powered-By: Next.js (audit finding)
+  poweredByHeader: false,
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: securityHeaders(),
+      },
+    ];
+  },
   // Node-only libraries that read their own asset files at runtime (pdfkit fonts, IMAP)
   serverExternalPackages: ["pdfkit", "imapflow", "mailparser", "nodemailer"],
   webpack: (config, { nextRuntime, webpack }) => {
