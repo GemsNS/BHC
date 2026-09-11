@@ -1,0 +1,25 @@
+[Unit]
+Description=BHC Next.js CRM (BH Contracting Co.)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/bhc
+EnvironmentFile=/etc/bhc/bhc.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=bhc
+
+# Hardening (adjust if app needs more files)
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+.git
+.github
+node_modules
+.next
+out
+data
+*.md
+.env
+.env.*
+!.env.example
+coverage
+terminals
+tmp
+*.log

@@ -134,3 +134,7 @@ Generic Node hosts (Fly, Railway, Cloud Run): `npm ci && npm run build && npm st
 - Manual: `npm run bhc -- store backup` · restore with `npm run bhc -- store restore <file>` (takes a `pre-restore-*` copy first) or Automation hub → Restore (admin)
 - App rollback: `bash deploy/production/deploy.sh --rollback` (previous SHA recorded in `data/deploy/previous_sha`)
 - Pages: revert `gh-pages` branch.
+
+## GCP / Grok agent deploy
+
+See `docs/GCP_GROK_DEPLOY.md` and `docs/GROK_MASTER_PROMPT.md`. Cloud Run + GCE VM scripts live under `deploy/gcp/`.
