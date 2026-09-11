@@ -88,6 +88,7 @@ describe("walid CRM", () => {
       expect(hours.timeEntryIds).toHaveLength(5); // Day1×2 + Day2×3
       expect(hours.hoursPerShift).toBe(8);
       expect(data.employees.filter((e) => hours.employeeIds.includes(e.id))).toHaveLength(3);
+      expect(data.employees.find((e) => e.id === "emp-chris")?.name).toBe("Christopher Ryan Scott");
       const jobEntries = data.timeEntries.filter((t) => t.jobId === WALID_CRM.jobId);
       expect(jobEntries).toHaveLength(5);
       const day1Entries = jobEntries.filter((t) => t.id.includes("-day1-"));
@@ -124,5 +125,103 @@ describe("walid CRM", () => {
       delete process.env.MEDIA_DIR;
       rmSync(media, { recursive: true, force: true });
     }
+  });
+
+  it("binds all crew hours to existing first-name matches and deletes stubs", () => {
+    const data = buildSeedData();
+    const live = [
+      {
+        id: "emp-crs-live",
+        name: "Christopher Ryan Scott",
+        email: "christopher.scott@bhcontracting.ca",
+        login: "christopher.scott",
+      },
+      {
+        id: "emp-cameron-live",
+        name: "Cameron Brown",
+        email: "cameron.brown@bhcontracting.ca",
+        login: "cameron.brown",
+      },
+      {
+        id: "emp-rylee-live",
+        name: "Rylee MacKenzie",
+        email: "rylee.mackenzie@bhcontracting.ca",
+        login: "rylee.mackenzie",
+      },
+    ] as const;
+    for (const row of live) {
+      data.employees.push({
+        ...row,
+        pin: "0000",
+        passwordHash: null,
+        mustChangePassword: false,
+        role: "field",
+        phone: "",
+        hireDate: "2024-01-01",
+        hourlyRate: 28,
+        active: true,
+      });
+    }
+    // Mistaken stub accounts from the earlier first-name-only import.
+    for (const stub of [
+      { id: "emp-chris", name: "Christopher", login: "chris" },
+      { id: "emp-cameron-field", name: "Cameron", login: "cameron" },
+      { id: "emp-rylee", name: "Rylee", login: "rylee" },
+    ] as const) {
+      data.employees.push({
+        id: stub.id,
+        name: stub.name,
+        email: `${stub.login}@bhcontracting.ca`,
+        login: stub.login,
+        pin: "0000",
+        passwordHash: null,
+        mustChangePassword: true,
+        role: "field",
+        phone: "",
+        hireDate: "2026-09-10",
+        hourlyRate: 26,
+        active: true,
+      });
+    }
+    data.timeEntries.unshift(
+      {
+        id: "time-walid-day1-chris",
+        employeeId: "emp-chris",
+        clockIn: "2026-09-09T08:00:00.000-03:00",
+        clockOut: "2026-09-09T14:00:00.000-03:00",
+        jobId: WALID_CRM.jobId,
+        notes: "stub hours",
+      },
+      {
+        id: "time-walid-day1-cameron-field",
+        employeeId: "emp-cameron-field",
+        clockIn: "2026-09-09T08:00:00.000-03:00",
+        clockOut: "2026-09-09T14:00:00.000-03:00",
+        jobId: WALID_CRM.jobId,
+        notes: "stub hours",
+      },
+    );
+
+    const hours = importWalidCrewHours(data);
+    expect(hours.employeeIds.sort()).toEqual(
+      ["emp-cameron-live", "emp-crs-live", "emp-rylee-live"].sort(),
+    );
+    expect(hours.employeeIds).not.toContain("emp-chris");
+    expect(hours.employeeIds).not.toContain("emp-cameron-field");
+    expect(hours.employeeIds).not.toContain("emp-rylee");
+
+    const jobEntries = data.timeEntries.filter((t) => t.jobId === WALID_CRM.jobId);
+    expect(jobEntries).toHaveLength(5);
+    expect(jobEntries.every((t) => hours.employeeIds.includes(t.employeeId))).toBe(true);
+
+    // Duplicate stubs are deleted, not left inactive.
+    expect(data.employees.find((e) => e.id === "emp-chris")).toBeUndefined();
+    expect(data.employees.find((e) => e.id === "emp-cameron-field")).toBeUndefined();
+    expect(data.employees.find((e) => e.id === "emp-rylee")).toBeUndefined();
+    expect(data.employees.find((e) => e.id === "emp-crs-live")?.name).toBe(
+      "Christopher Ryan Scott",
+    );
+    expect(data.employees.find((e) => e.id === "emp-cameron-live")?.name).toBe("Cameron Brown");
+    expect(data.employees.find((e) => e.id === "emp-rylee-live")?.name).toBe("Rylee MacKenzie");
   });
 });
