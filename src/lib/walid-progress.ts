@@ -393,7 +393,7 @@ export async function importWalidDay2Progress(
     if (!job.notes.includes("Progress: Day 2")) {
       job.notes = `${job.notes}\n\n${progressBlurb}`.trim();
     } else {
-      job.notes = job.notes.replace(/Progress: Day 2[\s\S]*?(?=\n\nProgress:|$)/, progressBlurb).trim();
+      job.notes = job.notes.replace(/Progress: Day 2[\s\S]*?(?=\n\n(?:Progress:|Crew hours:)|$)/, progressBlurb).trim();
     }
   }
 
@@ -476,7 +476,7 @@ export function importWalidCrewHours(
       job.notes = `${job.notes}\n\n${hoursNote}`.trim();
     } else {
       job.notes = job.notes
-        .replace(/Crew hours:[\s\S]*?(?=\n\n[A-Z]|$)/, hoursNote)
+        .replace(/Crew hours:[\s\S]*?(?=\n\n(?:Progress:|[A-Z])|$)/, hoursNote)
         .trim();
     }
   }
