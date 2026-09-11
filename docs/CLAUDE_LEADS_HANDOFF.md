@@ -2,6 +2,8 @@
 
 **Repo:** `GemsNS/BHC` · **Production:** `/opt/bhc` · **Site:** `bhcontracting.ca` · **Service:** `bhc`  
 **Main tip when this was written:** `804ec9c` (includes ads public sources #47 + doc-delete sync #48)  
+**Prerequisite (do before / in parallel with leads work):** security audit fixes in `docs/DNS_AND_HTTP_SECURITY.md` / PR `cursor/security-headers-spf-22fe` — GoDaddy SPF must include `spf.protection.outlook.com`, DMARC `p=reject`, HTTP HSTS/XCTO/CSP deployed. Outbound email reputation depends on SPF.
+
 **Owner ask:** Audit the automated leads system; build **realtime** ingest from **local Facebook Marketplace** and **Kijiji**; fix / take over **outbound email** so the CRM is actually autonomous.
 
 ---
