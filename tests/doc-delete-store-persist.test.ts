@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile, mkdir } from "fs/promises";
+import { mkdtemp, rm, mkdir } from "fs/promises";
 import os from "os";
 import path from "path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -43,7 +43,7 @@ describe("document delete persists through store backend", () => {
 
   it("round-trips delete through jsonBackend write/read like the API", async () => {
     const backend = jsonBackend(storePath);
-    let data = normalizeStore(buildDemoSeedData());
+    const data = normalizeStore(buildDemoSeedData());
     data.quotes = [];
     data.documents = [];
     data.payments = [];
@@ -93,7 +93,7 @@ describe("document delete persists through store backend", () => {
 
   it("upload then delete clears checklist contract mark", async () => {
     const backend = jsonBackend(storePath);
-    let data = normalizeStore(buildDemoSeedData());
+    const data = normalizeStore(buildDemoSeedData());
     data.documents = [];
     const job = data.jobs[0];
     job.portalToken = "tok-up";
