@@ -144,8 +144,20 @@ async function pollSource(
     const msg = err instanceof Error ? err.message : String(err);
     source.lastPolledAt = hooks.nowIso();
     source.lastError = msg;
-    result.errors.push(`${source.name}: ${msg}`);
-    live.error("ad", `Source failed: ${source.name}`, msg);
+    // Rate-limits / bot blocks are expected on some public hosts — keep the
+    // source marked unhealthy in the UI, but don't fail the whole automation tick
+    // when other sources still deliver ads (CI + production).
+    const soft =
+      /HTTP\s*(403|429)\b/i.test(msg) ||
+      /blocked by remote/i.test(msg) ||
+      /aborted|timeout/i.test(msg);
+    if (!soft) {
+      result.errors.push(`${source.name}: ${msg}`);
+      live.error("ad", `Source failed: ${source.name}`, msg);
+    } else {
+      result.polled += 1;
+      live.ad(`Source soft-fail: ${source.name}`, msg, undefined, "info");
+    }
   }
 }
 
