@@ -85,11 +85,9 @@ export async function runServerTick(opts: {
   const data = await readStore();
   const { autoCloseOverLimitPunches } = await import("./time-clock");
   const closed = autoCloseOverLimitPunches(data.timeEntries).closed;
-  // Wire IMAP mailbox + discovery sources when credentials exist (SMTP fallback ok).
-  if (imap.imapConfigured()) {
-    const { ensureImapAdSource } = await import("./ad-ingest");
-    ensureImapAdSource(data, { newId, nowIso });
-  }
+  // Wire IMAP mailbox + public Reddit/Kijiji/Craigslist sources when possible.
+  const { ensureAdIntakeSources } = await import("./ad-ingest");
+  ensureAdIntakeSources(data, { newId, nowIso });
   const record = await runAutomationTick(data, {
     source: opts.source,
     force: opts.force,

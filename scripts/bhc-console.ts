@@ -15,7 +15,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import path from "path";
 import readline from "readline";
 import { imapConfigured, imapSummary, pollImapInbox } from "../src/lib/ad-imap";
-import { ensureBuiltinSource, ingestRawAds, newAdSource } from "../src/lib/ad-ingest";
+import { ensureAdIntakeSources, ensureBuiltinSource, ingestRawAds, newAdSource } from "../src/lib/ad-ingest";
 import { companyProfile } from "../src/lib/ad-classify";
 import { qualifyListing, runAdIngest } from "../src/lib/ad-pipeline";
 import { getAIStatus } from "../src/lib/ai-provider";
@@ -425,13 +425,14 @@ const adHooks = () => ({ newId, nowIso, pollImap: imapConfigured() ? pollImapInb
 
 cmd({
   name: "ads",
-  usage: "ads [all|new|drafted|sent|replied|skipped] | ads ingest | ads add | ads sources | ads source add <rss|imap|webhook|manual> <name> [url]",
+  usage: "ads [all|new|drafted|sent|replied|skipped] | ads ingest | ads add | ads sources | ads source add <rss|html|imap|webhook|manual> <name> [url]",
   help: "Job-ad inbox, polling, and sources",
   run: async ([sub, ...rest]) => {
     if (sub === "ingest") {
       let summary = "";
       let errors: string[] = [];
       await updateStoreAsync(async (d) => {
+        ensureAdIntakeSources(d, { newId, nowIso });
         const r = await runAdIngest(d, adHooks());
         summary = r.summary;
         errors = r.errors;
@@ -460,22 +461,31 @@ cmd({
       return;
     }
     if (sub === "sources") {
+      await updateStore((d) => {
+        ensureAdIntakeSources(d, { newId, nowIso });
+      });
       const d = await readStore();
-      if (!d.adSources.length) return warn("no sources — try: ads source add imap \"Kijiji alerts\"  (after setting ADS_IMAP_*)");
+      if (!d.adSources.length) return warn("no sources — try: ads source ensure  (or ads source add imap \"Kijiji alerts\")");
       for (const s of d.adSources) console.log(`  ${on(s.enabled)} ${pad(s.id.slice(0, 8), 8)} ${pad(s.type, 7)} ${pad(s.name, 28)} ${s.url} ${c.dim(`last ${when(s.lastPolledAt)}`)}${s.lastError ? c.red(` ! ${s.lastError}`) : ""}`);
       return;
     }
     if (sub === "source") {
       const [verb, type, name, url] = rest;
       if (verb === "add") {
-        if (!type || !name || !["rss", "imap", "webhook", "manual"].includes(type)) return fail("usage: ads source add <rss|imap|webhook|manual> <name> [url]");
+        if (!type || !name || !["rss", "html", "imap", "webhook", "manual"].includes(type)) return fail("usage: ads source add <rss|html|imap|webhook|manual> <name> [url]");
         const keywords = (await ask("Keep only ads containing (comma list, blank = all): ")).split(",").map((s) => s.trim()).filter(Boolean);
         const exclude = (await ask("Drop ads containing [for sale, we offer, free estimates]: ") || "for sale, we offer, free estimates").split(",").map((s) => s.trim()).filter(Boolean);
-        const src = newAdSource({ name, type: type as "rss", url: url ?? "", keywords, excludeKeywords: exclude }, { newId, nowIso });
+        const src = newAdSource({ name, type: type as "rss" | "html" | "imap" | "webhook" | "manual", url: url ?? "", keywords, excludeKeywords: exclude }, { newId, nowIso });
         await updateStore((d) => {
           d.adSources.push(src);
         });
         return ok(`source added ${src.id.slice(0, 8)} — run "ads ingest" to poll now`);
+      }
+      if (verb === "ensure") {
+        await updateStore((d) => {
+          ensureAdIntakeSources(d, { newId, nowIso });
+        });
+        return ok("ensured IMAP + public Reddit/Kijiji/Craigslist sources — run ads ingest");
       }
       if (verb === "rm" || verb === "remove") {
         await updateStore((d) => {

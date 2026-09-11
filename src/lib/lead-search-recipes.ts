@@ -129,6 +129,112 @@ export const DEFAULT_DISCOVERY_DOMAINS: string[] = [
 ];
 
 /**
+ * Built-in public sources that work without IMAP (Kijiji alert mailbox).
+ * Auto-created by ensurePublicAdSources so the CRM still discovers ads when
+ * Office 365 blocks basic IMAP ("Login is disabled").
+ *
+ * - Reddit Atom feeds: work from most hosts
+ * - Kijiji HTML search pages: parse __NEXT_DATA__ StandardListing cards
+ * - Craigslist RSS: often blocked from cloud IPs; kept for production HRM hosts
+ */
+export type PublicAdSourceDef = {
+  id: string;
+  name: string;
+  type: "rss" | "html";
+  url: string;
+  /** Empty = keep all (minus excludes). Prefer empty for already-narrow search feeds. */
+  keywords: string[];
+  excludeKeywords: string[];
+  region: string;
+};
+
+/** Lighter keep-list for open scrapes (OR match). */
+export const PUBLIC_SCRAPE_KEEP_KEYWORDS: string[] = [
+  "looking for",
+  "recommend",
+  "how much",
+  "need a quote",
+  "need quote",
+  "contractor",
+  "siding",
+  "soffit",
+  "fascia",
+  "gutter",
+  "eavestrough",
+  "deck",
+  "window",
+  "exterior",
+  "reno",
+  "handyman",
+];
+
+export const DEFAULT_PUBLIC_AD_SOURCES: PublicAdSourceDef[] = [
+  {
+    id: "adsrc-reddit-halifax-demand",
+    name: "Reddit r/halifax — contractor / exterior asks",
+    type: "rss",
+    url: "https://www.reddit.com/r/halifax/search.rss?q=looking%20for%20OR%20recommend%20(siding%20OR%20deck%20OR%20contractor%20OR%20windows%20OR%20gutter%20OR%20soffit)&restrict_sr=1&sort=new",
+    keywords: [],
+    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS],
+    region: "Halifax Regional Municipality",
+  },
+  {
+    id: "adsrc-reddit-halifax-trades",
+    name: "Reddit r/halifax — siding / deck / windows mentions",
+    type: "rss",
+    url: "https://www.reddit.com/r/halifax/search.rss?q=siding%20OR%20%22deck%20repair%22%20OR%20soffit%20OR%20%22window%20replacement%22%20OR%20gutters%20OR%20eavestrough&restrict_sr=1&sort=new",
+    keywords: [...PUBLIC_SCRAPE_KEEP_KEYWORDS],
+    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS],
+    region: "Halifax Regional Municipality",
+  },
+  {
+    id: "adsrc-kijiji-html-siding",
+    name: "Kijiji HRM Services — siding / soffit search",
+    type: "html",
+    url: "https://www.kijiji.ca/b-services/city-of-halifax/siding/k0c72l1700321?sort=dateDesc",
+    keywords: [...PUBLIC_SCRAPE_KEEP_KEYWORDS],
+    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS],
+    region: "Halifax Regional Municipality",
+  },
+  {
+    id: "adsrc-kijiji-html-deck",
+    name: "Kijiji HRM Services — deck search",
+    type: "html",
+    url: "https://www.kijiji.ca/b-services/city-of-halifax/deck/k0c72l1700321?sort=dateDesc",
+    keywords: [...PUBLIC_SCRAPE_KEEP_KEYWORDS],
+    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS],
+    region: "Halifax Regional Municipality",
+  },
+  {
+    id: "adsrc-kijiji-html-looking",
+    name: "Kijiji HRM Services — looking for",
+    type: "html",
+    url: "https://www.kijiji.ca/b-services/city-of-halifax/looking-for/k0c72l1700321?sort=dateDesc",
+    keywords: [...PUBLIC_SCRAPE_KEEP_KEYWORDS],
+    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS],
+    region: "Halifax Regional Municipality",
+  },
+  {
+    id: "adsrc-craigslist-halifax-lab",
+    name: "Craigslist Halifax — labor gigs RSS",
+    type: "rss",
+    url: "https://halifax.craigslist.org/search/lab?format=rss",
+    keywords: [...PUBLIC_SCRAPE_KEEP_KEYWORDS],
+    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS],
+    region: "Halifax Regional Municipality",
+  },
+  {
+    id: "adsrc-craigslist-halifax-bbb",
+    name: "Craigslist Halifax — services RSS (siding/deck)",
+    type: "rss",
+    url: "https://halifax.craigslist.org/search/bbb?query=siding|deck|soffit|gutter|windows&format=rss",
+    keywords: [...PUBLIC_SCRAPE_KEEP_KEYWORDS],
+    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS],
+    region: "Halifax Regional Municipality",
+  },
+];
+
+/**
  * Kijiji saved searches the operator should create (email → CRM mailbox).
  * Category path matters more than a single broad keyword.
  */

@@ -30,6 +30,8 @@ Model choice: the CRM's default is **`claude-opus-5`** for anything customer-fac
 3. **Add sources:** in `/admin/ads` → *Add source*:
    - type **Alert mailbox (IMAP)**, name "Kijiji alerts" — uses the `ADS_IMAP_*` mailbox; optionally list keep/drop keywords.
    - type **RSS** for any site or RSS-bridge feed you have.
+   - type **Public search page (HTML)** for Kijiji search URLs (parses listing cards).
+   - Public Reddit / Kijiji / Craigslist sources are **auto-wired** on ingest when `ADS_PUBLIC_SOURCES=1` (default) — this keeps discovery alive if IMAP fails.
    - the **Inbound webhook** and **Manual paste** sources are created automatically the first time they are used.
 4. **Create Kijiji alerts** (step 3 in the table) pointed at the mailbox. First alerts arrive within an hour.
 5. **Point Twilio at the CRM:** Twilio Console → Phone Numbers → your number → Messaging → *A message comes in* → `https://bhcontracting.ca/api/sms/inbound` (HTTP POST). This is how replies and STOPs come back.
@@ -104,7 +106,7 @@ Every step is idempotent: re-running never duplicates leads, drafts, or follow-u
 
 Console: `ads`, `ads ingest`, `ads add`, `ads sources`, `ads source add imap "Kijiji alerts"`, `ad <id>`, `ad approve <id> [email|sms]`, `ad send <id>`, `ad edit <draftId>`, `ad replied|won|lost|skip <id>`, `outreach`, `outreach approve all`, `outreach send`, `optouts`.
 
-CLI: `npm run bhc -- ads status|ingest|add|list|send|test-email|test-sms`.
+CLI: `npm run bhc -- ads status|ensure-sources|ingest|add|list|send|test-email|test-sms`.
 
 ---
 

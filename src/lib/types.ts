@@ -614,13 +614,13 @@ export interface Message {
 /* Job-ad outreach (cold email / SMS replies to local "need a quote" ads) */
 /* ------------------------------------------------------------------ */
 
-export type AdSourceType = "rss" | "imap" | "webhook" | "manual";
+export type AdSourceType = "rss" | "html" | "imap" | "webhook" | "manual";
 
 export interface AdSource {
   id: string;
   name: string;
   type: AdSourceType;
-  /** RSS/Atom URL for `rss`; mailbox label for `imap`; ignored otherwise */
+  /** RSS/Atom URL for `rss`; public search/results page for `html`; mailbox label for `imap` */
   url: string;
   enabled: boolean;
   /** Only keep ads matching at least one keyword (empty = keep all) */

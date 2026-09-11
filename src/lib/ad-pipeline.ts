@@ -1,5 +1,5 @@
 import { classifyAd, draftReply } from "./ad-classify";
-import { ingestRawAds, parseFeed, type RawAd } from "./ad-ingest";
+import { ingestRawAds, parseFetchedAdDocument, type RawAd } from "./ad-ingest";
 import { live } from "./events";
 import {
   isJunkAdTitle,
@@ -14,7 +14,7 @@ import type { AdListing, AdSource, AppData, Lead, OutreachQueueItem } from "./ty
 
 /**
  * Ad → lead → drafted reply, end to end. Pure over AppData plus injected
- * I/O (fetcher for RSS, pollImap for mailboxes). Run by the automation
+ * I/O (fetcher for RSS/HTML, pollImap for mailboxes). Run by the automation
  * engine every 15 minutes, by POST /api/ads {action:"ingest"}, and by the
  * CLI (`npm run bhc -- ads ingest`).
  */
@@ -73,17 +73,31 @@ async function pollSource(
   const fetcher = hooks.fetcher ?? fetch;
   let raws: RawAd[] = [];
   try {
-    if (source.type === "rss") {
-      if (!source.url) throw new Error("RSS source has no URL");
+    if (source.type === "rss" || source.type === "html") {
+      if (!source.url) throw new Error(`${source.type.toUpperCase()} source has no URL`);
       const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-      const timer = controller ? setTimeout(() => controller.abort(), 15_000) : null;
+      const timer = controller ? setTimeout(() => controller.abort(), 20_000) : null;
+      const accept =
+        source.type === "html"
+          ? "text/html,application/xhtml+xml;q=0.9,*/*;q=0.5"
+          : "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, text/html;q=0.8, */*;q=0.5";
       const res = await fetcher(source.url, {
-        headers: { "User-Agent": "BHC-CRM/1.0 (+https://bhcontracting.ca)", Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.5" },
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; BHC-CRM/1.0; +https://bhcontracting.ca)",
+          Accept: accept,
+          "Accept-Language": "en-CA,en;q=0.9",
+        },
         signal: controller?.signal,
+        redirect: "follow",
       });
       if (timer) clearTimeout(timer);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      raws = parseFeed(await res.text());
+      const body = await res.text();
+      // Craigslist/Kijiji sometimes return a soft-block HTML page with 200
+      if (/your request has been blocked/i.test(body) || /<title>\s*blocked\s*<\/title>/i.test(body)) {
+        throw new Error("HTTP blocked by remote (bot protection)");
+      }
+      raws = parseFetchedAdDocument(body, source.url);
     } else if (source.type === "imap") {
       if (!hooks.pollImap) throw new Error("IMAP polling is only available on the Node host");
       const r = await hooks.pollImap();
