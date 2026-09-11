@@ -1,20 +1,49 @@
-import type { AppData, Employee } from "./types";
+import type { AppData, Employee, EmployeeRole } from "./types";
+
+/** Roles that may see full payroll (all punches + rates). */
+const PAYROLL_ROLES: EmployeeRole[] = ["admin", "manager", "office"];
+
+export function canViewPayroll(role: EmployeeRole): boolean {
+  return PAYROLL_ROLES.includes(role);
+}
 
 /** Strip secrets from employees before sending store JSON to the browser. */
-export function sanitizeEmployeeForClient(employee: Employee): Employee {
+export function sanitizeEmployeeForClient(
+  employee: Employee,
+  opts?: { hideRate?: boolean },
+): Employee {
   const { pin: _pin, passwordHash, ...safe } = employee;
   return {
     ...safe,
     pin: "",
     passwordHash: null,
     hasPassword: Boolean(passwordHash),
+    hourlyRate: opts?.hideRate ? 0 : safe.hourlyRate,
   };
 }
 
-export function sanitizeStoreForClient(data: AppData): AppData {
+/**
+ * Sanitize store for a browser client.
+ * Keeps password-reset tokens off the wire.
+ * When `viewer` is a non-payroll role, other employees' rates are zeroed and
+ * time entries are limited to the viewer's own punches.
+ */
+export function sanitizeStoreForClient(
+  data: AppData,
+  viewer?: Employee | null,
+): AppData {
+  const payroll = viewer ? canViewPayroll(viewer.role) : true;
   return {
     ...data,
-    employees: data.employees.map(sanitizeEmployeeForClient),
+    employees: data.employees.map((e) =>
+      sanitizeEmployeeForClient(e, {
+        hideRate: !payroll && Boolean(viewer) && e.id !== viewer!.id,
+      }),
+    ),
+    timeEntries:
+      payroll || !viewer
+        ? data.timeEntries
+        : data.timeEntries.filter((t) => t.employeeId === viewer.id),
     // Never expose reset tokens to the browser
     passwordResetTokens: [],
   };

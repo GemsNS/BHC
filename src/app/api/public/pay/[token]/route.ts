@@ -4,7 +4,7 @@ import { renderInvoicePdf } from "@/lib/documents";
 import { createStripeCheckout, invoiceBalance, paymentsStatus } from "@/lib/payments";
 import { companyForDocuments } from "@/lib/quotes";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
-import { newId, nowIso, readStore, updateStoreAsync } from "@/lib/store";
+import { newId, nowIso, readStore } from "@/lib/store";
 
 type RouteParams = { params: Promise<{ token: string }> };
 
@@ -36,16 +36,14 @@ export async function GET(request: Request, { params }: RouteParams) {
   );
 }
 
-/** Create a Stripe Checkout session for this invoice and return the URL. */
+/** Card checkout disabled — e-Transfer / cheque only. */
 export async function POST(request: Request, { params }: RouteParams) {
   const { token } = await params;
   const rl = checkRateLimit({ key: `pay:${clientIp(request)}`, limit: 30, windowMs: 3_600_000 });
   if (!rl.ok) return NextResponse.json({ error: "Too many attempts" }, { status: 429 });
-  let result: { url: string | null; error: string | null } = { url: null, error: "Not found" };
-  await updateStoreAsync(async (d) => {
-    const inv = d.invoices.find((i) => i.token === token);
-    if (!inv) return;
-    result = await createStripeCheckout(d, inv, { newId, nowIso });
-  });
-  return NextResponse.json(result, { status: result.url ? 200 : 400 });
+  const data = await readStore();
+  const inv = data.invoices.find((i) => i.token === token);
+  if (!inv) return NextResponse.json({ url: null, error: "Not found" }, { status: 404 });
+  const result = await createStripeCheckout(data, inv, { newId, nowIso });
+  return NextResponse.json(result, { status: 410 });
 }

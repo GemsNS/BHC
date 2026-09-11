@@ -237,7 +237,9 @@ function CommandShellInner({
             {children}
           </main>
           {mode === "apps" ? <MobileBottomBar pathname={pathname} /> : null}
-          {mode === "admin" && !isDeck ? <MainframeLauncher /> : null}
+          {mode === "admin" && !isDeck && can("dashboard") ? (
+            <MainframeLauncher />
+          ) : null}
         </div>
       </div>
     </RequireAuth>

@@ -113,13 +113,13 @@ describe("payments", () => {
     expect(d.payments.length).toBe(2);
   });
 
-  it("verifies Stripe signatures and matches e-Transfer emails", () => {
+  it("verifies Stripe signatures are rejected (Stripe cut) and matches e-Transfer emails", () => {
     const body = '{"id":"evt_1"}';
     const t = Math.floor(Date.now() / 1000);
     const sig = createHmac("sha256", "whsec_test").update(`${t}.${body}`).digest("hex");
-    expect(verifyStripeSignature(body, `t=${t},v1=${sig}`, "whsec_test")).toBe(true);
+    // Stripe verify always returns false — card pay removed from workflow
+    expect(verifyStripeSignature(body, `t=${t},v1=${sig}`, "whsec_test")).toBe(false);
     expect(verifyStripeSignature(body, `t=${t},v1=deadbeef`, "whsec_test")).toBe(false);
-    expect(verifyStripeSignature(body, `t=${t - 10_000},v1=${sig}`, "whsec_test")).toBe(false);
 
     const et = detectEtransfer({ subject: "INTERAC e-Transfer: Jane Doe sent you money", text: "Jane Doe sent you $1,234.56 (CAD).", fromAddress: "notify@payments.interac.ca" });
     expect(et).toEqual({ amount: 1234.56, senderName: "Jane Doe" });

@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const employee = await requireApiEmployee(request);
   if (employee instanceof NextResponse) return employee;
   const data = await readStore();
-  return NextResponse.json(sanitizeStoreForClient(data));
+  return NextResponse.json(sanitizeStoreForClient(data, employee));
 }
 
 export async function PUT(request: Request) {
@@ -20,5 +20,5 @@ export async function PUT(request: Request) {
   const merged = mergeClientStoreUpdate(existing, body);
   const normalized = normalizeStore(merged);
   await writeStore(normalized);
-  return NextResponse.json(sanitizeStoreForClient(normalized));
+  return NextResponse.json(sanitizeStoreForClient(normalized, employee));
 }

@@ -11,6 +11,18 @@ import type { AppData } from "@/lib/types";
 
 const apps = [
   {
+    href: "/apps/clock",
+    title: "Time clock",
+    blurb: "Clock in before using other tools. Auto clock-out at 12h; 30m lunch deducted.",
+    perm: "clock" as const,
+  },
+  {
+    href: "/apps/hours",
+    title: "Hour tracker",
+    blurb: "Your paid hours today and this week (lunch deducted).",
+    perm: "clock" as const,
+  },
+  {
     href: "/apps/schedule",
     title: "Schedule",
     blurb: "Your shifts plus open pool and overtime to claim.",
@@ -47,12 +59,6 @@ const apps = [
     perm: "knocker" as const,
   },
   {
-    href: "/apps/clock",
-    title: "Time clock",
-    blurb: "Clock in/out against jobs from any phone.",
-    perm: "clock" as const,
-  },
-  {
     href: "/admin/jobs",
     title: "Jobs",
     blurb: "Active and scheduled job board.",
@@ -72,8 +78,8 @@ const apps = [
   },
   {
     href: "/admin/hours",
-    title: "Hours",
-    blurb: "Your crew time and payroll view.",
+    title: "Payroll hours",
+    blurb: "Crew time and payroll view (office).",
     perm: "hours" as const,
   },
   {

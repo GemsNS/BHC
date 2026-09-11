@@ -83,6 +83,8 @@ export async function runServerTick(opts: {
     import("./job-reports"),
   ]);
   const data = await readStore();
+  const { autoCloseOverLimitPunches } = await import("./time-clock");
+  const closed = autoCloseOverLimitPunches(data.timeEntries).closed;
   // Wire IMAP mailbox + discovery sources when credentials exist (SMTP fallback ok).
   if (imap.imapConfigured()) {
     const { ensureImapAdSource } = await import("./ad-ingest");
@@ -102,6 +104,11 @@ export async function runServerTick(opts: {
     discover: discovery.discoveryConfigured() ? (d) => discovery.discoverLeadsOnline(d, { newId, nowIso }) : undefined,
     jobReports: (d) => reports.runWeeklyJobReports(d, { newId, nowIso }),
   });
+  if (closed > 0) {
+    record.results.unshift(
+      `Auto clock-out: closed ${closed} punch(es) past the 12-hour limit.`,
+    );
+  }
   await writeStore(data);
   return record;
 }
