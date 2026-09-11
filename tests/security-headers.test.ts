@@ -22,6 +22,22 @@ describe("securityHeaders", () => {
     expect(csp).toContain("tile.openstreetmap.org");
     expect(csp).toContain("nominatim.openstreetmap.org");
   });
+
+  it("allows Esri imagery and same-origin frames for God's Eye", () => {
+    const csp = contentSecurityPolicy();
+    expect(csp).toContain("server.arcgisonline.com");
+    expect(csp).toContain("frame-src 'self'");
+  });
+
+  it("allowlists GODS_EYE_EMBED_URL origin in frame-src when set", () => {
+    process.env.GODS_EYE_EMBED_URL = "https://gev.example.com/hrm";
+    try {
+      const csp = contentSecurityPolicy();
+      expect(csp).toContain("https://gev.example.com");
+    } finally {
+      delete process.env.GODS_EYE_EMBED_URL;
+    }
+  });
 });
 
 describe("DNS mail auth records", () => {

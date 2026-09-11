@@ -72,6 +72,8 @@ Canonical strings also live in `src/lib/security-headers.ts` (`DNS_SPF_RECORD`, 
 | `deploy/production/apache-bhc-security.conf` | `ServerTokens Prod`, strip `X-Powered-By`, mirror HSTS/XCTO |
 | `deploy/production/install-apache-security.sh` | One-shot install + `apache2` reload |
 
+CSP also allowlists Leaflet OSM + Esri World Imagery (`server.arcgisonline.com`) for the optional God's Eye HRM map, and `frame-src 'self'` plus `GODS_EYE_EMBED_URL` origin when set. See `docs/GROKBOT_GODS_EYE_HANDBACK.md`.
+
 **On the host after merge:**
 
 ```bash

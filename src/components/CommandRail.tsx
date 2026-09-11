@@ -12,6 +12,7 @@ import {
   type NavItem,
   type NavSection,
 } from "@/lib/nav";
+import { navItemVisibleForFlags } from "@/lib/gods-eye";
 import type { Permission } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -103,6 +104,7 @@ function AdminNav({
       ADMIN_NAV_SECTIONS.map((section) => ({
         ...section,
         items: section.items.filter((item) => {
+          if (!navItemVisibleForFlags(item.href)) return false;
           if (item.href === "/admin/sales") return canSeeSales(can);
           return can(item.perm);
         }),

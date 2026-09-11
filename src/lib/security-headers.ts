@@ -6,7 +6,27 @@
 
 export type SecurityHeader = { key: string; value: string };
 
-/** Content-Security-Policy tuned for Next.js App Router + Leaflet OSM tiles. */
+/**
+ * Optional frame-src hosts for God's Eye embed (GODS_EYE_EMBED_URL).
+ * Only same-origin by default; append allowlisted embed origin when set.
+ */
+export function godsEyeFrameSrcDirective(): string {
+  const hosts = new Set<string>(["'self'"]);
+  const raw =
+    process.env.NEXT_PUBLIC_GODS_EYE_EMBED_URL?.trim() ||
+    process.env.GODS_EYE_EMBED_URL?.trim() ||
+    "";
+  if (raw) {
+    try {
+      hosts.add(new URL(raw).origin);
+    } catch {
+      // Soft-fail: ignore malformed embed URL rather than break CSP / boot.
+    }
+  }
+  return `frame-src ${[...hosts].join(" ")}`;
+}
+
+/** Content-Security-Policy tuned for Next.js App Router + Leaflet OSM/Esri tiles. */
 export function contentSecurityPolicy(): string {
   const directives = [
     "default-src 'self'",
@@ -21,7 +41,12 @@ export function contentSecurityPolicy(): string {
       "https://*.tile.openstreetmap.org",
       "https://nominatim.openstreetmap.org",
       "https://*.openstreetmap.org",
+      // Keyless Esri World Imagery (God's Eye HRM satellite basemap)
+      "https://server.arcgisonline.com",
+      "https://*.arcgisonline.com",
+      "https://*.arcgis.com",
     ].join(" "),
+    godsEyeFrameSrcDirective(),
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "object-src 'none'",
