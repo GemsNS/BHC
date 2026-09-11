@@ -53,3 +53,4 @@ data/ai-usage.json
 # side-directory builds used by deploy/production/deploy.sh
 /.next-build/
 /.next-prev/
+.next-gev-off/

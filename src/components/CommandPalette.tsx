@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ADMIN_NAV_SECTIONS, SALES_TABS } from "@/lib/nav";
+import { navItemVisibleForFlags } from "@/lib/gods-eye";
 import { useSession } from "@/lib/session";
 
 type CommandEntry = {
@@ -23,6 +24,7 @@ export function CommandPalette() {
     const list: CommandEntry[] = [];
     for (const section of ADMIN_NAV_SECTIONS) {
       for (const item of section.items) {
+        if (!navItemVisibleForFlags(item.href)) continue;
         if (!can(item.perm)) continue;
         list.push({
           id: item.href,

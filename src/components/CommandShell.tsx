@@ -11,6 +11,7 @@ import {
   navItemForPath,
   sectionForPath,
 } from "@/lib/nav";
+import { navItemVisibleForFlags } from "@/lib/gods-eye";
 import type { Permission } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { JarvisBar } from "./JarvisBar";
@@ -35,6 +36,7 @@ function MobileSectionNav({ pathname }: { pathname: string }) {
   const chips = ADMIN_NAV_SECTIONS.flatMap((section) =>
     section.items
       .filter((item) => {
+        if (!navItemVisibleForFlags(item.href)) return false;
         if (item.href === "/admin/sales") return canSeeSales(can);
         return can(item.perm);
       })
@@ -107,6 +109,7 @@ function CommandShellInner({
   useEffect(() => {
     if (!user || mode !== "admin") return;
     const allowedNav = ADMIN_NAV.filter((n) => {
+      if (!navItemVisibleForFlags(n.href)) return false;
       if (n.href === "/admin/sales") return canSeeSales(can);
       return can(n.perm);
     });

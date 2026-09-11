@@ -3394,3 +3394,74 @@
   .live-dot-on { animation: none; }
   .live-wire-row { animation: none; }
 }
+
+/* ---- God's Eye View (HRM ops map) ---- */
+.gods-eye-page .cc-page-body { padding-bottom: 1.5rem; }
+.gods-eye-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: 1rem;
+  align-items: start;
+}
+.gods-eye-map-panel { min-height: 28rem; }
+.gods-eye-map-wrap { position: relative; }
+.gods-eye-map {
+  width: 100%;
+  height: min(70vh, 36rem);
+  min-height: 22rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #0b1220;
+}
+.gods-eye-map-loading,
+.gods-eye-map-error {
+  position: absolute;
+  z-index: 2;
+  left: 0.75rem;
+  top: 0.75rem;
+  margin: 0;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  border-radius: 0.35rem;
+  background: rgba(15, 23, 42, 0.85);
+  color: #e2e8f0;
+}
+.gods-eye-map-error { color: #fecaca; }
+.gods-eye-basemap-toggle { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.gods-eye-side { display: flex; flex-direction: column; gap: 1rem; }
+.gods-eye-side-copy,
+.gods-eye-disabled-copy {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--muted, #5c6570);
+}
+.gods-eye-disabled-list,
+.gods-eye-key-status {
+  margin: 0.75rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.gods-eye-meta {
+  margin: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+.gods-eye-meta dt {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.gods-eye-meta dd { margin: 0.15rem 0 0; font-size: 0.9rem; }
+.gods-eye-embed {
+  width: 100%;
+  min-height: 16rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: #0b1220;
+}
+@media (max-width: 960px) {
+  .gods-eye-layout { grid-template-columns: 1fr; }
+}
