@@ -508,6 +508,12 @@ export async function deleteDocument(
   const file = mediaFileFromUrl(doc.fileUrl);
   if (file) await deleteMedia(file);
 
+  // Drop dangling quote PDF pointer so hub/portal don't keep a dead media URL.
+  if (doc.quoteId) {
+    const q = data.quotes.find((x) => x.id === doc.quoteId);
+    if (q && q.pdfUrl === doc.fileUrl) q.pdfUrl = null;
+  }
+
   auditDocument(data, {
     jobId: doc.jobId,
     authorId: ctx.createdById,
