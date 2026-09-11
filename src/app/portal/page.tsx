@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AppsShell } from "@/components/AppsShell";
@@ -16,7 +16,7 @@ import {
 } from "@/lib/time-clock";
 import type { Job, TimeEntry } from "@/lib/types";
 
-export default function PortalPage() {
+function PortalClockInner() {
   const { user } = useSession();
   const search = useSearchParams();
   const nextPath = search.get("next");
@@ -197,5 +197,19 @@ export default function PortalPage() {
         </div>
       </RequireAuth>
     </AppsShell>
+  );
+}
+
+export default function PortalPage() {
+  return (
+    <Suspense
+      fallback={
+        <AppsShell title="Time clock">
+          <p className="text-[var(--muted)]">Loading time clock…</p>
+        </AppsShell>
+      }
+    >
+      <PortalClockInner />
+    </Suspense>
   );
 }

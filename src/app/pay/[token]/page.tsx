@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import "../../q/[token]/quote.css";
 
@@ -15,7 +15,7 @@ type Payload = {
 
 const money = (n: number) => `$${n.toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export default function PayPage() {
+function PayPageInner() {
   const { token } = useParams<{ token: string }>();
   const search = useSearchParams();
   const justPaid = search.get("paid") === "1";
@@ -103,5 +103,13 @@ export default function PayPage() {
         <footer className="pq-foot">{c.name} · {c.website}</footer>
       </div>
     </main>
+  );
+}
+
+export default function PayPage() {
+  return (
+    <Suspense fallback={<main className="pq"><p className="pq-status">Loading payment…</p></main>}>
+      <PayPageInner />
+    </Suspense>
   );
 }
