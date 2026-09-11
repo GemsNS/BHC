@@ -94,6 +94,15 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     canvassStops: raw.canvassStops ?? seed.canvassStops,
     zones: (raw.zones ?? seed.zones).map((z) => ({
       ...z,
+      // Older stores omit knocker assignment / door targets — stats + knocker
+      // maps crash if these are undefined.
+      assignedKnockerIds: Array.isArray(z.assignedKnockerIds)
+        ? z.assignedKnockerIds
+        : [],
+      targetDoors:
+        typeof z.targetDoors === "number" && Number.isFinite(z.targetDoors)
+          ? z.targetDoors
+          : 0,
       polygon: z.polygon ?? null,
       colorHex: z.colorHex ?? "#ff2a2a",
     })),

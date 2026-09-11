@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
+import { RequireAuth } from "@/components/RequireAuth";
 import { fetchJson, loadAppData } from "@/lib/client-data";
 import { isStaticDemo } from "@/lib/paths";
 import type { AppData, KnockEvent, SalesProjection } from "@/lib/types";
@@ -26,69 +27,105 @@ type StatsPayload = {
 };
 
 function computeFromData(data: AppData): StatsPayload {
-  const materialSpend = data.materials.reduce(
-    (s, m) => s + m.quantity * m.unitCost,
+  const materials = data.materials ?? [];
+  const fuelLogs = data.fuelLogs ?? [];
+  const jobs = data.jobs ?? [];
+  const leads = data.leads ?? [];
+  const knocks = data.knocks ?? [];
+  const zones = data.zones ?? [];
+  const employees = data.employees ?? [];
+
+  const materialSpend = materials.reduce(
+    (s, m) => s + (m.quantity || 0) * (m.unitCost || 0),
     0,
   );
-  const fuelSpend = data.fuelLogs.reduce((s, f) => s + f.cost, 0);
-  const knocksByOutcome = data.knocks.reduce<Record<string, number>>((acc, k) => {
+  const fuelSpend = fuelLogs.reduce((s, f) => s + (f.cost || 0), 0);
+  const knocksByOutcome = knocks.reduce<Record<string, number>>((acc, k) => {
     acc[k.outcome] = (acc[k.outcome] || 0) + 1;
     return acc;
   }, {});
+
   return {
     stats: {
-      openLeads: data.leads.filter((l) => !["won", "lost"].includes(l.status))
-        .length,
-      activeJobs: data.jobs.filter((j) =>
+      openLeads: leads.filter((l) => !["won", "lost"].includes(l.status)).length,
+      activeJobs: jobs.filter((j) =>
         ["scheduled", "in_progress", "on_hold"].includes(j.status),
       ).length,
-      contractValue: data.jobs.reduce((s, j) => s + (j.contractValue || 0), 0),
+      contractValue: jobs.reduce((s, j) => s + (j.contractValue || 0), 0),
       materialSpend,
       fuelSpend,
-      fuelGallons: data.fuelLogs.reduce((s, f) => s + f.gallons, 0),
-      knocksTotal: data.knocks.length,
-      knocksToday: data.knocks.filter(
+      fuelGallons: fuelLogs.reduce((s, f) => s + (f.gallons || 0), 0),
+      knocksTotal: knocks.length,
+      knocksToday: knocks.filter(
         (k) =>
           new Date(k.createdAt).toDateString() === new Date().toDateString(),
       ).length,
-      zonesActive: data.zones.filter((z) => z.status === "active").length,
-      teamSize: data.employees.filter((e) => e.active).length,
+      zonesActive: zones.filter((z) => z.status === "active").length,
+      teamSize: employees.filter((e) => e.active).length,
     },
     knocksByOutcome,
-    zoneProgress: data.zones.map((z) => {
-      const knocks = data.knocks.filter((k) => k.zoneId === z.id).length;
+    zoneProgress: zones.map((z) => {
+      const knockCount = knocks.filter((k) => k.zoneId === z.id).length;
+      const target =
+        typeof z.targetDoors === "number" && Number.isFinite(z.targetDoors)
+          ? z.targetDoors
+          : 0;
+      const assignees = Array.isArray(z.assignedKnockerIds)
+        ? z.assignedKnockerIds.length
+        : 0;
       return {
         zoneId: z.id,
         name: z.name,
         status: z.status,
-        knocks,
-        target: z.targetDoors,
-        pct: z.targetDoors
-          ? Math.min(100, Math.round((knocks / z.targetDoors) * 100))
-          : 0,
-        assignees: z.assignedKnockerIds.length,
+        knocks: knockCount,
+        target,
+        pct: target ? Math.min(100, Math.round((knockCount / target) * 100)) : 0,
+        assignees,
       };
     }),
-    projection: data.projections[0] || null,
-    recentKnocks: data.knocks.slice(0, 10),
+    projection: data.projections?.[0] || null,
+    recentKnocks: knocks.slice(0, 10),
   };
 }
 
-export default function StatsPage() {
+function StatsInner() {
   const [data, setData] = useState<StatsPayload | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      if (isStaticDemo()) {
-        setData(computeFromData(await loadAppData()));
-        return;
-      }
       try {
-        setData(await fetchJson<StatsPayload>("/api/stats"));
-      } catch {
-        setData(computeFromData(await loadAppData()));
+        if (isStaticDemo()) {
+          const payload = computeFromData(await loadAppData());
+          if (!cancelled) setData(payload);
+          return;
+        }
+        try {
+          const payload = await fetchJson<StatsPayload>("/api/stats");
+          if (!cancelled) setData(payload);
+        } catch {
+          const payload = computeFromData(await loadAppData());
+          if (!cancelled) setData(payload);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Could not load statistics",
+          );
+          setData({
+            stats: {},
+            knocksByOutcome: {},
+            zoneProgress: [],
+            projection: null,
+            recentKnocks: [],
+          });
+        }
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (!data) {
@@ -105,10 +142,25 @@ export default function StatsPage() {
         subtitle="Sales projections, knock conversion, job value, materials, and fuel at a glance."
       />
 
+      {error ? (
+        <p className="mb-4 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
+          {error}
+        </p>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Contract value" value={formatCurrency(stats.contractValue || 0)} />
-        <StatCard label="Material spend" value={formatCurrency(stats.materialSpend || 0)} />
-        <StatCard label="Fuel spend" value={formatCurrency(stats.fuelSpend || 0)} />
+        <StatCard
+          label="Contract value"
+          value={formatCurrency(stats.contractValue || 0)}
+        />
+        <StatCard
+          label="Material spend"
+          value={formatCurrency(stats.materialSpend || 0)}
+        />
+        <StatCard
+          label="Fuel spend"
+          value={formatCurrency(stats.fuelSpend || 0)}
+        />
         <StatCard label="Open leads" value={stats.openLeads || 0} />
         <StatCard label="Active jobs" value={stats.activeJobs || 0} />
         <StatCard label="Knocks (total)" value={stats.knocksTotal || 0} />
@@ -127,13 +179,27 @@ export default function StatsPage() {
               value={formatCurrency(projection.projectedRevenue)}
             />
             <StatCard label="Projected jobs" value={projection.projectedJobs} />
-            <StatCard label="Projected knocks" value={projection.projectedKnocks} />
+            <StatCard
+              label="Projected knocks"
+              value={projection.projectedKnocks}
+            />
           </div>
           {projection.notes ? (
             <p className="mt-3 text-sm text-[var(--muted)]">{projection.notes}</p>
           ) : null}
         </section>
-      ) : null}
+      ) : (
+        <section className="mt-6 rounded-xl border border-dashed border-[var(--line)] bg-white/50 p-5">
+          <h2 className="font-[family-name:var(--font-display)] text-xl">
+            Sales projection
+          </h2>
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            No projection on file yet. Add one in the store / seed when you set
+            monthly knock and revenue targets — this block will appear
+            automatically.
+          </p>
+        </section>
+      )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section className="rounded-xl border border-[var(--line)] bg-white p-5">
@@ -151,7 +217,9 @@ export default function StatsPage() {
               </li>
             ))}
             {Object.keys(knocksByOutcome).length === 0 ? (
-              <li className="text-sm text-[var(--muted)]">No knocks yet</li>
+              <li className="text-sm text-[var(--muted)]">
+                No knocks logged yet — knocker app activity will show here.
+              </li>
             ) : null}
           </ul>
         </section>
@@ -178,6 +246,11 @@ export default function StatsPage() {
                 </p>
               </li>
             ))}
+            {zoneProgress.length === 0 ? (
+              <li className="text-sm text-[var(--muted)]">
+                No zones configured yet.
+              </li>
+            ) : null}
           </ul>
         </section>
       </div>
@@ -199,8 +272,21 @@ export default function StatsPage() {
               </span>
             </li>
           ))}
+          {recentKnocks.length === 0 ? (
+            <li className="py-3 text-sm text-[var(--muted)]">
+              No recent knocks.
+            </li>
+          ) : null}
         </ul>
       </section>
     </div>
+  );
+}
+
+export default function StatsPage() {
+  return (
+    <RequireAuth perm="stats">
+      <StatsInner />
+    </RequireAuth>
   );
 }
