@@ -10,6 +10,9 @@
  *   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY  # future Google 3D tiles
  *   GODS_EYE_EMBED_URL               # optional iframe to a hosted full GEV build
  *   NEXT_PUBLIC_GODS_EYE_EMBED_URL   # client-visible embed URL (same value)
+ *
+ * Note: NEXT_PUBLIC_* must be read as static `process.env.NEXT_PUBLIC_…`
+ * identifiers so Next can inline them into the client bundle.
  */
 
 /** Halifax Regional Municipality civic core (City Hall / downtown). */
@@ -32,29 +35,29 @@ export type GodsEyeConfigStatus = {
   region: typeof HRM_CENTER;
 };
 
-function env(name: string): string | undefined {
+function truthyFlag(raw: string | undefined | null): boolean {
+  const v = (raw ?? "0").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
+function serverEnv(name: string): string | undefined {
   if (typeof process === "undefined") return undefined;
   const v = process.env?.[name]?.trim();
   return v || undefined;
 }
 
-function truthyFlag(raw: string | undefined): boolean {
-  const v = (raw ?? "0").toLowerCase();
-  return v === "1" || v === "true" || v === "yes" || v === "on";
-}
-
 /**
  * Explicit kill-switch. Default OFF.
- * Server prefers GODS_EYE_ENABLED; client builds also see NEXT_PUBLIC_GODS_EYE_ENABLED.
+ * Client uses statically referenced NEXT_PUBLIC_GODS_EYE_ENABLED (Next inlines it).
+ * Server prefers GODS_EYE_ENABLED, then the public flag.
  */
 export function godsEyeEnabled(): boolean {
-  // Prefer public flag on the client so nav can hide without a round-trip.
   if (typeof window !== "undefined") {
-    return truthyFlag(env("NEXT_PUBLIC_GODS_EYE_ENABLED"));
+    return truthyFlag(process.env.NEXT_PUBLIC_GODS_EYE_ENABLED);
   }
-  const server = env("GODS_EYE_ENABLED");
+  const server = serverEnv("GODS_EYE_ENABLED");
   if (server !== undefined) return truthyFlag(server);
-  return truthyFlag(env("NEXT_PUBLIC_GODS_EYE_ENABLED"));
+  return truthyFlag(process.env.NEXT_PUBLIC_GODS_EYE_ENABLED);
 }
 
 /** Whether an admin nav href should be shown (feature-flagged items). */
@@ -69,21 +72,23 @@ export function navItemVisibleForFlags(href: string): boolean {
 }
 
 export function godsEyeEmbedUrl(): string | null {
-  return (
-    env("NEXT_PUBLIC_GODS_EYE_EMBED_URL") ??
-    env("GODS_EYE_EMBED_URL") ??
-    null
-  );
+  const pub = process.env.NEXT_PUBLIC_GODS_EYE_EMBED_URL?.trim();
+  if (pub) return pub;
+  return serverEnv("GODS_EYE_EMBED_URL") ?? null;
 }
 
 export function godsEyeConfigStatus(): GodsEyeConfigStatus {
+  const cesium =
+    process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN?.trim() ||
+    serverEnv("CESIUM_ION_TOKEN");
+  const google =
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ||
+    serverEnv("GOOGLE_MAPS_API_KEY");
   return {
     enabled: godsEyeEnabled(),
     embedUrl: godsEyeEmbedUrl(),
-    cesiumIonConfigured: Boolean(env("NEXT_PUBLIC_CESIUM_ION_TOKEN") ?? env("CESIUM_ION_TOKEN")),
-    googleMapsConfigured: Boolean(
-      env("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY") ?? env("GOOGLE_MAPS_API_KEY"),
-    ),
+    cesiumIonConfigured: Boolean(cesium),
+    googleMapsConfigured: Boolean(google),
     region: HRM_CENTER,
   };
 }

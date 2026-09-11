@@ -12,6 +12,7 @@ export type SecurityHeader = { key: string; value: string };
  */
 export function godsEyeFrameSrcDirective(): string {
   const hosts = new Set<string>(["'self'"]);
+  // Static NEXT_PUBLIC read so Next can inline at build; server env as fallback.
   const raw =
     process.env.NEXT_PUBLIC_GODS_EYE_EMBED_URL?.trim() ||
     process.env.GODS_EYE_EMBED_URL?.trim() ||
