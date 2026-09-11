@@ -74,11 +74,30 @@ export default function PayPage() {
           <section className="pq-sign">
             <h2>Pay {money(inv.balance)}</h2>
             {error ? <p className="pq-error">{error}</p> : null}
-            <div className="pq-actions">
-              {data.canPayOnline ? <button type="button" className="pq-btn" disabled={busy} onClick={payOnline}>{busy ? "Opening secure checkout…" : "Pay by card / Apple Pay / Google Pay"}</button> : null}
+            {data.etransferEmail ? (
+              <div className="pq-block">
+                <h3>Interac e-Transfer</h3>
+                <p>
+                  Send {money(inv.balance)} to <strong>{data.etransferEmail}</strong>{" "}
+                  (auto-deposit — no security question needed). Put{" "}
+                  {inv.number ?? "the invoice number"} in the message.
+                </p>
+              </div>
+            ) : (
+              <div className="pq-block">
+                <h3>How to pay</h3>
+                <p>
+                  Card checkout is disabled. Please pay by Interac e-Transfer or
+                  cheque using the details below, or contact the office.
+                </p>
+              </div>
+            )}
+            <div className="pq-block">
+              <h3>Cheque</h3>
+              <p>
+                Payable to {c.name}. Questions? {c.phone} · {c.email}
+              </p>
             </div>
-            {data.etransferEmail ? <div className="pq-block"><h3>Interac e-Transfer</h3><p>Send {money(inv.balance)} to <strong>{data.etransferEmail}</strong> (auto-deposit — no security question needed). Put {inv.number ?? "the invoice number"} in the message.</p></div> : null}
-            <div className="pq-block"><h3>Cheque</h3><p>Payable to {c.name}. Questions? {c.phone} · {c.email}</p></div>
           </section>
         ) : null}
         <footer className="pq-foot">{c.name} · {c.website}</footer>

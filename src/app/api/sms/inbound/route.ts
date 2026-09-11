@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { receiveInbound } from "@/lib/messaging";
+import { twilioEnabled } from "@/lib/sms";
 import { newId, nowIso, updateStore } from "@/lib/store";
 import { readTwilioForm, twilioPublicUrl, twilioSignatureValid, twiml, xmlEscape } from "@/lib/twilio-verify";
 
@@ -16,6 +17,12 @@ export const dynamic = "force-dynamic";
  * Every message lands in /admin/inbox.
  */
 export async function POST(request: Request) {
+  if (!twilioEnabled()) {
+    return NextResponse.json(
+      { error: "SMS pending Twilio compliance approval (TWILIO_ENABLED=0)." },
+      { status: 503 },
+    );
+  }
   const token = process.env.TWILIO_AUTH_TOKEN?.trim();
   if (!token) return NextResponse.json({ error: "TWILIO_AUTH_TOKEN not set" }, { status: 503 });
   const params = await readTwilioForm(request);
