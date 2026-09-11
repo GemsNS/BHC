@@ -45,6 +45,8 @@ sudo systemctl daemon-reload && sudo systemctl enable --now bhc
 # optional: external timer instead of the in-process scheduler (then set BHC_SCHEDULER=0 in .env)
 sudo cp deploy/production/bhc-automation.{service,timer} /etc/systemd/system/
 sudo systemctl enable --now bhc-automation.timer
+# HTTP hardening (HSTS/XCTO mirror + hide Server version / X-Powered-By) — see docs/DNS_AND_HTTP_SECURITY.md
+sudo bash deploy/production/install-apache-security.sh
 ```
 
 Add to `/opt/bhc/.env`: `AUTOMATION_SECRET=<long random>` (lets cron/CI trigger ticks) and any `AUTOMATION_*` thresholds.

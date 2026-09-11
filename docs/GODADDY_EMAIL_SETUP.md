@@ -137,6 +137,21 @@ CONTACT_TO_EMAIL=info@bhcontracting.ca
 
 ---
 
+## SPF / DMARC (required for Microsoft 365 senders)
+
+Mail for `bhcontracting.ca` runs on **Microsoft 365** (`MX` → `bhcontracting-ca.mail.protection.outlook.com`, DKIM → Microsoft). If SPF is still GoDaddy-only, M365 outbound **fails SPF**.
+
+In GoDaddy DNS → domain `bhcontracting.ca`:
+
+| Host | Type | Value |
+|------|------|-------|
+| `@` | TXT (SPF) | `v=spf1 include:spf.protection.outlook.com include:secureserver.net -all` |
+| `_dmarc` | TXT (DMARC) | `v=DMARC1; p=reject; adkim=r; aspf=r; rua=mailto:dmarc_rua@onsecureserver.net;` |
+
+Full checklist (HTTP headers too): [`docs/DNS_AND_HTTP_SECURITY.md`](./DNS_AND_HTTP_SECURITY.md).
+
+---
+
 ## Troubleshooting
 
 | Symptom | Fix |
@@ -145,6 +160,7 @@ CONTACT_TO_EMAIL=info@bhcontracting.ca
 | 500 after submit | Wrong SMTP password, or GoDaddy blocking relay — confirm login at webmail |
 | **535 … disabled for the Tenant** | Enable SMTP AUTH at **tenant** level — see section above; mailbox-only is not enough |
 | **535 authentication rejected** | Wrong password, or tenant/mailbox SMTP still disabled |
+| Emails go to spam / SPF fail | SPF must include `spf.protection.outlook.com` — see section above |
 | Emails go to spam | Set `SMTP_FROM` to the same address as `SMTP_USER` |
 
 **Never commit** `SMTP_PASS` or API keys to git.
