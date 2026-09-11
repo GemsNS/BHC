@@ -9,6 +9,7 @@ import { automationStatus, describeSchedule } from "./automation-engine";
 import { storeHealth } from "./store-health";
 import { findProspectsForLead, scoreLead } from "./lead-automation";
 import { purgeSyntheticOutreachAndAds } from "./outreach-guard";
+import { queueQbOp, qbConnectionSummary } from "./quickbooks-ops";
 import type {
   AppData,
   AssistantCriteriaProfile,
@@ -99,6 +100,11 @@ export const MAINFRAME_TOOL_NAMES = [
   "outreach_status",
   "send_outreach",
   "purge_synthetic_outreach",
+  "qb_status",
+  "qb_get_pnl",
+  "qb_sync_customer",
+  "qb_sync_invoice",
+  "qb_sync_payroll_hours",
 ] as const;
 
 export type MainframeToolName = (typeof MAINFRAME_TOOL_NAMES)[number];
@@ -177,9 +183,35 @@ export function executeMainframeTool(
       };
     case "purge_synthetic_outreach":
       return toolPurgeSynthetic(data);
+    case "qb_status":
+    case "qb_get_pnl":
+    case "qb_sync_customer":
+    case "qb_sync_invoice":
+    case "qb_sync_payroll_hours":
+      return toolQuickBooks(tool, args);
     default:
       return { ok: false, summary: `Unknown tool: ${tool}` };
   }
+}
+
+function toolQuickBooks(
+  tool: MainframeToolName,
+  args: Record<string, unknown>,
+): ToolExecution {
+  if (tool === "qb_status") {
+    const summary = qbConnectionSummary();
+    return {
+      ok: true,
+      summary: `QuickBooks: ${summary}. Use Books & P&L to connect. Sync tools queue customer/invoice/payroll pushes for flush.`,
+      data: { connected: summary.startsWith("connected") },
+    };
+  }
+  const queued = queueQbOp(tool, args);
+  return {
+    ok: queued.ok,
+    summary: queued.summary,
+    data: queued.data,
+  };
 }
 
 function toolListAds(data: AppData, args: Record<string, unknown>): ToolExecution {

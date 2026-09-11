@@ -14,6 +14,11 @@ import {
   type PnlReport,
   type QbConnection,
 } from "@/lib/quickbooks";
+import {
+  flushQbQueue,
+  loadQbQueue,
+  qbConnectionSummary,
+} from "@/lib/quickbooks-ops";
 import { formatCurrency } from "@/lib/utils";
 
 type QbRemote = {
@@ -340,6 +345,33 @@ function BooksInner() {
                 onClick={disconnectQb}
               >
                 Disconnect
+              </button>
+              <button
+                type="button"
+                className="mainframe-panel-btn mainframe-panel-btn-muted"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const queued = loadQbQueue().filter((o) => o.status === "queued");
+                    if (!queued.length) {
+                      setMessage(
+                        `No Mainframe QB ops queued. ${qbConnectionSummary()}`,
+                      );
+                      return;
+                    }
+                    const notes = await flushQbQueue(fetchJson);
+                    setMessage(notes.join(" · "));
+                  } catch (err) {
+                    setMessage(
+                      err instanceof Error ? err.message : "Flush failed",
+                    );
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Flush Mainframe QB queue
               </button>
             </div>
           </>
