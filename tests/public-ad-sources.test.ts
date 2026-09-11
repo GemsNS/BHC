@@ -9,6 +9,7 @@ import {
 } from "../src/lib/ad-ingest";
 import { runAdIngest } from "../src/lib/ad-pipeline";
 import { DEFAULT_PUBLIC_AD_SOURCES } from "../src/lib/lead-search-recipes";
+import { KIJIJI_DEMAND_SOURCES } from "../src/lib/kijiji-realtime";
 import { buildDemoSeedData } from "../src/lib/demo-seed";
 import { normalizeStore } from "../src/lib/normalize";
 import type { AppData } from "../src/lib/types";
@@ -96,12 +97,17 @@ describe("public ad source fixtures", () => {
   it("ensurePublicAdSources creates the default Reddit/Kijiji/Craigslist set", () => {
     const d = store();
     const created = ensurePublicAdSources(d, ctx);
-    expect(created.length).toBe(DEFAULT_PUBLIC_AD_SOURCES.length);
+    // Trade defaults + intent-first Kijiji demand sources from kijiji-realtime.
+    expect(created.length).toBe(DEFAULT_PUBLIC_AD_SOURCES.length + KIJIJI_DEMAND_SOURCES.length);
     expect(d.adSources.some((s) => s.id === "adsrc-reddit-halifax-demand")).toBe(true);
+    expect(d.adSources.some((s) => s.id === "adsrc-kijiji-demand-siding")).toBe(true);
     expect(d.adSources.some((s) => s.type === "html")).toBe(true);
     // idempotent
     ensurePublicAdSources(d, ctx);
     expect(d.adSources.filter((s) => s.id.startsWith("adsrc-reddit")).length).toBe(2);
+    expect(d.adSources.filter((s) => s.id.startsWith("adsrc-kijiji-demand")).length).toBe(
+      KIJIJI_DEMAND_SOURCES.length,
+    );
   });
 
   it("ensureAdIntakeSources can be disabled via ADS_PUBLIC_SOURCES=0", () => {
