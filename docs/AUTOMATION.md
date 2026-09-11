@@ -65,6 +65,7 @@ Defined in `src/lib/automation-defaults.ts`. `normalizeStore` adds any missing e
 | `auto-payment-reminders` | `payment_reminders` | daily 10am | on | Sent invoices at 7/14/30 days → reminder with pay link |
 | `auto-job-reports` | `job_reports` | weekly (Fri 4pm, `JOB_REPORT_WEEKDAY`) | on | PDF progress report per active job from the week's site updates; sent when `DOCS_AUTOSEND` has `job_report` (server only) |
 | `auto-lead-discovery` | `lead_discovery` | every 3h | on | Claude + web search finds new "need a contractor" posts in HRM → ad inbox (needs `ANTHROPIC_API_KEY`; server only) |
+| `auto-agent-ops` | `agent_ops` | hourly | **off** | Unattended Mainframe agent sweep (allowlisted tools only). Hard-killed by `AGENT_HARNESS_ENABLED=0`. See `docs/GROKBOT_HANDBACK.md`. |
 | `auto-prospects` | `prospect_hunt` | daily 10am | off | Queue outreach drafts (still `pending_approval`) |
 | `auto-outreach-digest` | `outreach_digest` | daily 4pm | off | Count of drafts awaiting approval |
 

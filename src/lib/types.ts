@@ -740,7 +740,8 @@ export type AutomationActionName =
   | "referral_asks"
   | "payment_reminders"
   | "lead_discovery"
-  | "job_reports";
+  | "job_reports"
+  | "agent_ops";
 
 /** One execution of the automation engine (scheduler tick, API, CLI, UI) */
 export interface AutomationTickRecord {

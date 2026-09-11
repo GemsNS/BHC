@@ -47,6 +47,8 @@ export type TickOptions = {
   discover?: (data: AppData) => Promise<{ summary: string; created: number; errors: string[] }>;
   /** Server hook: weekly customer PDF reports. Omit to skip job_reports. */
   jobReports?: (data: AppData) => Promise<{ generated: number; sent: number; summary: string }>;
+  /** Server hook: Mainframe agent harness (allowlisted tools). Omit to skip agent_ops. */
+  agentOps?: (data: AppData) => Promise<{ summary: string }>;
 };
 
 const TICK_HISTORY_CAP = 60;
@@ -201,6 +203,18 @@ export async function runAutomationTick(
         results.push(`[${auto.name}] ${r.summary}`);
         for (const e of r.errors) errors.push(`${auto.name}: ${e}`);
         if (r.created) audit(data, "lead_discovery", r.summary, opts.newId);
+        continue;
+      }
+
+      if (auto.action === "agent_ops") {
+        if (!opts.agentOps) {
+          results.push(`[${auto.name}] skipped — needs the Node host + AI key + AGENT_HARNESS_ENABLED=1.`);
+          continue;
+        }
+        const r = await opts.agentOps(data);
+        auto.lastRunAt = startedIso;
+        counters.automationsRun += 1;
+        results.push(`[${auto.name}] ${r.summary}`);
         continue;
       }
 

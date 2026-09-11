@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { PageFrame, Panel } from "@/components/cc";
 import { GodsEyeMap } from "@/components/gods-eye/GodsEyeMap";
@@ -11,16 +11,18 @@ import {
 } from "@/lib/gods-eye";
 
 /**
- * God's Eye View — HRM-focused ops map.
+ * God's Eye View — HRM ops console.
  *
- * Integrated: Leaflet + keyless Esri/OSM centered on Halifax Regional Municipality.
- * Deferred: full Cesium GEV (aircraft/AIS/voice) — optional iframe via GODS_EYE_EMBED_URL.
+ * Preferred mode: full-bleed iframe of a separately hosted God's Eye View
+ * instance (GODS_EYE_EMBED_URL). Fallback: keyless Leaflet/Esri HRM map so the
+ * tab is never a dead end while Grokbot stands up the full GEV stack.
+ *
  * Kill-switch: GODS_EYE_ENABLED / NEXT_PUBLIC_GODS_EYE_ENABLED (default OFF).
  */
 export default function GodsEyePage() {
-  const [basemap, setBasemap] = useState<"satellite" | "streets">("satellite");
   const enabled = godsEyeEnabled();
   const status = useMemo(() => godsEyeConfigStatus(), []);
+  const embedUrl = status.embedUrl;
 
   if (!enabled) {
     return (
@@ -33,9 +35,9 @@ export default function GodsEyePage() {
           <Panel title="Disabled (kill-switch)">
             <p className="gods-eye-disabled-copy">
               Set <code>GODS_EYE_ENABLED=1</code> and{" "}
-              <code>NEXT_PUBLIC_GODS_EYE_ENABLED=1</code>, then restart the app
-              to enable the HRM ops map. See{" "}
-              <code>docs/GROKBOT_GODS_EYE_HANDBACK.md</code>.
+              <code>NEXT_PUBLIC_GODS_EYE_ENABLED=1</code>, rebuild, then point{" "}
+              <code>GODS_EYE_EMBED_URL</code> at the hosted GEV instance. See{" "}
+              <code>docs/GROKBOT_HANDBACK.md</code>.
             </p>
             <ul className="gods-eye-disabled-list">
               <li>Default camera / center: {HRM_CENTER.label}</li>
@@ -50,62 +52,70 @@ export default function GodsEyePage() {
     );
   }
 
+  // Full GEV instance — primary UX once Grokbot deploys it
+  if (embedUrl) {
+    return (
+      <RequireAuth perm="dashboard">
+        <PageFrame
+          context="Intelligence layer · HRM"
+          title="God's Eye View"
+          subtitle={`${HRM_CENTER.label} — live GEV instance`}
+          className="gods-eye-page gods-eye-page-embed"
+        >
+          <div className="gods-eye-embed-shell">
+            <iframe
+              title="God's Eye View — HRM"
+              src={embedUrl}
+              className="gods-eye-embed-frame"
+              allow="geolocation; fullscreen; clipboard-read; clipboard-write"
+              referrerPolicy="no-referrer"
+              // Scripts + same-origin needed for Cesium; forms locked down.
+              sandbox="allow-scripts allow-same-origin allow-popups allow-downloads"
+            />
+            <p className="gods-eye-embed-footnote">
+              Hosted GEV · HRM default · webhook sink{" "}
+              <code>/api/gods-eye/webhook</code> · kill-switch{" "}
+              <code>GODS_EYE_ENABLED=0</code>
+            </p>
+          </div>
+        </PageFrame>
+      </RequireAuth>
+    );
+  }
+
+  // Fallback until GEV is live — still useful, not a blank tab
   return (
     <RequireAuth perm="dashboard">
       <PageFrame
         context="Intelligence layer · HRM"
         title="God's Eye View"
-        subtitle={`${HRM_CENTER.label} — keyless satellite/streets ops view. Full Cesium GEV optional via embed.`}
-        actions={
-          <div className="gods-eye-basemap-toggle" role="group" aria-label="Basemap">
-            <button
-              type="button"
-              className={basemap === "satellite" ? "cc-btn cc-btn-primary" : "cc-btn"}
-              onClick={() => setBasemap("satellite")}
-            >
-              Satellite
-            </button>
-            <button
-              type="button"
-              className={basemap === "streets" ? "cc-btn cc-btn-primary" : "cc-btn"}
-              onClick={() => setBasemap("streets")}
-            >
-              Streets
-            </button>
-          </div>
-        }
+        subtitle={`${HRM_CENTER.label} — fallback ops map (set GODS_EYE_EMBED_URL for full GEV)`}
         className="gods-eye-page"
       >
         <div className="gods-eye-layout">
-          <Panel title={`${HRM_CENTER.shortLabel} ops map`} className="gods-eye-map-panel">
-            <GodsEyeMap key={basemap} basemap={basemap} />
+          <Panel title={`${HRM_CENTER.shortLabel} fallback map`} className="gods-eye-map-panel">
+            <GodsEyeMap basemap="satellite" />
           </Panel>
-
           <aside className="gods-eye-side">
-            <Panel title="Region">
-              <dl className="gods-eye-meta">
-                <div>
-                  <dt>Focus</dt>
-                  <dd>{HRM_CENTER.label}</dd>
-                </div>
-                <div>
-                  <dt>Center</dt>
-                  <dd>
-                    {HRM_CENTER.lat.toFixed(4)}°N, {Math.abs(HRM_CENTER.lng).toFixed(4)}°W
-                  </dd>
-                </div>
-                <div>
-                  <dt>Basemap</dt>
-                  <dd>{basemap === "satellite" ? "Esri World Imagery (keyless)" : "OpenStreetMap"}</dd>
-                </div>
-              </dl>
-            </Panel>
-
-            <Panel title="Keys (optional)">
+            <Panel title="Waiting on full GEV">
               <p className="gods-eye-side-copy">
-                Photoreal Cesium / Google 3D tiles are <strong>not required</strong>.
-                Status soft-fails when tokens are missing.
+                Deploy{" "}
+                <a
+                  href="https://github.com/bilawalsidhu/gods-eye-view"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  bilawalsidhu/gods-eye-view
+                </a>{" "}
+                as a sibling service, then set:
               </p>
+              <pre className="gods-eye-env-snip">{`GODS_EYE_EMBED_URL=https://gev.bhcontracting.ca/
+NEXT_PUBLIC_GODS_EYE_EMBED_URL=https://gev.bhcontracting.ca/`}</pre>
+              <p className="gods-eye-side-copy">
+                Full steps: <code>docs/GROKBOT_HANDBACK.md</code>
+              </p>
+            </Panel>
+            <Panel title="Keys (optional)">
               <ul className="gods-eye-key-status">
                 <li>
                   Cesium ion:{" "}
@@ -117,35 +127,6 @@ export default function GodsEyePage() {
                 </li>
               </ul>
             </Panel>
-
-            {status.embedUrl ? (
-              <Panel title="Full GEV embed">
-                <iframe
-                  title="God's Eye View embed"
-                  src={status.embedUrl}
-                  className="gods-eye-embed"
-                  sandbox="allow-scripts allow-same-origin allow-popups"
-                  referrerPolicy="no-referrer"
-                />
-              </Panel>
-            ) : (
-              <Panel title="Full GEV">
-                <p className="gods-eye-side-copy">
-                  Upstream{" "}
-                  <a
-                    href="https://github.com/bilawalsidhu/gods-eye-view"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    bilawalsidhu/gods-eye-view
-                  </a>{" "}
-                  is not vendored here (Cesium + Node 24+). Point{" "}
-                  <code>GODS_EYE_EMBED_URL</code> /{" "}
-                  <code>NEXT_PUBLIC_GODS_EYE_EMBED_URL</code> at a hosted build
-                  to iframe it. Respect third-party data licenses.
-                </p>
-              </Panel>
-            )}
           </aside>
         </div>
       </PageFrame>

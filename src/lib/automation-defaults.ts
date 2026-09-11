@@ -222,6 +222,18 @@ export const AUTOMATION_CATALOG: AutomationCatalogEntry[] = [
     runHour: 16,
     defaultEnabled: false,
   },
+  {
+    id: "auto-agent-ops",
+    action: "agent_ops",
+    name: "Mainframe ops sweep (AI agent)",
+    description:
+      "Unattended Mainframe agent: reads CRM/ads/outreach, creates follow-up tasks, lists anything that needs a human send/approval/delete. Ships OFF. Requires AI key + AGENT_HARNESS_ENABLED=1.",
+    runHour: 0,
+    intervalMinutes: 60,
+    defaultEnabled: false,
+    serverOnly: true,
+  },
+
 ];
 
 export function catalogEntry(action: AutomationActionName): AutomationCatalogEntry | undefined {
