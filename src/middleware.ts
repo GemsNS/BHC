@@ -22,6 +22,7 @@ const PUBLIC_PREFIXES = [
   "/api/voice/",
   "/api/ads/inbound",
   "/api/payments/webhook",
+  "/api/gods-eye/webhook", // GEV sibling → CRM; auth via GODS_EYE_WEBHOOK_SECRET inside route
   "/api/presentations/",
   "/api/public/",
   "/api/calendar", // ICS feed for calendar apps (token-gated inside)

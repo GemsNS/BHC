@@ -160,6 +160,8 @@ Header: x-bhc-gods-eye-secret: <GODS_EYE_WEBHOOK_SECRET>
 JSON: { "type": "contact.selected", "title": "...", "lat": 44.65, "lng": -63.57, "url": "..." }
 ```
 
+`/api/gods-eye/webhook` is on the Next middleware public allowlist (secret still required on POST). Do not rely on a prod-only hot-patch.
+
 Smoke:
 
 ```bash
