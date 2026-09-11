@@ -4,6 +4,8 @@
 **CRM tab:** Admin → God's Eye View (`/admin/gods-eye`)  
 **Automation:** Admin → Automation → “Mainframe ops sweep (AI agent)” (`agent_ops`)
 
+**Twilio:** Account is **restored**. Wire SMS back on prod (`TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER`, then `TWILIO_ENABLED=1`, webhook → `/api/sms/inbound`). Full steps in §3 below — do not leave SMS off assuming compliance is still pending.
+
 This handback covers two ship-ready but **default-OFF** systems. CRM stays fully operational if either (or both) remain off.
 
 Upstream GEV (MIT code, third-party **data** keeps own licenses):  
