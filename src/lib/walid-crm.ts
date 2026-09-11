@@ -87,6 +87,102 @@ export const WALID_CRM = {
   contractPackageNote:
     "Warehouse extension exterior: ~30 squares charcoal/cedar-tone siding, 2 exterior doors (crew fuel/travel waived by agreement). Presentation: /presentations/walid · 3D model (current Oreo v3): /presentations/walid/v3 · prior Oreo v2: /presentations/walid/v2 · Contract package under presentations/walid/package/03_Contract/.",
 } as const;
+/** Canonical commercial preamble for the Walid job (no progress/hours). */
+export const WALID_JOB_MILESTONES_NOTE =
+  "Payment milestones (pre-HST): mobilization $3,250 · ~50% siding $6,500 · substantial $3,250.";
+
+export const WALID_JOB_HOLDBACK_NOTE =
+  "Statutory holdback 10% per NS Builders' Lien Act.";
+
+function splitNoteParagraphs(notes: string | undefined | null): string[] {
+  if (!notes?.trim()) return [];
+  return notes
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
+function isCommercialPreamble(paragraph: string): boolean {
+  const p = paragraph.toLowerCase();
+  return (
+    p.startsWith("warehouse extension exterior:") ||
+    p.startsWith("payment milestones (pre-hst)") ||
+    p.startsWith("statutory holdback") ||
+    // Legacy fuel-included commercial blurbs from earlier imports
+    (p.startsWith("warehouse extension") &&
+      (p.includes("crew fuel/travel") || p.includes("presentation:"))) ||
+    (p.includes("mobilization") && p.includes("pre-hst") && p.includes("siding"))
+  );
+}
+
+function isLeadCommercialPreamble(paragraph: string): boolean {
+  const p = paragraph.toLowerCase();
+  return (
+    isCommercialPreamble(paragraph) ||
+    p.startsWith("contract price (pre-hst)") ||
+    p.startsWith("fuel/travel:")
+  );
+}
+
+function lastMatching(paragraphs: string[], test: (p: string) => boolean): string | undefined {
+  let found: string | undefined;
+  for (const p of paragraphs) {
+    if (test(p)) found = p;
+  }
+  return found;
+}
+
+/**
+ * Rebuild Walid job notes without nesting duplicates.
+ * Keeps the latest Progress Day 1 / Day 2 / Crew hours paragraphs from existing notes.
+ */
+export function composeWalidJobNotes(existingNotes?: string | null): string {
+  const paras = splitNoteParagraphs(existingNotes);
+  const day1 = lastMatching(paras, (p) => /^Progress:\s*Day 1\b/i.test(p));
+  const day2 = lastMatching(paras, (p) => /^Progress:\s*Day 2\b/i.test(p));
+  const otherProgress = lastMatching(
+    paras,
+    (p) => /^Progress:/i.test(p) && !/^Progress:\s*Day [12]\b/i.test(p),
+  );
+  const crewHours = lastMatching(paras, (p) => /^Crew hours:/i.test(p));
+
+  const sections = [
+    WALID_CRM.contractPackageNote,
+    WALID_JOB_MILESTONES_NOTE,
+    WALID_JOB_HOLDBACK_NOTE,
+  ];
+
+  // Preserve unique custom paragraphs (operator edits) once.
+  const seen = new Set(sections.map((s) => s.toLowerCase()));
+  for (const p of paras) {
+    if (isCommercialPreamble(p)) continue;
+    if (/^Progress:/i.test(p) || /^Crew hours:/i.test(p)) continue;
+    const key = p.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    sections.push(p);
+  }
+
+  if (day1) sections.push(day1);
+  else if (otherProgress) sections.push(otherProgress);
+  if (day2) sections.push(day2);
+  if (crewHours) sections.push(crewHours);
+  return sections.join("\n\n");
+}
+
+/** Rebuild Walid lead notes without nesting duplicates. */
+export function composeWalidLeadNotes(existingNotes?: string | null): string {
+  const paras = splitNoteParagraphs(existingNotes);
+  const progress = lastMatching(paras, (p) => /^Progress:/i.test(p));
+  const sections = [
+    WALID_CRM.contractPackageNote,
+    `Contract price (pre-HST): $${WALID_CRM.contractValue.toFixed(2)}`,
+    `Fuel/travel: waived by agreement (was ${WALID_JOB_TRAVEL.includedRoundTrips} RT / ${WALID_JOB_TRAVEL.totalDistanceKm} km @ CRA rate).`,
+  ];
+  if (progress) sections.push(progress);
+  return sections.join("\n\n");
+}
+
 
 export type EnsureWalidResult = {
   created: string[];
@@ -143,14 +239,7 @@ export function ensureWalidInCrm(
     source: "Presentation / contract",
     status: "won",
     jobType: "commercial",
-    notes: [
-      WALID_CRM.contractPackageNote,
-      `Contract price (pre-HST): $${WALID_CRM.contractValue.toFixed(2)}`,
-      `Fuel/travel: waived by agreement (was ${WALID_JOB_TRAVEL.includedRoundTrips} RT / ${WALID_JOB_TRAVEL.totalDistanceKm} km @ CRA rate).`,
-      existingLead?.notes?.includes("Progress:") ? existingLead.notes : "",
-    ]
-      .filter(Boolean)
-      .join("\n\n"),
+    notes: composeWalidLeadNotes(existingLead?.notes),
     assignedToId: existingLead?.assignedToId ?? "emp-sales",
     companyId: WALID_CRM.companyId,
     leadScore: 90,
@@ -176,14 +265,7 @@ export function ensureWalidInCrm(
     startDate: existingJob?.startDate ?? now.slice(0, 10),
     estimatedValue: WALID_CRM.contractValue,
     contractValue: WALID_CRM.contractValue,
-    notes: [
-      WALID_CRM.contractPackageNote,
-      "Payment milestones (pre-HST): mobilization $3,250 · ~50% siding $6,500 · substantial $3,250.",
-      "Statutory holdback 10% per NS Builders' Lien Act.",
-      existingJob?.notes?.includes("Progress:") ? existingJob.notes : "",
-    ]
-      .filter(Boolean)
-      .join("\n\n"),
+    notes: composeWalidJobNotes(existingJob?.notes),
     createdAt: existingJob?.createdAt ?? now,
     number: existingJob?.number ?? "JOB-WALID-2026",
     portalToken: existingJob?.portalToken ?? null,

@@ -42,6 +42,8 @@ function JobHubInner() {
   const [editingQuote, setEditingQuote] = useState<QuoteWithTotals | null>(null);
   const [paying, setPaying] = useState<{ invoiceId: string; amount: number; method: string; note: string } | null>(null);
   const [uploadKind, setUploadKind] = useState<"contract" | "invoice" | "quote" | "receipt" | "job_report">("contract");
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const refresh = useCallback(async () => {
@@ -194,7 +196,62 @@ function JobHubInner() {
                 <dt className="text-[var(--muted)]">Shifts</dt><dd>{shifts.length ? shifts.map((s) => `${fmtDay(s.startAt)} ${s.title}`).join(" · ") : "none scheduled"}</dd>
                 <dt className="text-[var(--muted)]">Materials</dt><dd>{materials.length} line(s) · {formatCurrency(money.materialCost)}</dd>
                 {damage.length ? <><dt className="text-[var(--muted)]">Damage</dt><dd className="text-amber-300">{damage.filter((d) => !d.resolved).length} unresolved of {damage.length}</dd></> : null}
-                <dt className="text-[var(--muted)]">Notes</dt><dd className="whitespace-pre-wrap text-[var(--muted)]">{job.notes || "—"}</dd>
+                <dt className="text-[var(--muted)]">Notes</dt>
+                <dd className="min-w-0">
+                  {editingNotes ? (
+                    <div className="space-y-2">
+                      <textarea
+                        className="field-input min-h-[10rem] whitespace-pre-wrap !text-sm"
+                        value={notesDraft}
+                        disabled={busy !== null}
+                        onChange={(e) => setNotesDraft(e.target.value)}
+                        rows={12}
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="btn-primary !py-1 !text-xs"
+                          disabled={busy !== null}
+                          onClick={() =>
+                            act("notes", async () => {
+                              await fetchJson(`/api/jobs/${id}`, {
+                                method: "PATCH",
+                                body: JSON.stringify({ notes: notesDraft }),
+                              });
+                              setEditingNotes(false);
+                              return "Notes saved.";
+                            })
+                          }
+                        >
+                          Save notes
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary !py-1 !text-xs"
+                          disabled={busy !== null}
+                          onClick={() => setEditingNotes(false)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="whitespace-pre-wrap text-[var(--muted)]">{job.notes || "—"}</p>
+                      <button
+                        type="button"
+                        className="linkish text-xs"
+                        disabled={busy !== null}
+                        onClick={() => {
+                          setNotesDraft(job.notes || "");
+                          setEditingNotes(true);
+                        }}
+                      >
+                        Edit notes
+                      </button>
+                    </div>
+                  )}
+                </dd>
               </dl>
             </Panel>
           </div>

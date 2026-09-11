@@ -34,7 +34,7 @@ describe("walid CRM", () => {
     );
   });
 
-  it("is idempotent and preserves in-progress status", () => {
+  it("is idempotent, preserves in-progress status, and does not nest notes", () => {
     const data = buildSeedData();
     const job = data.jobs.find((j) => j.id === WALID_CRM.jobId)!;
     job.status = "in_progress";
@@ -44,7 +44,11 @@ describe("walid CRM", () => {
     expect(first.created.length).toBe(0);
     expect(second.updated.length).toBeGreaterThan(0);
     expect(data.jobs.filter((j) => j.id === WALID_CRM.jobId)).toHaveLength(1);
+    const notes = data.jobs.find((j) => j.id === WALID_CRM.jobId)?.notes ?? "";
     expect(data.jobs.find((j) => j.id === WALID_CRM.jobId)?.status).toBe("in_progress");
+    expect(notes).toContain("Progress: started north elevation.");
+    expect(notes.match(/Payment milestones \(pre-HST\)/g)?.length).toBe(1);
+    expect(notes.match(/Warehouse extension exterior:/g)?.length).toBe(1);
   });
 
   it("imports Day 1 field photos onto the job", async () => {
@@ -224,4 +228,50 @@ describe("walid CRM", () => {
     expect(data.employees.find((e) => e.id === "emp-cameron-live")?.name).toBe("Cameron Brown");
     expect(data.employees.find((e) => e.id === "emp-rylee-live")?.name).toBe("Rylee MacKenzie");
   });
+
+  it("dedupes nested Walid job notes on ensure", () => {
+    const data = buildSeedData();
+    const job = data.jobs.find((j) => j.id === WALID_CRM.jobId)!;
+    const packageNote = WALID_CRM.contractPackageNote;
+    const milestones = "Payment milestones (pre-HST): mobilization $3,250 · ~50% siding $6,500 · substantial $3,250.";
+    const holdback = "Statutory holdback 10% per NS Builders' Lien Act.";
+    const day1 = "Progress: Day 1 (2026-09-09) — 9 field photo(s) attached.";
+    const day2 =
+      "Progress: Day 2 (2026-09-10) — Crew Rylee, Christopher & Cameron 10:30–18:30. Back wall NovaWrap complete except right-side window still needs cut/wrap. Right elevation ~half wrapped.";
+    const hours =
+      "Crew hours: Day 1 (2026-09-09) Christopher & Cameron 08:00–14:00 (6h each). Day 2 (2026-09-10) Rylee, Christopher & Cameron 10:30–18:30 (8h each).";
+    // Simulate the nested blob from repeated ensure + progress imports.
+    job.notes = [
+      packageNote,
+      milestones,
+      holdback,
+      packageNote,
+      milestones,
+      holdback,
+      packageNote,
+      milestones,
+      holdback,
+      "Warehouse extension exterior: ~30 squares charcoal/cedar-tone siding, 2 exterior doors, crew fuel/travel (20 RT Dartmouth↔Uniacke). Presentation: /presentations/walid · 3D model (current Oreo v3): /presentations/walid/v3 · prior Oreo v2: /presentations/walid/v2 · Contract package under presentations/walid/package/03_Contract/.",
+      "Payment milestones (pre-HST): mobilization+fuel $4,255.12 · ~50% siding $6,500 · substantial $3,250.",
+      holdback,
+      day1,
+      day2,
+      hours,
+    ].join("\n\n");
+
+    ensureWalidInCrm(data);
+    const notes = data.jobs.find((j) => j.id === WALID_CRM.jobId)?.notes ?? "";
+    expect(notes.match(/Warehouse extension exterior:/g)?.length).toBe(1);
+    expect(notes.match(/Payment milestones \(pre-HST\)/g)?.length).toBe(1);
+    expect(notes.match(/Statutory holdback/g)?.length).toBe(1);
+    expect(notes.match(/Progress: Day 1/g)?.length).toBe(1);
+    expect(notes.match(/Progress: Day 2/g)?.length).toBe(1);
+    expect(notes.match(/Crew hours:/g)?.length).toBe(1);
+    expect(notes).toContain("waived by agreement");
+    expect(notes).not.toContain("mobilization+fuel");
+    expect(notes).toContain(day1);
+    expect(notes).toContain("Crew hours: Day 1");
+    expect(notes.indexOf(packageNote)).toBeLessThan(notes.indexOf(day1));
+  });
+
 });
