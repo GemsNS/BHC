@@ -39,6 +39,8 @@ NEXT_PUBLIC_GODS_EYE_ENABLED=1
 
 Then restart the Node/Next process (`deploy/production/deploy.sh` or `systemctl restart` as you usually do).
 
+**Important:** `NEXT_PUBLIC_*` is inlined at **build** time. Changing the public kill-switch requires a rebuild (`npm run build` / deploy script), not only a process restart. Keep `GODS_EYE_ENABLED` equal to `NEXT_PUBLIC_GODS_EYE_ENABLED`.
+
 With the flag off:
 
 - Nav item is hidden (rail, mobile chips, command palette)
