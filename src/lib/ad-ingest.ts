@@ -617,6 +617,11 @@ export function ensurePublicAdSources(
     data.adSources.push(src);
     created.push(src);
   }
+  // Retire noisy auto-sources that were replaced (broad "looking for" Kijiji page).
+  for (const obsolete of ["adsrc-kijiji-html-looking"]) {
+    const s = data.adSources.find((x) => x.id === obsolete);
+    if (s) s.enabled = false;
+  }
   return created;
 }
 

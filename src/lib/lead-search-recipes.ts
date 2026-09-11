@@ -168,6 +168,26 @@ export const PUBLIC_SCRAPE_KEEP_KEYWORDS: string[] = [
   "handyman",
 ];
 
+/** Extra noise to drop from broad Kijiji HTML searches (services category is noisy). */
+export const PUBLIC_HTML_EXTRA_EXCLUDE: string[] = [
+  "tutor",
+  "piano",
+  "guitar",
+  "website",
+  "web design",
+  "web designer",
+  "loan",
+  "business plan",
+  "smart tv",
+  "care giver",
+  "caregiver",
+  "cleaning service",
+  "junk removal",
+  "math tutor",
+  "dog walk",
+  "pet sitting",
+];
+
 export const DEFAULT_PUBLIC_AD_SOURCES: PublicAdSourceDef[] = [
   {
     id: "adsrc-reddit-halifax-demand",
@@ -193,7 +213,7 @@ export const DEFAULT_PUBLIC_AD_SOURCES: PublicAdSourceDef[] = [
     type: "html",
     url: "https://www.kijiji.ca/b-services/city-of-halifax/siding/k0c72l1700321?sort=dateDesc",
     keywords: [...PUBLIC_SCRAPE_KEEP_KEYWORDS],
-    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS],
+    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS, ...PUBLIC_HTML_EXTRA_EXCLUDE],
     region: "Halifax Regional Municipality",
   },
   {
@@ -202,16 +222,16 @@ export const DEFAULT_PUBLIC_AD_SOURCES: PublicAdSourceDef[] = [
     type: "html",
     url: "https://www.kijiji.ca/b-services/city-of-halifax/deck/k0c72l1700321?sort=dateDesc",
     keywords: [...PUBLIC_SCRAPE_KEEP_KEYWORDS],
-    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS],
+    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS, ...PUBLIC_HTML_EXTRA_EXCLUDE],
     region: "Halifax Regional Municipality",
   },
   {
-    id: "adsrc-kijiji-html-looking",
-    name: "Kijiji HRM Services — looking for",
+    id: "adsrc-kijiji-html-windows",
+    name: "Kijiji HRM Services — windows / doors search",
     type: "html",
-    url: "https://www.kijiji.ca/b-services/city-of-halifax/looking-for/k0c72l1700321?sort=dateDesc",
+    url: "https://www.kijiji.ca/b-services/city-of-halifax/windows/k0c72l1700321?sort=dateDesc",
     keywords: [...PUBLIC_SCRAPE_KEEP_KEYWORDS],
-    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS],
+    excludeKeywords: [...DEFAULT_AD_EXCLUDE_KEYWORDS, ...PUBLIC_HTML_EXTRA_EXCLUDE],
     region: "Halifax Regional Municipality",
   },
   {
