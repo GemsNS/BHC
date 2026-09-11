@@ -29,12 +29,23 @@ export default function CustomerPortalPage() {
   const [sent, setSent] = useState(false);
 
   const load = () =>
-    fetch(`/api/public/portal/${token}`)
+    fetch(`/api/public/portal/${token}`, { cache: "no-store" })
       .then(async (r) => (r.ok ? r.json() : Promise.reject(new Error("This link is not valid"))))
       .then(setData)
       .catch((e) => setError(e.message));
   useEffect(() => {
     void load();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    window.addEventListener("focus", load);
+    document.addEventListener("visibilitychange", onVisible);
+    const poll = window.setInterval(() => void load(), 30_000);
+    return () => {
+      window.removeEventListener("focus", load);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.clearInterval(poll);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 

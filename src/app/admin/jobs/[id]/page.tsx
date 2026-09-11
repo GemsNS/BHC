@@ -85,7 +85,14 @@ function JobHubInner() {
     form.set("jobId", id);
     form.set("kind", uploadKind);
     form.set("file", file);
-    const res = await fetch("/api/documents", { method: "POST", body: form, credentials: "include" });
+    const { sessionHeaders } = await import("@/lib/session-headers");
+    const res = await fetch("/api/documents", {
+      method: "POST",
+      body: form,
+      credentials: "include",
+      cache: "no-store",
+      headers: { ...sessionHeaders() },
+    });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(json.error || json.message || "Upload failed");
     return json.document as { title: string; number: string };
@@ -430,10 +437,11 @@ function JobHubInner() {
                       className="btn-secondary !py-0.5 !text-[11px] text-rose-300"
                       disabled={busy !== null}
                       onClick={() => {
-                        if (!window.confirm(`Delete “${d.title}”? This removes the file and writes an audit note on the timeline.`)) return;
+                        if (!window.confirm(`Delete “${d.title}”? This removes the file from the job and customer portal, and updates the job checklist.`)) return;
                         void act(`deldoc:${d.id}`, async () => {
                           await post("/api/documents", { action: "delete", id: d.id });
-                          return `Deleted ${d.title}.`;
+                          setTab("overview");
+                          return `Deleted ${d.title}. Portal and checklist refreshed.`;
                         });
                       }}
                     >

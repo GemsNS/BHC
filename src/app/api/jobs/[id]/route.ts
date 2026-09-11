@@ -10,6 +10,8 @@ import { onJobStatusChanged } from "@/lib/workflows";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request, { params }: RouteParams) {
   const employee = await requireApiEmployee(request);
   if (employee instanceof NextResponse) return employee;
@@ -17,11 +19,16 @@ export async function GET(request: Request, { params }: RouteParams) {
   const data = await readStore();
   const hub = jobHub(data, id);
   if (!hub) return NextResponse.json({ error: "Job not found" }, { status: 404 });
-  return NextResponse.json({
-    ...hub,
-    employees: data.employees.map((e) => ({ id: e.id, name: e.name, role: e.role })),
-    portalUrl: hub.job.portalToken ? `${(process.env.APP_BASE_URL ?? "https://bhcontracting.ca").replace(/\/$/, "")}/portal/${hub.job.portalToken}` : null,
-  });
+  return NextResponse.json(
+    {
+      ...hub,
+      employees: data.employees.map((e) => ({ id: e.id, name: e.name, role: e.role })),
+      portalUrl: hub.job.portalToken
+        ? `${(process.env.APP_BASE_URL ?? "https://bhcontracting.ca").replace(/\/$/, "")}/portal/${hub.job.portalToken}`
+        : null,
+    },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 const patchSchema = z.object({

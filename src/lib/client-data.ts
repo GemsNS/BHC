@@ -60,6 +60,7 @@ export async function fetchJson<T>(
     throw new Error("STATIC_DEMO_USE_LOCAL");
   }
   const res = await fetch(withBasePath(path), {
+    cache: "no-store",
     ...init,
     headers: {
       "Content-Type": "application/json",

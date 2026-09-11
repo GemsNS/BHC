@@ -35,6 +35,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       quotes: quotes.map((q) => ({ number: q.number, status: q.status, total: quoteTotals(q).total, url: quotePublicUrl(q, base), signedAt: q.signedAt })),
       invoices: invoices.map((i) => ({ number: i.number, status: i.status, total: invoiceTotal(i), balance: invoiceBalance(data, i), dueAt: i.dueAt, url: i.token ? invoicePayUrl(i, base) : null })),
       progress: progress.map((p) => ({ id: p.id, createdAt: p.createdAt, notes: p.notes, summary: p.aiSummary, photos: p.imageDataUrls.map((u) => (u.startsWith("/api/media/") ? `/api/public/portal/${token}/media/${u.split("/").pop()}` : u)) })),
+      // Only staff-sent JobDocuments — deleting on the job Documents tab removes these immediately.
       documents: documents.map((d) => ({ id: d.id, kind: d.kind, title: d.title, number: d.number, sentAt: d.sentAt, url: `/api/public/portal/${token}/doc/${d.id}` })),
       schedule: shifts.map((s) => ({ title: s.title, startAt: s.startAt, endAt: s.endAt, status: s.status })),
       messages: messages.map((m) => ({ direction: m.direction, channel: m.channel, body: m.body, createdAt: m.createdAt })),

@@ -87,21 +87,28 @@ function buildChecklist(
   ctx: { quotes: AppData["quotes"]; invoices: AppData["invoices"]; documents: AppData["documents"]; progress: AppData["jobProgress"]; paid: number; invoiced: number },
 ): HubChecklistItem[] {
   const signed = ctx.quotes.some((q) => q.status === "signed");
+  // Document-backed marks — deleting the last matching JobDocument clears these.
   const contract = ctx.documents.some((d) => d.kind === "contract");
   const deposit = ctx.invoices.some((i) => i.notes.includes("deposit") && i.status === "paid");
   const scheduled = data.shifts.some((s) => s.jobId === job.id);
-  const finalInvoice = ctx.invoices.some((i) => i.kind === "invoice" && !i.notes.includes("deposit"));
+  const finalInvoice = ctx.invoices.some(
+    (i) =>
+      i.kind === "invoice" &&
+      !i.notes.includes("deposit") &&
+      (i.status === "sent" || i.status === "paid" || Boolean(i.sentAt)),
+  );
   const paidFull = ctx.invoiced > 0 && ctx.paid >= ctx.invoiced - 0.01;
-  const report = ctx.documents.some((d) => d.kind === "job_report");
+  // "Sent" requires a delivery stamp — generating alone must not check this off.
+  const report = ctx.documents.some((d) => d.kind === "job_report" && Boolean(d.sentAt));
   const review = data.outreachQueue.some((o) => o.jobId === job.id && o.kind === "review" && o.status === "sent");
   return [
     { key: "quote", label: "Quote signed", done: signed, hint: signed ? undefined : "Create a quote and send it for e-signature" },
-    { key: "contract", label: "Contract generated", done: contract },
+    { key: "contract", label: "Contract generated", done: contract, hint: contract ? undefined : "Generate or upload a contract on the Documents tab" },
     { key: "deposit", label: "Deposit paid", done: deposit },
     { key: "schedule", label: "Crew scheduled", done: scheduled, href: "/admin/schedule" },
     { key: "progress", label: "Site updates posted", done: ctx.progress.length > 0, hint: ctx.progress.length ? `${ctx.progress.length} update(s)` : "Crew posts photos from /apps/progress" },
     { key: "complete", label: "Job completed", done: job.status === "completed" || job.status === "invoiced" },
-    { key: "report", label: "Job report sent", done: report },
+    { key: "report", label: "Job report sent", done: report, hint: report ? undefined : "Generate a job report and Send to customer" },
     { key: "invoice", label: "Final invoice sent", done: finalInvoice },
     { key: "paid", label: "Paid in full", done: paidFull },
     { key: "review", label: "Review requested", done: review },

@@ -8,8 +8,12 @@ import {
   uploadDocument,
   type GenerateInput,
 } from "@/lib/documents";
+import type { HubChecklistItem } from "@/lib/job-hub";
+import { jobHub } from "@/lib/job-hub";
 import { newId, nowIso, readStore, updateStoreAsync } from "@/lib/store";
 import type { DocumentKind, JobDocument } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const employee = await requireApiEmployee(request);
@@ -18,7 +22,10 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const jobId = url.searchParams.get("jobId");
   const docs = data.documents.filter((d) => !jobId || d.jobId === jobId).slice(0, 200);
-  return NextResponse.json({ documents: docs, autosend: [...autosendKinds()] });
+  return NextResponse.json(
+    { documents: docs, autosend: [...autosendKinds()] },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 const jsonSchema = z.object({
@@ -138,11 +145,15 @@ export async function POST(request: Request) {
   if (body.action === "delete") {
     if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
     let deleted: JobDocument | null = null;
+    let checklist: HubChecklistItem[] | null = null;
     let error: string | null = null;
     await updateStoreAsync(async (d) => {
       try {
         const result = await deleteDocument(d, body.id!, { ...ctx, createdById: employee.id });
         deleted = result.deleted;
+        if (result.deleted.jobId) {
+          checklist = jobHub(d, result.deleted.jobId)?.checklist ?? null;
+        }
       } catch (err) {
         error = err instanceof Error ? err.message : String(err);
       }
@@ -151,7 +162,10 @@ export async function POST(request: Request) {
       const status = error === "Document not found" ? 404 : 400;
       return NextResponse.json({ error }, { status });
     }
-    return NextResponse.json({ deleted });
+    return NextResponse.json(
+      { deleted, checklist },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   // send
