@@ -1,5 +1,7 @@
 # Lead intake — Kijiji / Craigslist / Facebook / discovery
 
+> **Claude takeover brief:** see [`docs/CLAUDE_LEADS_HANDOFF.md`](./CLAUDE_LEADS_HANDOFF.md) — audit leads, ship realtime Kijiji + Facebook Marketplace ingest, fix outbound email.
+
 ## Why ads were zero
 
 Production store showed the IMAP source error:
