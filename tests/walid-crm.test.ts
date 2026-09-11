@@ -88,6 +88,7 @@ describe("walid CRM", () => {
       expect(hours.timeEntryIds).toHaveLength(5); // Day1×2 + Day2×3
       expect(hours.hoursPerShift).toBe(8);
       expect(data.employees.filter((e) => hours.employeeIds.includes(e.id))).toHaveLength(3);
+      expect(data.employees.find((e) => e.id === "emp-chris")?.name).toBe("Christopher Ryan Scott");
       const jobEntries = data.timeEntries.filter((t) => t.jobId === WALID_CRM.jobId);
       expect(jobEntries).toHaveLength(5);
       const day1Entries = jobEntries.filter((t) => t.id.includes("-day1-"));
@@ -124,5 +125,59 @@ describe("walid CRM", () => {
       delete process.env.MEDIA_DIR;
       rmSync(media, { recursive: true, force: true });
     }
+  });
+
+  it("attaches Christopher hours to existing Christopher Ryan Scott (not a stub)", () => {
+    const data = buildSeedData();
+    data.employees.push({
+      id: "emp-crs-live",
+      name: "Christopher Ryan Scott",
+      email: "christopher.scott@bhcontracting.ca",
+      login: "christopher.scott",
+      pin: "0000",
+      passwordHash: null,
+      mustChangePassword: false,
+      role: "field",
+      phone: "",
+      hireDate: "2024-01-01",
+      hourlyRate: 28,
+      active: true,
+    });
+    // Simulate the mistaken stub from the earlier import.
+    data.employees.push({
+      id: "emp-chris",
+      name: "Christopher",
+      email: "chris@bhcontracting.ca",
+      login: "chris",
+      pin: "0000",
+      passwordHash: null,
+      mustChangePassword: true,
+      role: "field",
+      phone: "",
+      hireDate: "2026-09-10",
+      hourlyRate: 26,
+      active: true,
+    });
+    data.timeEntries.unshift({
+      id: "time-walid-day1-chris",
+      employeeId: "emp-chris",
+      clockIn: "2026-09-09T08:00:00.000-03:00",
+      clockOut: "2026-09-09T14:00:00.000-03:00",
+      jobId: WALID_CRM.jobId,
+      notes: "stub hours",
+    });
+
+    const hours = importWalidCrewHours(data);
+    expect(hours.employeeIds).toContain("emp-crs-live");
+    expect(hours.employeeIds).not.toContain("emp-chris");
+    const chrisEntries = data.timeEntries.filter(
+      (t) => t.jobId === WALID_CRM.jobId && t.id.includes("-chris"),
+    );
+    expect(chrisEntries.length).toBeGreaterThan(0);
+    expect(chrisEntries.every((t) => t.employeeId === "emp-crs-live")).toBe(true);
+    expect(data.employees.find((e) => e.id === "emp-chris")?.active).toBe(false);
+    // Must not bind field Cameron hours onto Cameron Brown / role login cameron.
+    expect(hours.employeeIds).toContain("emp-cameron-field");
+    expect(data.employees.find((e) => e.id === "emp-cameron-field")?.name).toBe("Cameron");
   });
 });

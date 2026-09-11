@@ -38,12 +38,29 @@ export const WALID_CRM = {
   /** Day 2 on-site shift (Atlantic) — Rylee, Christopher & Cameron. */
   day2ShiftStart: "10:30",
   day2ShiftEnd: "18:30",
+  /**
+   * Field crew for Walid hours.
+   * `id` is only used when no existing employee matches — prefer live users
+   * (e.g. Christopher Ryan Scott) over minting a stub named "Christopher".
+   */
   crew: [
-    { id: "emp-rylee", name: "Rylee", login: "rylee" },
-    { id: "emp-chris", name: "Christopher", login: "chris" },
-    { id: "emp-cameron-field", name: "Cameron", login: "cameron" },
-  ] as const,
-  /** Who worked which day (employee ids from `crew`). */
+    { id: "emp-rylee", name: "Rylee", login: "rylee", matchNames: ["Rylee"] },
+    {
+      id: "emp-chris",
+      name: "Christopher Ryan Scott",
+      login: "chris",
+      matchNames: ["Christopher Ryan Scott", "Christopher Scott"],
+      matchLogins: ["chris", "christopher", "cscott", "christopher.scott"],
+    },
+    { id: "emp-cameron-field", name: "Cameron", login: "cameron", matchNames: ["Cameron"] },
+  ] satisfies ReadonlyArray<{
+    id: string;
+    name: string;
+    login: string;
+    matchNames: readonly string[];
+    matchLogins?: readonly string[];
+  }>,
+  /** Who worked which day (preferred / fallback ids from `crew`). */
   day1CrewIds: ["emp-chris", "emp-cameron-field"] as const,
   day2CrewIds: ["emp-rylee", "emp-chris", "emp-cameron-field"] as const,
   customerLegalName: "SOI Trade Inc.",

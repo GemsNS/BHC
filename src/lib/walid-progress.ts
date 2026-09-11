@@ -49,45 +49,142 @@ function shiftHours(start: string, end: string): number {
   return (eh * 60 + em - (sh * 60 + sm)) / 60;
 }
 
-/** Ensure Rylee / Christopher / Cameron exist as active field staff (idempotent). */
+type WalidCrewRow = (typeof WALID_CRM.crew)[number];
+
+function normName(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/** Prefer an existing live employee over minting a Walid stub id. */
+function findExistingCrewMember(data: AppData, row: WalidCrewRow): Employee | undefined {
+  const matchNames = row.matchNames.map(normName);
+  const matchLogins = new Set(
+    [row.login, ...(row.matchLogins ?? [])].map((l) => l.toLowerCase()),
+  );
+
+  // Exact full-name match first (e.g. Christopher Ryan Scott).
+  for (const needle of matchNames) {
+    const hit = data.employees.find((e) => normName(e.name) === needle);
+    if (hit) return hit;
+  }
+
+  // All significant tokens present (christopher + ryan + scott, or christopher + scott).
+  for (const needle of matchNames) {
+    const tokens = needle.split(" ").filter((t) => t.length > 2);
+    if (tokens.length < 2) continue;
+    const hit = data.employees.find((e) => {
+      const n = normName(e.name);
+      return tokens.every((t) => n.includes(t));
+    });
+    if (hit) return hit;
+  }
+
+  // Already created under the preferred Walid stub id.
+  const byId = data.employees.find((e) => e.id === row.id);
+  if (byId) return byId;
+
+  // Login aliases only for multi-word identities (avoid binding "cameron" → Cameron Brown).
+  const canonicalTokens = normName(row.name).split(" ").filter((t) => t.length > 2);
+  if (canonicalTokens.length >= 2) {
+    const byLogin = data.employees.find((e) => matchLogins.has(e.login.toLowerCase()));
+    if (byLogin) return byLogin;
+  }
+
+  return undefined;
+}
+
+function remappingEmployeeId(data: AppData, fromId: string, toId: string) {
+  if (fromId === toId) return;
+  for (const t of data.timeEntries) {
+    if (t.employeeId === fromId) t.employeeId = toId;
+  }
+  for (const p of data.jobProgress) {
+    if (p.authorId === fromId) p.authorId = toId;
+  }
+  const stub = data.employees.find((e) => e.id === fromId);
+  if (stub) {
+    stub.active = false;
+    // Free login collision if the real user already owns a different login.
+    if (!stub.login.endsWith(".stub")) stub.login = `${stub.login}.stub`;
+  }
+}
+
+/**
+ * Resolve Rylee / Christopher Ryan Scott / Cameron to real employee ids.
+ * Prefers existing users (by name/login) over creating Walid stub accounts.
+ * Idempotent — remaps hours off a mistaken `emp-chris` stub onto the live user.
+ */
 export function ensureWalidCrew(data: AppData, nowIso?: string): string[] {
   const hireDate = (nowIso ?? new Date().toISOString()).slice(0, 10);
   const ids: string[] = [];
   for (const row of WALID_CRM.crew) {
-    ids.push(row.id);
-    const existing = data.employees.find((e) => e.id === row.id);
-    if (existing) {
-      existing.name = row.name;
-      existing.active = true;
-      if (!existing.role) existing.role = "field";
-      continue;
+    let emp = findExistingCrewMember(data, row);
+
+    // Stub was created earlier under the fallback id with a short name — prefer
+    // a fuller live match when both exist.
+    if (emp && emp.id === row.id) {
+      const better = data.employees.find((e) => {
+        if (e.id === row.id) return false;
+        const n = normName(e.name);
+        return row.matchNames.map(normName).some((needle) => {
+          if (n === needle) return true;
+          const tokens = needle.split(" ").filter((t) => t.length > 2);
+          return tokens.length >= 2 && tokens.every((t) => n.includes(t));
+        });
+      });
+      if (better) {
+        remappingEmployeeId(data, row.id, better.id);
+        emp = better;
+      }
     }
-    const byLogin = data.employees.find((e) => e.login === row.login);
-    if (byLogin && byLogin.id !== row.id) {
-      // Keep their login unique — rename login on the stable crew id only.
+
+    if (!emp) {
+      emp = {
+        id: row.id,
+        name: row.name,
+        email: `${row.login}@bhcontracting.ca`,
+        login: row.login,
+        pin: DEFAULT_STAFF_PIN,
+        passwordHash: null,
+        mustChangePassword: true,
+        role: "field",
+        phone: "",
+        hireDate,
+        hourlyRate: 26,
+        active: true,
+      };
+      if (data.employees.some((e) => e.login === emp!.login && e.id !== emp!.id)) {
+        emp.login = `${row.login}.field`;
+        emp.email = `${row.login}.field@bhcontracting.ca`;
+      }
+      data.employees.push(emp);
+    } else {
+      // Keep the live person's name; only fill blank role / ensure active for hours.
+      emp.active = true;
+      if (!emp.role) emp.role = "field";
+      if (emp.id === row.id && normName(emp.name) !== normName(row.name)) {
+        // Only rewrite the stub account name to the canonical full name.
+        emp.name = row.name;
+      }
+      if (emp.id !== row.id) {
+        remappingEmployeeId(data, row.id, emp.id);
+      }
     }
-    const emp: Employee = {
-      id: row.id,
-      name: row.name,
-      email: `${row.login}@bhcontracting.ca`,
-      login: row.login,
-      pin: DEFAULT_STAFF_PIN,
-      passwordHash: null,
-      mustChangePassword: true,
-      role: "field",
-      phone: "",
-      hireDate,
-      hourlyRate: 26,
-      active: true,
-    };
-    // Avoid duplicate login collisions with role accounts.
-    if (data.employees.some((e) => e.login === emp.login && e.id !== emp.id)) {
-      emp.login = `${row.login}.field`;
-      emp.email = `${row.login}.field@bhcontracting.ca`;
-    }
-    data.employees.push(emp);
+
+    ids.push(emp.id);
   }
   return ids;
+}
+
+/** Map preferred crew id → resolved live employee id after ensureWalidCrew. */
+export function resolveWalidCrewIds(data: AppData, nowIso?: string): Map<string, string> {
+  ensureWalidCrew(data, nowIso);
+  const map = new Map<string, string>();
+  for (const row of WALID_CRM.crew) {
+    const emp = findExistingCrewMember(data, row) ?? data.employees.find((e) => e.id === row.id);
+    map.set(row.id, emp?.id ?? row.id);
+  }
+  return map;
 }
 
 /**
@@ -257,7 +354,7 @@ export function importWalidCrewHours(
   opts: { nowIso?: string; days?: WalidDayKey[] } = {},
 ): ImportWalidHoursResult {
   ensureWalidInCrm(data, { nowIso: opts.nowIso });
-  ensureWalidCrew(data, opts.nowIso);
+  const crewIds = resolveWalidCrewIds(data, opts.nowIso);
   const days = opts.days?.length ? opts.days : (["day1", "day2"] as WalidDayKey[]);
   const dayDates: Record<WalidDayKey, string> = {
     day1: WALID_CRM.day1Date,
@@ -275,12 +372,14 @@ export function importWalidCrewHours(
     recordedDays.push(date);
     const shift = shiftForDay(dayKey);
     for (const member of crewForDay(dayKey)) {
-      employeeIdSet.add(member.id);
+      const employeeId = crewIds.get(member.id) ?? member.id;
+      employeeIdSet.add(employeeId);
+      // Stable entry ids keep the preferred crew suffix (chris), not the live emp uuid.
       const id = `time-walid-${dayKey}-${member.id.replace(/^emp-/, "")}`;
       timeEntryIds.push(id);
       const entry: TimeEntry = {
         id,
-        employeeId: member.id,
+        employeeId,
         clockIn: atlanticIso(date, shift.start),
         clockOut: atlanticIso(date, shift.end),
         jobId: WALID_CRM.jobId,
