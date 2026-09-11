@@ -5,6 +5,7 @@ import {
   DEFAULT_PUBLIC_AD_SOURCES,
   looksLikeRealEstateNoise,
 } from "./lead-search-recipes";
+import { KIJIJI_DEMAND_SOURCES } from "./kijiji-realtime";
 import {
   isJunkAdTitle,
   isRealHttpUrl,
@@ -587,7 +588,8 @@ export function ensurePublicAdSources(
   if (disabled === "0" || disabled === "false" || disabled === "off") return [];
 
   const created: AdSource[] = [];
-  for (const def of DEFAULT_PUBLIC_AD_SOURCES) {
+  // Trade-only default searches + intent-first demand searches (kijiji-realtime).
+  for (const def of [...DEFAULT_PUBLIC_AD_SOURCES, ...KIJIJI_DEMAND_SOURCES]) {
     const existing = data.adSources.find((s) => s.id === def.id);
     if (existing) {
       // Refresh URL / filters from code defaults so ops pick up recipe fixes.

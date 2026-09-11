@@ -333,3 +333,42 @@ export function looksLikeRealEstateNoise(text: string): boolean {
   const detailCount = (text.match(/\b(\d+\s*bed(room)?s?|\d+\s*bath(room)?s?|sq\.?\s?ft|square feet)\b/gi) ?? []).length;
   return detailCount >= 2 && !/\b(looking for|need(ed|ing)? a? ?quote|contractor|repair|replace|install)\b/i.test(text);
 }
+
+/* --------------------------- demand vs supply --------------------------- */
+
+/**
+ * Contractor **supply** ads — someone advertising that THEY do the work.
+ * These are the dominant noise on Kijiji "Services" search pages and on
+ * Facebook Marketplace. We drop them at the source level so the classifier
+ * (and any auto-send) never sees them.
+ */
+export const SUPPLY_AD_RE =
+  /\b(we (install|offer|provide|specialize|do|build|repair)|our (team|crew|services|company)|free estimates?|call us(\s+today)?|licensed (and|&) insured|fully insured|now booking|book (now|today)|years? (of )?experience|serving (hrm|halifax|nova scotia)|accepting new (clients|customers)|hire us|we come to you|no job too (big|small)|satisfaction guaranteed|competitive (rates|pricing)|for a free quote|contact us for)\b/i;
+
+/**
+ * Homeowner **demand** intent — someone asking for work / a quote / a referral.
+ * Deliberately requires an ask phrase, not just a trade term, so "vinyl siding
+ * for sale" or "we install siding" never counts as demand.
+ */
+export const DEMAND_INTENT_RE =
+  /\b(looking for|need(ed|ing)?\s+(a\s+|an\s+|some\s+)?(quote|contractor|help|someone|estimate)|need\s+a?\s*quote|want(ed)?\s+(a\s+)?quote|get(ting)?\s+quotes|anyone\s+recommend|recommendations?\s+for|who\s+(can|does)|someone\s+to|seeking\s+(a\s+)?(contractor|quote|installer)|contractor\s+(wanted|needed)|installer\s+(wanted|needed)|hire\s+(a|someone)|in\s+search\s+of|iso\b|price\s+to)\b/i;
+
+/**
+ * True when the text reads like a homeowner asking for exterior work — demand
+ * intent present, no supply pitch, and not a real-estate / for-sale listing.
+ * Used by the realtime Kijiji + Facebook Marketplace ingest paths so only
+ * demand-side listings enter the CRM pipeline.
+ */
+export function looksLikeDemand(text: string): boolean {
+  if (!text) return false;
+  if (looksLikeRealEstateNoise(text)) return false;
+  if (SUPPLY_AD_RE.test(text)) return false;
+  return DEMAND_INTENT_RE.test(text);
+}
+
+/** True when the text mentions any exterior trade BHC actually does. */
+export function mentionsExteriorTrade(text: string): boolean {
+  if (!text) return false;
+  const hay = text.toLowerCase();
+  return DEMAND_TRADE_KEYWORDS.some((k) => hay.includes(k.toLowerCase()));
+}

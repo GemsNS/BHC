@@ -274,12 +274,21 @@ curl -sS http://127.0.0.1:3000/api/health
 
 ## Ops notes (Claude: fill in when finished)
 
-- SMTP provider working: _TBD_
-- IMAP status: _TBD_
-- Kijiji realtime method: _TBD_
-- FB Marketplace method: _TBD_
-- Autosend enabled?: _no / email / …_
-- Follow-ups for humans: _TBD_
+> Status after branch `cursor/leads-realtime-fb-kijiji-22fe`. The code work was done on a
+> **dev checkout (Windows, no `/opt/bhc` shell)**, so prod-only steps (SMTP/IMAP config,
+> FB session, live ingest counts) are documented below as exact ops actions, not yet run.
+
+- **SMTP provider working:** _Not yet verified on prod._ Code path is sound (`src/lib/mail.ts` `sendEmail` → GoDaddy SMTP if `SMTP_*` set, else Resend if `RESEND_API_KEY`). To prove: set `SMTP_HOST=smtpout.secureserver.net`, `SMTP_PORT=465`, `SMTP_SECURE=true`, `SMTP_USER=quotes@bhcontracting.ca`, `SMTP_PASS=…`, `SMTP_FROM="BH Contracting LTD. <quotes@bhcontracting.ca>"` in `/opt/bhc/.env`, then `sudo -u bhc bash -lc 'cd /opt/bhc && npm run bhc -- ads test-email <owner-email>'`. If GoDaddy SMTP auth is blocked, fall back to `RESEND_API_KEY` (verify a domain in Resend first). Requires the SPF fix from PR #50 to already be live for deliverability.
+- **IMAP status:** Still expected **dead** (M365 basic auth disabled). Not required anymore — realtime intake no longer depends on it. Restore later per `docs/GROKBOT_LEAD_INTAKE_PROMPT.md` (app password / dedicated inbox) only to capture prospect *replies*; outbound + intake work without it.
+- **Kijiji realtime method:** Intent-first HTML search sources (`src/lib/kijiji-realtime.ts` → `KIJIJI_DEMAND_SOURCES`), auto-wired by `ensurePublicAdSources`. Demand filter `looksLikeDemand()` keeps homeowner asks, drops contractor supply + real-estate. If the app-server IP is blocked, run `scripts/fb-marketplace-scrape.ts --site kijiji` from HRM egress.
+- **FB Marketplace method:** Operator browser sidecar (`scripts/fb-marketplace-scrape.ts`, ops-owned session outside git) → `POST /api/ads/inbound`. Pure normalizer `src/lib/facebook-marketplace.ts`. Schedule via `deploy/production/bhc-fb-scrape.{service,timer}`. Setup in `docs/LEAD_INTAKE.md`.
+- **Autosend enabled?:** **no** (approval-first). Leave `OUTREACH_AUTOSEND` unset until email is proven on prod; then set `OUTREACH_AUTOSEND=email` (or `email,sms`) only on owner confirmation.
+- **Follow-ups for humans:**
+  1. Set + prove SMTP (or Resend) on `/opt/bhc/.env`; run `ads test-email`.
+  2. Deploy this branch, then `npm run bhc -- ads ensure-sources && npm run bhc -- ads ingest && npm run bhc -- ads status` and record the source-by-source `lastError` + supply/demand counts (the audit table this handoff asks for can only be filled from prod).
+  3. Do the one-time FB sidecar login and enable `bhc-fb-scrape.timer`.
+  4. Confirm the live Kijiji demand-search URLs resolve from the host (they were authored, not fetched, from the dev box — Kijiji was not hit to avoid hammering).
+  5. Run `npm test` under **Node 22** (dev box has Node 21; vitest/rolldown needs 22).
 
 ---
 

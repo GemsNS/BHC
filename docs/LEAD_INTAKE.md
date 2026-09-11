@@ -22,10 +22,73 @@ On every `ads status` / `ads ingest` / scheduler tick the CRM auto-wires public 
 |--------|------|--------|
 | Reddit r/halifax demand search | RSS/Atom | Live from most hosts; best demand-side signal today |
 | Reddit r/halifax trades search | RSS/Atom | Siding / deck / gutters / windows mentions |
-| Kijiji HRM Services HTML searches | `html` | Parses `__NEXT_DATA__` `StandardListing` cards |
+| Kijiji HRM Services HTML searches | `html` | Parses `__NEXT_DATA__` `StandardListing` cards (trade terms) |
+| **Kijiji HRM demand searches** | `html` | **New.** Intent-first searches (`looking for` / `need a quote`), newest first — see below |
 | Craigslist Halifax RSS | RSS | Often **403** from cloud IPs; may work from production HRM egress |
 
 Classifier + exclude lists still drop contractor-supply / real-estate noise after fetch.
+
+## Realtime Kijiji demand (not contractor supply)
+
+`src/lib/kijiji-realtime.ts` adds intent-first Kijiji Services searches (`adsrc-kijiji-demand-*`)
+that are auto-wired by `ensurePublicAdSources` alongside the trade-term searches. The
+difference is the source-level filter:
+
+- **keep-list** = demand intent phrases (`looking for`, `need a quote`, `contractor wanted`, `anyone recommend`, …)
+- **exclude-list** = supply + real-estate noise (`we install`, `free estimates`, `licensed and insured`, `for sale`, `open house`, …)
+
+The shared detector `looksLikeDemand(text)` in `lead-search-recipes.ts` encodes the rule:
+intent present **and** no supply pitch **and** not a for-sale/real-estate listing. It is the
+same filter used by the Facebook path, so both intake routes agree on what "demand" means.
+
+If Kijiji blocks the app server's datacenter IP (HTTP 403/429, soft-failed), run the
+**operator sidecar** from HRM residential egress:
+
+```bash
+npx tsx scripts/fb-marketplace-scrape.ts --site kijiji --dry-run   # preview
+npx tsx scripts/fb-marketplace-scrape.ts --site kijiji             # POST to /api/ads/inbound
+```
+
+## Facebook Marketplace sidecar (ops-owned session)
+
+Facebook Marketplace needs a logged-in session and has no pollable public feed, so the app
+server never scrapes it. Instead an **operator browser sidecar** runs on the host with an
+**ops-owned** Facebook session and POSTs demand listings to the inbound API. No credential
+automation, no login bypass, and the session file is stored **outside git**.
+
+- Pure normalizer: `src/lib/facebook-marketplace.ts` (`normalizeFacebookListings`, `parseMarketplaceSearchJson`) — demand-only, deduped by `facebook:<itemId>`.
+- Sidecar: `scripts/fb-marketplace-scrape.ts` — dynamically loads Playwright (host-only dep).
+- Schedule: `deploy/production/bhc-fb-scrape.{service,timer}` (every 15 min).
+
+One-time setup on the host:
+
+```bash
+cd /opt/bhc
+npm i -D playwright && npx playwright install chromium
+# Save an ops session (opens a browser; log in as the ops FB account):
+sudo -u bhc FB_SESSION_STATE=/etc/bhc/fb-session/state.json \
+  npx tsx scripts/fb-marketplace-scrape.ts --login
+# Add to /opt/bhc/.env (never commit):
+#   ADS_INBOUND_SECRET=...            (must match the server)
+#   BHC_INBOUND_URL=http://127.0.0.1:3000/api/ads/inbound
+#   FB_SESSION_STATE=/etc/bhc/fb-session/state.json
+sudo cp deploy/production/bhc-fb-scrape.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now bhc-fb-scrape.timer
+```
+
+### Inbound payload contract (`POST /api/ads/inbound`)
+
+The sidecar (or Zapier / Cloudflare Email Worker / any operator script) POSTs the **existing**
+inbound shape — no new schema was invented:
+
+```json
+{ "title": "Looking for a deck builder", "body": "need a quote, Bedford",
+  "url": "https://www.facebook.com/marketplace/item/42", "location": "Halifax",
+  "externalId": "facebook:42", "contactEmail": "", "contactPhone": "" }
+```
+
+Auth: header `x-bhc-inbound-secret: $ADS_INBOUND_SECRET` (or `?secret=`). Each ad is deduped,
+triaged, and — if it qualifies — turned into a lead + approval-first drafts.
 
 ## Better Kijiji saved searches (mailbox path)
 

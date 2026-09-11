@@ -1,0 +1,32 @@
+# /etc/systemd/system/bhc-fb-scrape.service — one Facebook Marketplace scrape (paired with .timer)
+#
+# Operator browser sidecar. Requires a one-time ops login that saves a session
+# file OUTSIDE git (FB_SESSION_STATE). See scripts/fb-marketplace-scrape.ts and
+# docs/LEAD_INTAKE.md ("Facebook Marketplace sidecar").
+#
+#   sudo cp deploy/production/bhc-fb-scrape.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now bhc-fb-scrape.timer
+#   systemctl list-timers bhc-fb-scrape.timer
+#
+# Prereqs on the host (once):
+#   cd /opt/bhc && npm i -D playwright && npx playwright install chromium
+#   sudo -u bhc FB_SESSION_STATE=/etc/bhc/fb-session/state.json \
+#     npx tsx scripts/fb-marketplace-scrape.ts --login
+
+[Unit]
+Description=BHC Facebook Marketplace demand scrape (ops session -> /api/ads/inbound)
+After=bhc.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=bhc
+Group=bhc
+WorkingDirectory=/opt/bhc
+EnvironmentFile=-/opt/bhc/.env
+Environment=NODE_ENV=production
+Environment=FB_SCRAPE_HEADLESS=1
+# --site kijiji is available as a second unit/override if datacenter IPs block Kijiji.
+ExecStart=/usr/bin/npx --yes tsx scripts/fb-marketplace-scrape.ts --site facebook
+# Never hang the box if a page stalls behind a checkpoint.
+TimeoutStartSec=300
