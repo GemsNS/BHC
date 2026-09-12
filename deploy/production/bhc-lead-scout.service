@@ -1,0 +1,48 @@
+# /etc/systemd/system/bhc-lead-scout.service — BHC lead scout daemon (24/7 web scanner)
+#
+# Runs scripts/lead-scout.ts in --daemon mode next to the CRM: heartbeats to
+# /api/scout, claims scans the Mainframe agent queued, scrapes Kijiji /
+# Craigslist / Reddit / DuckDuckGo (+ Facebook Marketplace with a saved ops
+# session), and posts homeowner-demand listings back into the ad pipeline.
+#
+# NOTE: cloud IPs are often 403/429'd by Kijiji, Reddit and Craigslist. The
+# runner backs off a blocked platform for an hour, but the intended 24/7 home
+# for this process is the owner's PC (deploy/windows/install-lead-scout.ps1)
+# pointed at BHC_BASE_URL=https://bhcontracting.ca. Use this unit when the host
+# has a residential/VPN egress or for Reddit-only sweeps.
+#
+#   sudo cp deploy/production/bhc-lead-scout.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now bhc-lead-scout
+#   journalctl -u bhc-lead-scout -f
+#
+# Env needed in /etc/bhc/bhc.env or /opt/bhc/.env: ADS_INBOUND_SECRET (same as the app),
+# BHC_BASE_URL=http://127.0.0.1:3000, optional SCOUT_PLATFORMS / SCOUT_INTERVAL_MIN /
+# SCOUT_SWEEP_MIN / FB_SESSION_STATE.
+
+[Unit]
+Description=BHC lead scout (own-host web scanner -> /api/scout)
+After=bhc.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/bhc
+EnvironmentFile=-/etc/bhc/bhc.env
+EnvironmentFile=-/opt/bhc/.env
+Environment=NODE_ENV=production
+Environment=SCOUT_RUNNER_ID=bhc-host
+Environment=SCOUT_RUNNER_NAME=Production host
+Environment=FB_SCRAPE_HEADLESS=1
+ExecStart=/usr/bin/npx --yes tsx scripts/lead-scout.ts --daemon
+Restart=always
+RestartSec=30
+# Hardening (state file lives under /opt/bhc/data)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/bhc/data
+
+[Install]
+WantedBy=multi-user.target

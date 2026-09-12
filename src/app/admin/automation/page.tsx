@@ -10,10 +10,18 @@ import {
   runAutomationTick,
   type AutomationStatus,
 } from "@/lib/automation-engine";
+import type { AgentRuntimeStatus } from "@/lib/agent-harness";
 import { fetchJson, loadAppData, mutateAppData, mutateAppDataAsync } from "@/lib/client-data";
+import type { ScoutStatus } from "@/lib/lead-scout";
 import { isStaticDemo } from "@/lib/paths";
 import { storeHealth, type StoreHealthReport } from "@/lib/store-health";
-import type { AutomationTickRecord, InAppNotification, WebhookDelivery } from "@/lib/types";
+import type {
+  AgentRunRecord,
+  AutomationTickRecord,
+  InAppNotification,
+  ScoutPlatform,
+  WebhookDelivery,
+} from "@/lib/types";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +48,43 @@ type HubPayload = {
   recentTicks: AutomationTickRecord[];
   notifications: InAppNotification[];
   webhookBacklog: WebhookDelivery[];
+  /** Autonomous agent + own-PC lead scout (server mode only) */
+  agent?: AgentRuntimeStatus | null;
+  agentRuns?: AgentRunRecord[];
+  scout?: ScoutStatus | null;
 };
+
+const SCOUT_PLATFORM_OPTIONS: ScoutPlatform[] = ["kijiji", "craigslist", "reddit", "facebook", "web"];
+
+const TAG_TONES: Record<string, string> = {
+  online: "bg-emerald-500/20 text-emerald-200",
+  offline: "bg-stone-500/30 text-stone-300",
+  queued: "bg-amber-500/20 text-amber-200",
+  running: "bg-sky-500/20 text-sky-200",
+  done: "bg-emerald-500/20 text-emerald-200",
+  failed: "bg-rose-500/20 text-rose-200",
+  schedule: "bg-sky-500/20 text-sky-200",
+  wake: "bg-amber-500/20 text-amber-200",
+  manual: "bg-violet-500/20 text-violet-200",
+  test: "bg-stone-500/30 text-stone-300",
+  ok: "bg-emerald-500/20 text-emerald-200",
+  refused: "bg-rose-500/20 text-rose-200",
+  error: "bg-orange-500/20 text-orange-200",
+  skipped: "bg-stone-500/30 text-stone-300",
+};
+
+function Tag({ tone, children }: { tone: string; children: React.ReactNode }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+        TAG_TONES[tone] ?? "bg-stone-500/30 text-stone-300",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
 
 function fmt(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -71,6 +115,9 @@ function AutomationHub() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedTick, setSelectedTick] = useState<string | null>(null);
+  const [selectedRun, setSelectedRun] = useState<string | null>(null);
+  const [scanPlatform, setScanPlatform] = useState<ScoutPlatform>("kijiji");
+  const [scanQuery, setScanQuery] = useState("");
   const staticMode = isStaticDemo();
 
   const refresh = useCallback(async () => {
@@ -93,6 +140,9 @@ function AutomationHub() {
       recentTicks: data.automationRuns.slice(0, 15),
       notifications: data.notifications.slice(0, 30),
       webhookBacklog: [],
+      agent: null,
+      agentRuns: [],
+      scout: null,
     });
   }, [staticMode]);
 
@@ -234,9 +284,40 @@ function AutomationHub() {
     });
   }
 
+  function runAgent() {
+    return act("agent-run", async () => {
+      const res = await fetchJson<{ ok: boolean; agentRun: AgentRunRecord | null; record: AutomationTickRecord }>(
+        "/api/automation",
+        { method: "POST", body: JSON.stringify({ action: "agent_run" }) },
+      );
+      const run = res.agentRun;
+      if (!run) return res.record?.results[0] ?? "Agent tick ran (no run recorded).";
+      if (run.skipped) return `Agent skipped (${run.skipped.replace(/_/g, " ")}): ${run.error ?? run.needsHuman[0] ?? "see status"}`;
+      setSelectedRun(run.id);
+      return `Agent run done — ${run.did.length} did · ${run.needsHuman.length} need human · ${run.toolRuns.length} tool call(s) · ${run.webSearches} web search(es).`;
+    });
+  }
+
+  function enqueueScan(e: React.FormEvent) {
+    e.preventDefault();
+    const query = scanQuery.trim();
+    if (query.length < 4) {
+      setError("Enter a search phrase (at least 4 characters).");
+      return;
+    }
+    return act("scan", async () => {
+      const res = await fetchJson<{ ok: boolean; existing?: boolean; taskId?: string }>("/api/automation", {
+        method: "POST",
+        body: JSON.stringify({ action: "scout_enqueue", platform: scanPlatform, query }),
+      });
+      setScanQuery("");
+      return `${res.existing ? "Already queued" : "Queued"} ${scanPlatform} scan "${query}".`;
+    });
+  }
+
   const metrics = useMemo(() => {
     if (!payload) return [];
-    const { status, scheduler, health } = payload;
+    const { status, scheduler, health, agent, scout } = payload;
     const enabled = status.automations.filter((a) => a.enabled).length;
     return [
       {
@@ -275,6 +356,22 @@ function AutomationHub() {
         hint: health.ok ? `${health.issues.length} warning(s)` : "integrity errors",
         signal: !health.ok,
       },
+      {
+        label: "AI agent",
+        value: agent ? (agent.envEnabled ? agent.autonomy : "off") : "browser",
+        hint: agent
+          ? agent.lastRunAt
+            ? `last run ${fmt(agent.lastRunAt)}`
+            : "never ran"
+          : "server mode only",
+        signal: Boolean(agent && agent.automationEnabled && !agent.envEnabled),
+      },
+      {
+        label: "Lead scout",
+        value: scout ? `${scout.onlineRunners} online` : "—",
+        hint: scout ? `${scout.queued} queued · ${scout.running} running` : "server mode only",
+        signal: Boolean(scout && scout.queued > 0 && scout.onlineRunners === 0),
+      },
     ];
   }, [payload]);
 
@@ -287,8 +384,12 @@ function AutomationHub() {
   }
 
   const { status, scheduler, health, backups, recentTicks, notifications, webhookBacklog } = payload;
+  const agent = payload.agent ?? null;
+  const agentRuns = payload.agentRuns ?? [];
+  const scout = payload.scout ?? null;
   const unread = notifications.filter((n) => !n.readAt);
   const tick = recentTicks.find((t) => t.id === selectedTick) ?? recentTicks[0] ?? null;
+  const run = agentRuns.find((r) => r.id === selectedRun) ?? null;
 
   return (
     <PageFrame
@@ -325,6 +426,280 @@ function AutomationHub() {
       ) : null}
 
       <MetricStrip items={metrics} />
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Panel
+          title="Autonomous agent"
+          action={
+            !staticMode ? (
+              <button
+                type="button"
+                className="btn-secondary !py-1 !text-xs"
+                disabled={busy !== null || !agent?.envEnabled}
+                title={agent?.envEnabled ? "Force one agent sweep now" : "Set AGENT_HARNESS_ENABLED=1 on the server first"}
+                onClick={runAgent}
+              >
+                {busy === "agent-run" ? "Running…" : "Run agent now"}
+              </button>
+            ) : null
+          }
+        >
+          {staticMode || !agent ? (
+            <p className="cc-empty">
+              The autonomous Mainframe agent runs on the Node host only. In server mode it hunts the web for homeowner job
+              requests, feeds the ad pipeline, keeps tasks current, and lists anything that needs a human.
+            </p>
+          ) : (
+            <>
+              <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm sm:grid-cols-4">
+                <dt className="text-[var(--muted)]">Kill-switch</dt>
+                <dd>
+                  <StatusBadge status={agent.envEnabled ? "enabled" : "disabled"} />
+                </dd>
+                <dt className="text-[var(--muted)]">Automation</dt>
+                <dd>
+                  <StatusBadge status={agent.automationEnabled ? "enabled" : "paused"} />
+                </dd>
+                <dt className="text-[var(--muted)]">Autonomy</dt>
+                <dd className="font-medium">{agent.autonomy}</dd>
+                <dt className="text-[var(--muted)]">Provider</dt>
+                <dd className="truncate">
+                  {agent.provider}
+                  {agent.model ? <span className="text-xs text-[var(--muted)]"> · {agent.model}</span> : null}
+                </dd>
+                <dt className="text-[var(--muted)]">Web search</dt>
+                <dd>{agent.webSearch ? "on" : "off"}</dd>
+                <dt className="text-[var(--muted)]">Cadence</dt>
+                <dd>
+                  every {agent.intervalMin ?? "?"} min · min gap {agent.minGapMin} min
+                </dd>
+                <dt className="text-[var(--muted)]">Runs today</dt>
+                <dd className={cn(agent.runsToday >= agent.maxRunsPerDay && "text-amber-300")}>
+                  {agent.runsToday}/{agent.maxRunsPerDay} · {agent.maxSteps} steps max
+                </dd>
+                <dt className="text-[var(--muted)]">Open goals</dt>
+                <dd>
+                  {agent.openGoals} · {agent.crmTools + agent.agentTools} tools
+                </dd>
+              </dl>
+              {agent.automationEnabled && !agent.envEnabled ? (
+                <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                  The automation is on but the kill-switch is off. Set <code>AGENT_HARNESS_ENABLED=1</code> on the server to let it run.
+                </p>
+              ) : null}
+              {agent.wakeReasons.length ? (
+                <div className="mt-3 text-xs">
+                  <p className="uppercase tracking-wide text-[var(--muted)]">Will wake for</p>
+                  <ul className="mt-1 space-y-1">
+                    {agent.wakeReasons.map((r, i) => (
+                      <li key={i} className="rounded bg-amber-500/10 px-2 py-1 text-amber-100">
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              <p className="mt-3 text-xs uppercase tracking-wide text-[var(--muted)]">Recent runs</p>
+              {agentRuns.length ? (
+                <ul className="mt-1 space-y-1 text-xs">
+                  {agentRuns.map((r) => {
+                    const open = run?.id === r.id;
+                    return (
+                      <li key={r.id} className="rounded-md border border-white/10">
+                        <button
+                          type="button"
+                          className={cn("flex w-full flex-wrap items-center gap-2 px-2 py-1.5 text-left hover:bg-white/5", open && "bg-white/10")}
+                          onClick={() => setSelectedRun(open ? null : r.id)}
+                        >
+                          <Tag tone={r.trigger}>{r.trigger}</Tag>
+                          {r.skipped ? <Tag tone="skipped">skipped · {r.skipped.replace(/_/g, " ")}</Tag> : null}
+                          <span className="font-medium">{fmt(r.finishedAt)}</span>
+                          <span className="text-[var(--muted)]">
+                            {r.autonomy} · {r.durationMs} ms · {r.did.length} did ·{" "}
+                            <span className={cn(r.needsHuman.length > 0 && "text-amber-200")}>{r.needsHuman.length} need human</span> ·{" "}
+                            {r.toolRuns.length} tools · {r.webSearches} searches
+                          </span>
+                        </button>
+                        {open ? (
+                          <div className="space-y-2 border-t border-white/10 px-3 py-2">
+                            {r.wakeReasons.length ? (
+                              <p className="text-[var(--muted)]">Woke for: {r.wakeReasons.join("; ")}</p>
+                            ) : null}
+                            {r.error ? <p className="rounded bg-rose-500/10 px-2 py-1 text-rose-200">{r.error}</p> : null}
+                            {(
+                              [
+                                ["DID", r.did, "bg-emerald-500/10 text-emerald-100"],
+                                ["NEEDS HUMAN", r.needsHuman, "bg-amber-500/10 text-amber-100"],
+                                ["NOTED", r.noted, "bg-white/5"],
+                              ] as Array<[string, string[], string]>
+                            ).map(([label, items, klass]) => (
+                              <div key={label}>
+                                <p className="uppercase tracking-wide text-[var(--muted)]">{label}</p>
+                                {items.length ? (
+                                  <ul className="mt-1 space-y-1">
+                                    {items.map((line, i) => (
+                                      <li key={i} className={cn("rounded px-2 py-1", klass)}>
+                                        {line}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="text-[var(--muted)]">none</p>
+                                )}
+                              </div>
+                            ))}
+                            {r.toolRuns.length ? (
+                              <div>
+                                <p className="uppercase tracking-wide text-[var(--muted)]">Tool calls</p>
+                                <ul className="mt-1 space-y-1">
+                                  {r.toolRuns.map((t, i) => (
+                                    <li key={i} className="flex items-start gap-2 rounded bg-white/5 px-2 py-1">
+                                      <Tag tone={t.refused ? "refused" : t.ok ? "ok" : "error"}>
+                                        {t.refused ? "refused" : t.ok ? "ok" : "error"}
+                                      </Tag>
+                                      <span className="min-w-0">
+                                        <span className="font-medium">{t.tool}</span>
+                                        <span className="text-[var(--muted)]"> — {t.summary.slice(0, 180)}{t.summary.length > 180 ? "…" : ""}</span>
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="cc-empty mt-1">
+                  No agent runs yet. Set <code>AGENT_HARNESS_ENABLED=1</code> and enable &ldquo;Mainframe ops sweep&rdquo; below.
+                </p>
+              )}
+            </>
+          )}
+        </Panel>
+
+        <Panel
+          title="Lead scout (your PC)"
+          action={
+            scout ? (
+              <span className="text-xs text-[var(--muted)]">
+                {scout.onlineRunners}/{scout.runners.length} online · {scout.doneToday} scans today
+                {scout.failedToday ? ` · ${scout.failedToday} failed` : ""}
+              </span>
+            ) : null
+          }
+        >
+          {staticMode || !scout ? (
+            <p className="cc-empty">
+              The lead scout is a small worker you run on your own PC (residential IP). It heartbeats to the server, picks up
+              scans the agent requests, scrapes Kijiji / Craigslist / Reddit / Facebook Marketplace / the web, and posts
+              homeowner job requests into the ad pipeline. Server mode only.
+            </p>
+          ) : (
+            <>
+              {scout.runners.length ? (
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {scout.runners.map((r) => (
+                    <li key={r.id} className="rounded-md border border-white/10 px-3 py-2 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-sm font-medium">{r.name}</p>
+                        <Tag tone={r.online ? "online" : "offline"}>{r.online ? "online" : "offline"}</Tag>
+                      </div>
+                      <p className="text-[var(--muted)]">
+                        {r.host} · v{r.version} · {r.platforms.join(", ") || "no platforms"}
+                      </p>
+                      <p className="text-[var(--muted)]">
+                        seen {fmt(r.lastSeenAt)} · {r.tasksDone} scans · {r.adsPosted} ads posted
+                      </p>
+                      {r.lastSummary ? <p className="mt-1 truncate">{r.lastSummary}</p> : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="cc-empty">No scout runner has checked in yet.</p>
+              )}
+
+              <form onSubmit={enqueueScan} className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                <select
+                  className="rounded-md border border-white/10 bg-transparent px-2 py-1.5 text-sm"
+                  value={scanPlatform}
+                  onChange={(e) => setScanPlatform(e.target.value as ScoutPlatform)}
+                  disabled={busy !== null}
+                >
+                  {SCOUT_PLATFORM_OPTIONS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  className="min-w-0 flex-1 rounded-md border border-white/10 bg-transparent px-2 py-1.5 text-sm"
+                  placeholder='e.g. "looking for siding contractor"'
+                  value={scanQuery}
+                  onChange={(e) => setScanQuery(e.target.value)}
+                  maxLength={200}
+                  disabled={busy !== null}
+                />
+                <button type="submit" className="btn-secondary !py-1.5 !text-xs" disabled={busy !== null}>
+                  {busy === "scan" ? "Queueing…" : "Queue scan"}
+                </button>
+              </form>
+
+              <p className="mt-3 text-xs uppercase tracking-wide text-[var(--muted)]">Scan queue</p>
+              {scout.recent.length ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="text-left uppercase tracking-wide text-[var(--muted)]">
+                      <tr>
+                        <th className="py-1 pr-2">State</th>
+                        <th className="py-1 pr-2">Platform</th>
+                        <th className="py-1 pr-2">Query</th>
+                        <th className="py-1 pr-2">Found / created</th>
+                        <th className="py-1 pr-2">By</th>
+                        <th className="py-1">When</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scout.recent.map((t) => (
+                        <tr key={t.id} className="border-t border-white/10 align-top">
+                          <td className="py-1 pr-2">
+                            <Tag tone={t.status}>{t.status}</Tag>
+                          </td>
+                          <td className="py-1 pr-2">{t.platform}</td>
+                          <td className="py-1 pr-2">
+                            <span className="line-clamp-2">{t.query}</span>
+                            {t.error ? <span className="block text-rose-300">{t.error.slice(0, 80)}</span> : null}
+                          </td>
+                          <td className="py-1 pr-2 whitespace-nowrap">
+                            {t.status === "done" ? `${t.found} / ${t.created}` : "—"}
+                          </td>
+                          <td className="py-1 pr-2 whitespace-nowrap">{t.requestedBy}</td>
+                          <td className="py-1 whitespace-nowrap text-[var(--muted)]">{fmt(t.completedAt ?? t.claimedAt ?? t.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="cc-empty mt-1">No scans yet. Queue one above or let the agent request them.</p>
+              )}
+
+              <div className="mt-3 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs">
+                <p className="text-[var(--muted)]">Run this on the PC that should scrape (residential IP works best):</p>
+                <pre className="mt-1 overflow-x-auto rounded bg-black/30 px-2 py-1 font-mono">npm run scout -- --daemon</pre>
+                <p className="mt-1 text-[var(--muted)]">
+                  Windows: <code>deploy/windows/install-lead-scout.ps1</code> registers it as a logon task. Needs{" "}
+                  <code>ADS_INBOUND_SECRET</code> + <code>BHC_BASE_URL</code> in <code>.env</code>.
+                </p>
+              </div>
+            </>
+          )}
+        </Panel>
+      </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <Panel title="Automations" action={<span className="text-xs text-[var(--muted)]">{status.automations.filter((a) => a.enabled).length} enabled</span>}>

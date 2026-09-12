@@ -1,4 +1,5 @@
 import { runAdIngest, type AdPipelineHooks } from "./ad-pipeline";
+import { decideAgentRun, lastAgentRunAt, type AgentDueDecision } from "./agent-wake";
 import { catalogEntry } from "./automation-defaults";
 import { live } from "./events";
 import {
@@ -47,9 +48,28 @@ export type TickOptions = {
   discover?: (data: AppData) => Promise<{ summary: string; created: number; errors: string[] }>;
   /** Server hook: weekly customer PDF reports. Omit to skip job_reports. */
   jobReports?: (data: AppData) => Promise<{ generated: number; sent: number; summary: string }>;
-  /** Server hook: Mainframe agent harness (allowlisted tools). Omit to skip agent_ops. */
-  agentOps?: (data: AppData) => Promise<{ summary: string }>;
+  /**
+   * Server hook: autonomous Mainframe agent (allowlisted tools). Omit to skip
+   * agent_ops. `info.trigger` is "wake" when events pulled the run forward.
+   */
+  agentOps?: (
+    data: AppData,
+    info: { trigger: "schedule" | "wake"; wakeReasons: string[] },
+  ) => Promise<{ summary: string }>;
 };
+
+/** Exposed for tests: how the engine decides whether agent_ops runs this tick. */
+export function agentOpsDue(
+  data: AppData,
+  auto: AppData["assistantAutomations"][number],
+  nowMs: number,
+): AgentDueDecision {
+  return decideAgentRun(data, {
+    scheduledDue: isAutomationDue(auto, nowMs),
+    lastRunAt: auto.lastRunAt ?? lastAgentRunAt(data),
+    nowMs,
+  });
+}
 
 const TICK_HISTORY_CAP = 60;
 
@@ -78,7 +98,15 @@ export async function runAutomationTick(
   for (const auto of data.assistantAutomations) {
     if (only && !only.has(auto.id)) continue;
     if (!auto.enabled) continue;
-    if (!opts.force && !isAutomationDue(auto, started)) continue;
+    // The autonomous agent can be woken early by events (new ads, replies,
+    // inbound messages, tick errors, finished scans) once its minimum gap passed.
+    let agentDecision: AgentDueDecision | null = null;
+    if (auto.action === "agent_ops" && opts.agentOps) {
+      agentDecision = agentOpsDue(data, auto, started);
+      if (!opts.force && !agentDecision.due) continue;
+    } else if (!opts.force && !isAutomationDue(auto, started)) {
+      continue;
+    }
 
     try {
       if (auto.action === "store_backup") {
@@ -211,10 +239,12 @@ export async function runAutomationTick(
           results.push(`[${auto.name}] skipped — needs the Node host + AI key + AGENT_HARNESS_ENABLED=1.`);
           continue;
         }
-        const r = await opts.agentOps(data);
+        const trigger = agentDecision?.trigger === "wake" ? "wake" : "schedule";
+        const wakeReasons = agentDecision?.wakeReasons ?? [];
+        const r = await opts.agentOps(data, { trigger, wakeReasons });
         auto.lastRunAt = startedIso;
         counters.automationsRun += 1;
-        results.push(`[${auto.name}] ${r.summary}`);
+        results.push(`[${auto.name}] ${r.summary}${trigger === "wake" ? ` · woke: ${wakeReasons.slice(0, 2).join("; ").slice(0, 120)}` : ""}`);
         continue;
       }
 

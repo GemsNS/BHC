@@ -12,7 +12,10 @@
  */
 
 import "dotenv/config";
+import { agentRuntimeStatus, runAgentOpsSweep } from "../src/lib/agent-harness";
+import { openAgentGoals } from "../src/lib/agent-tools";
 import { getAIStatus } from "../src/lib/ai-provider";
+import { enqueueScoutTask, parseScoutPlatform, scoutStatus, SCOUT_PLATFORMS } from "../src/lib/lead-scout";
 import { summarizeProgress } from "../src/lib/ai-summarize";
 import { automationStatus } from "../src/lib/automation-engine";
 import { runMainframeTurn, type ChatMessage } from "../src/lib/mainframe-agent";
@@ -85,6 +88,14 @@ Commands:
 
   webhooks backlog              Deliveries waiting for retry
   webhooks retry                Retry the backlog now
+
+  agent status                  Autonomous agent: kill-switch, autonomy, runs today, last run, wake reasons
+  agent run                     Force one agent sweep now (needs AGENT_HARNESS_ENABLED=1 + AI key)
+  agent goals                   Open goals the agent carries across runs
+
+  scout status                  Lead scout runners (own PC), scan queue, recent results
+  scout enqueue <platform> "<query>"
+                                Queue a scan for the runner (kijiji|craigslist|reddit|facebook|web)
 
   ads status                    Job-ad outreach: connections, sources, inbox counts
   ads ensure-sources            Wire IMAP + public Reddit/Kijiji/Craigslist sources
@@ -684,6 +695,97 @@ async function cmdAuthResetLink(login: string) {
   }
 }
 
+async function cmdAgentStatus() {
+  const data = await readStore();
+  const s = agentRuntimeStatus(data);
+  console.log(
+    `Agent: ${s.envEnabled ? "ENABLED" : "OFF (AGENT_HARNESS_ENABLED=0)"} · automation ${s.automationEnabled ? "on" : "off"} · autonomy ${s.autonomy} · ${s.provider}${s.model ? ` (${s.model})` : ""} · web search ${s.webSearch ? "on" : "off"}`,
+  );
+  console.log(
+    `Cadence: every ${s.intervalMin ?? "?"} min · min gap ${s.minGapMin} min · runs today ${s.runsToday}/${s.maxRunsPerDay} · max steps ${s.maxSteps} · tools ${s.crmTools} CRM + ${s.agentTools} agent`,
+  );
+  console.log(`Last run: ${s.lastRunAt ?? "never"} · open goals: ${s.openGoals}`);
+  if (s.wakeReasons.length) {
+    console.log("Would wake now for:");
+    for (const r of s.wakeReasons) console.log(`  • ${r}`);
+  }
+  if (s.lastRun) {
+    console.log(`\nLast run (${s.lastRun.trigger}, ${s.lastRun.durationMs} ms${s.lastRun.skipped ? `, skipped: ${s.lastRun.skipped}` : ""}):`);
+    for (const d of s.lastRun.did) console.log(`  DID  ${d}`);
+    for (const h of s.lastRun.needsHuman) console.log(`  HUMAN ${h}`);
+    for (const n of s.lastRun.noted) console.log(`  NOTE ${n}`);
+  }
+}
+
+async function cmdAgentRun() {
+  // Direct sweep (trigger "manual") so it runs even when the scheduled toggle is off.
+  // Kill-switch, daily cap, and AI budget are still enforced inside the sweep.
+  let summary = "";
+  await updateStoreAsync(async (d) => {
+    const r = await runAgentOpsSweep(d, { newId, nowIso }, { trigger: "manual" });
+    summary = r.summary;
+    const auto = d.assistantAutomations.find((a) => a.action === "agent_ops");
+    if (auto && !r.skipped) auto.lastRunAt = nowIso();
+  });
+  console.log(summary);
+  const data = await readStore();
+  const run = (data.agentRuns ?? [])[0];
+  if (run) {
+    console.log(`\nRun ${run.id} (${run.trigger}, ${run.autonomy}${run.skipped ? `, skipped: ${run.skipped}` : ""}) — ${run.toolRuns.length} tool call(s), ${run.webSearches} web search(es)`);
+    for (const d of run.did) console.log(`  DID  ${d}`);
+    for (const h of run.needsHuman) console.log(`  HUMAN ${h}`);
+    for (const n of run.noted) console.log(`  NOTE ${n}`);
+  }
+}
+
+async function cmdAgentGoals() {
+  const data = await readStore();
+  const goals = openAgentGoals(data);
+  if (!goals.length) {
+    console.log("No open agent goals.");
+    return;
+  }
+  for (const g of goals) console.log(`  [${g.id}] ${g.content}  (since ${g.createdAt.slice(0, 10)})`);
+}
+
+async function cmdScoutStatus() {
+  const data = await readStore();
+  const s = scoutStatus(data);
+  console.log(
+    `Scout: ${s.onlineRunners} online of ${s.runners.length} runner(s) · ${s.queued} queued · ${s.running} running · ${s.doneToday} done today · ${s.failedToday} failed today`,
+  );
+  for (const r of s.runners) {
+    console.log(
+      `  ${r.online ? "●" : "○"} ${r.name} @ ${r.host} v${r.version} [${r.platforms.join(",")}] seen ${r.lastSeenAt} · ${r.tasksDone} scans · ${r.adsPosted} ads`,
+    );
+  }
+  if (s.recent.length) {
+    console.log("\nRecent scans:");
+    for (const t of s.recent) {
+      console.log(
+        `  ${t.status.padEnd(7)} ${t.platform.padEnd(10)} "${t.query}" ${t.status === "done" ? `found ${t.found}, created ${t.created}` : t.error ?? ""} (${t.requestedBy})`,
+      );
+    }
+  }
+  if (!s.runners.length) {
+    console.log("\nNo runner yet. On the PC that should scrape, run:  npm run scout -- --daemon");
+  }
+}
+
+async function cmdScoutEnqueue(platformRaw: string, query: string) {
+  const platform = parseScoutPlatform(platformRaw);
+  if (!platform || !query) {
+    console.error(`Usage: bhc scout enqueue <${SCOUT_PLATFORMS.join("|")}> "<query>"`);
+    process.exit(1);
+  }
+  let out = "";
+  await updateStoreAsync(async (d) => {
+    const r = enqueueScoutTask(d, { platform, query, requestedBy: "cli" }, { newId, nowIso });
+    out = `${r.existing ? "Already queued" : "Queued"} ${platform} scan "${query}" [${r.task.id}]`;
+  });
+  console.log(out);
+}
+
 async function main() {
   const cmd = args[0];
   const sub = args[1];
@@ -726,6 +828,21 @@ async function main() {
     if (sub === "backlog") return cmdWebhooksBacklog();
     if (sub === "retry") return cmdWebhooksRetry();
     console.error(`Unknown webhooks subcommand: ${sub ?? "(none)"}`);
+    process.exit(1);
+  }
+
+  if (cmd === "agent") {
+    if (sub === "status") return cmdAgentStatus();
+    if (sub === "run") return cmdAgentRun();
+    if (sub === "goals") return cmdAgentGoals();
+    console.error(`Unknown agent subcommand: ${sub ?? "(none)"} — try: agent status | agent run | agent goals`);
+    process.exit(1);
+  }
+
+  if (cmd === "scout") {
+    if (sub === "status") return cmdScoutStatus();
+    if (sub === "enqueue") return cmdScoutEnqueue(args[2] ?? "", args.slice(3).join(" ").trim());
+    console.error(`Unknown scout subcommand: ${sub ?? "(none)"} — try: scout status | scout enqueue <platform> "<query>"`);
     process.exit(1);
   }
 

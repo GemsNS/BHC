@@ -1116,5 +1116,8 @@ export function buildDemoSeedData(): AppData {
     payments: [] as AppData["payments"],
     messages: [] as AppData["messages"],
     passwordResetTokens: [] as AppData["passwordResetTokens"],
+    agentRuns: [] as AppData["agentRuns"],
+    scoutTasks: [] as AppData["scoutTasks"],
+    scoutRunners: [] as AppData["scoutRunners"],
   };
 }

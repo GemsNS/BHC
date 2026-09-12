@@ -74,14 +74,15 @@ OUTREACH_AUTOSEND=email,sms
 # optional later: OUTREACH_AUTOSEND_TOUCHES=1  # review/referral/payment touches
 ```
 
-Policy (code): high-score ad replies can send without manual approve; daily cap 25; `ADS_AUTOSEND_MIN_SCORE` default 75.  
-**Harness cannot call `send_outreach` / approve tools** — humans or the outreach-send automation path only.
+Policy (code): high-score ad replies can send without manual approve; daily cap 25; `ADS_AUTOSEND_MIN_SCORE` default 75.
+
+**Harness autonomy (post agent-runtime ship):** default `AGENT_AUTONOMY=assist` — reversible CRM writes + ingest/scan; deletes/HR/imports/QB-sync refused at every tier. `operate` may score-gated `approve_outreach`; `full` may `send_outreach` under the same outreach policy. Keep prod on **`assist`** unless you deliberately raise the tier. Ship checklist: [`GROKBOT_AGENT_RUNTIME_DEPLOY.md`](./GROKBOT_AGENT_RUNTIME_DEPLOY.md).
 
 ## Agent harness ↔ Anthropic
 
 - `AI_PROVIDER=anthropic` · `ANTHROPIC_API_KEY` present · no `ANTHROPIC_BASE_URL` (AgentRouter abandoned).
 - Kill-switch `AGENT_HARNESS_ENABLED=1` + UI automation `auto-agent-ops`.
-- Allowlisted reads/reversible writes only; deletes / send / approve outreach refused.
+- Tiered allowlist (`AGENT_AUTONOMY`); see `docs/AGENT_RUNTIME.md`.
 
 ```bash
 sudo -u www-data bash -lc 'cd /opt/bhc && set -a && source /etc/bhc/bhc.env && set +a && ./node_modules/.bin/tsx scripts/bhc-cli.ts automations tick --force'

@@ -11,6 +11,7 @@ Everything the BHC CRM can do on its own, and exactly what to buy or configure t
 | Mainframe chat, console, reply drafting, quote/inbox drafting | **Claude Opus 5** | `ANTHROPIC_MODEL=claude-opus-5` (default) | Customer-facing writing, tool-using assistant, voicemail summaries | ≈ $0.03–0.06 per drafted message |
 | Ad triage (yes/no + score on every ad) | **Claude Haiku 4.5** | `ANTHROPIC_FAST_MODEL=claude-haiku-4-5` (default) | 200+ ads/month cheaply | ≈ $0.002 per ad |
 | Internet lead discovery (web search) | **Claude Opus 5 + web search tool** | `DISCOVERY_MODEL` (default = main), `DISCOVERY_MAX_SEARCHES=8` | Every 3 h searches for “looking for a contractor” posts in HRM | ≈ $0.10–0.25 per run → $25–60/mo at 8 runs/day; lower `DISCOVERY_MAX_SEARCHES` or interval to trim |
+| Autonomous agent (24/7 ops sweep + web lead hunting) | **Claude Opus 5 + web search tool** | `AGENT_HARNESS_ENABLED=1`, `AGENT_AUTONOMY=assist`, `AGENT_WEB_SEARCH_MAX=5`, `AGENT_HARNESS_MAX_RUNS_PER_DAY=48` | Hourly (or when woken) sweep: hunts job requests, ingests them, keeps tasks current, escalates under NEEDS HUMAN | ≈ $0.05–0.20 per run → $20–60/mo at 24 runs/day; lower the interval or `AGENT_WEB_SEARCH_MAX` to trim. The lead-scout runner on your PC is free. |
 | Cost-saver option | Claude Sonnet 5 | `ANTHROPIC_MODEL=claude-sonnet-5` | Same jobs, ~5× cheaper drafts, slightly less polish | ≈ $0.01 per draft |
 | Fallbacks (optional) | Gemini / OpenAI | `GEMINI_API_KEY`, `OPENAI_API_KEY` | Used only if no Anthropic key | — |
 

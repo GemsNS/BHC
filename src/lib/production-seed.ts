@@ -230,6 +230,9 @@ export function buildProductionSeed(): AppData {
     payments: [],
     messages: [],
     passwordResetTokens: [],
+    agentRuns: [],
+    scoutTasks: [],
+    scoutRunners: [],
   };
 
   ensureWalidInCrm(data, { nowIso: now, authorId: "emp-admin" });

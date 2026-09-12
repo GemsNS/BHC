@@ -139,3 +139,16 @@ Cloud object storage adapter behind `media-store.ts`; QuickBooks two-way invoice
 ## 11. Conventions carried forward
 
 Branches `cursor/<name>-22fe`, merge verified work into `main`; the owner runs the deploy. Additive migrations only (`normalizeStore`). Anything that creates business records or sends to customers ships paused/approval-gated. Emit `live.*` events from new features. Update `docs/AGENT_MEMORY.md` with dated entries when the owner states a preference.
+
+---
+
+## 12. Autonomous agent runtime + lead scout (2026-09-11, Claude)
+
+Read `docs/AGENT_RUNTIME.md` for the full picture. Summary for Cursor:
+
+- **Store v11** adds `agentRuns`, `scoutTasks`, `scoutRunners` (additive; old stores load).
+- **Agent** (`src/lib/agent-harness.ts`, `agent-tools.ts`, `agent-wake.ts`): autonomy tiers via `AGENT_AUTONOMY` (observe / assist [default] / operate / full); deletes, HR, imports, QuickBooks syncs refused at every tier; `approve_outreach` only per-draft when the ad scores ≥ `ADS_AUTOSEND_MIN_SCORE`. Runs on the `auto-agent-ops` interval **or wakes early** (new qualified ads, replies, inbound messages, tick errors, finished scans) with a minimum gap. Server-built briefing, Anthropic `web_search` server tool (`serverTools` on `runAIAgentLoop`), `fetch_page` (allowlisted https only), `ingest_ad`, `request_web_scan`, goals in `assistantMemory` (topic `agent-goal`). Every run → `data.agentRuns` + audit + owner notification when NEEDS HUMAN.
+- **Lead scout** (`src/lib/lead-scout.ts`, `scout-platforms.ts`, `scripts/lead-scout.ts`, `/api/scout`): a runner on the owner's PC (residential IP; optional Facebook ops session) polls the CRM for scan tasks, scrapes Kijiji / Craigslist / Reddit / DuckDuckGo-web / Facebook Marketplace, and POSTs demand listings back; they enter the normal ad pipeline as `adsrc-scout-<platform>`. `npm run scout -- --daemon`; Windows installer `deploy/windows/install-lead-scout.ps1`; systemd `deploy/production/bhc-lead-scout.service`.
+- **UI**: `/admin/automation` → "Autonomous agent" + "Lead scout (your PC)" panels. **API**: `GET /api/automation` adds `agent`, `agentRuns`, `scout`; `POST` adds `agent_run`, `scout_enqueue`. **CLI**: `bhc agent status|run|goals`, `bhc scout status|enqueue`.
+- **Prod switch-on**: `AGENT_HARNESS_ENABLED=1` (already on per handback), `AGENT_AUTONOMY=assist`, enable the automation, then run the scout on a PC with `BHC_BASE_URL=https://bhcontracting.ca` + `ADS_INBOUND_SECRET`.
+- Tests: `tests/agent-harness.test.ts`, `agent-wake.test.ts`, `lead-scout.test.ts` (288 total pass). Lint/typecheck/build clean at hand-off.

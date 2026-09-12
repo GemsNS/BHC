@@ -27,7 +27,7 @@ Repo: `GemsNS/BHC` · Production: `https://bhcontracting.ca` · Static demo: `ht
 
 1. **Do not commit secrets.** `.env` is gitignored. Never put Anthropic/Gemini/OpenAI keys in git. `NEXT_PUBLIC_GEMINI_API_KEY` is **temporary Pages testing only**.
 2. **Production auth:** login + password (bootstrap PIN `0000`, then set password). Manage users in Admin → Team. Signed httpOnly session cookie (`SESSION_SECRET`). Older “cameron/1001” demo accounts are legacy; production seed uses role logins (`admin`, `knocker`, etc.).
-3. **Bump `bhc-crm-store-vN` in `src/lib/client-data.ts` when `AppData` schema changes.** Current: **v10**.
+3. **Bump `bhc-crm-store-vN` in `src/lib/client-data.ts` when `AppData` schema changes.** Current: **v11**.
 4. **Do not pass `withBasePath()` to Next `Link` / `router.push`.** Next applies `basePath`. Use `withBasePath` for `fetch` and service-worker URLs only.
 5. **GitHub Pages builds strip `src/app/api`.** Static demo uses localStorage. Full AI/webhooks/calendar ICS/automation need server mode (`npm run dev` / `npm start`).
 6. **User preference:** merge verified feature PRs into `main`. Branch names: `cursor/<name>-22fe`.
@@ -64,6 +64,8 @@ npm run deploy:gh-pages
 | Calendar ICS | `src/lib/calendar.ts`, `GET /api/calendar` |
 | Webhooks (signed, queued, retried) | `src/lib/webhooks.ts`, `/api/webhooks` |
 | **Automation engine** | `src/lib/automation-engine.ts`, `automation-checks.ts`, `automation-defaults.ts`, `scheduler.ts`, `src/instrumentation.ts`, `/admin/automation`, `/api/automation`, `docs/AUTOMATION.md` |
+| **Autonomous agent (24/7)** | `src/lib/agent-harness.ts` (tiers, gate, briefing, sweep), `agent-tools.ts` (fetch_page, ingest_ad, request_web_scan, goals), `agent-wake.ts` (wake reasons, cadence), `docs/AGENT_RUNTIME.md` |
+| **Lead scout (own-PC scraper)** | `src/lib/lead-scout.ts`, `scout-platforms.ts`, `scripts/lead-scout.ts` (`npm run scout`), `/api/scout`, `deploy/windows/install-lead-scout.ps1`, `deploy/production/bhc-lead-scout.service` |
 | Event workflows | `src/lib/workflows.ts` |
 | **Job-ad outreach** | `src/lib/ad-ingest.ts`, `ad-pipeline.ts`, `outreach-send.ts`, `/admin/ads`, `docs/OUTREACH.md` |
 | Console | `scripts/bhc-console.ts` → `npm run console` |
@@ -84,6 +86,7 @@ npm run deploy:gh-pages
 - In-process scheduler (`BHC_SCHEDULER`, default on, every 15 min) ticks the automation engine.
 - Workflow templates ship paused; enable in Admin → Automation.
 - Job-ad outreach is approval-gated by default (`OUTREACH_AUTOSEND`).
+- **Autonomous agent** (`agent_ops`) ships OFF: `AGENT_HARNESS_ENABLED=1` + enable in Admin → Automation. `AGENT_AUTONOMY=observe|assist|operate|full` sets what it may do (deletes/HR/imports never). It runs on its interval and wakes early on new ads, replies, inbound messages, tick errors, or finished scout scans. Web: Anthropic `web_search` + `fetch_page` + the own-PC **lead scout** runner (`npm run scout -- --daemon`, posts to `/api/scout` with `ADS_INBOUND_SECRET`). See `docs/AGENT_RUNTIME.md`.
 - Auth: signed httpOnly cookie (`SESSION_SECRET`); `BHC_STRICT_AUTH=1` retires legacy header auth.
 - Media lives under `data/media` (not base64 in the store).
 - Optional `BHC_STORE=sqlite` for `data/store.sqlite`.

@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "bhc": "tsx scripts/bhc-cli.ts",
     "console": "tsx scripts/bhc-console.ts",
+    "scout": "tsx scripts/lead-scout.ts",
     "ads:status": "tsx scripts/bhc-cli.ts ads status",
     "ads:ingest": "tsx scripts/bhc-cli.ts ads ingest",
     "ai:status": "tsx scripts/bhc-cli.ts ai status",

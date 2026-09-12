@@ -70,6 +70,9 @@ const COLLECTIONS: Array<keyof AppData> = [
   "documents",
   "payments",
   "messages",
+  "agentRuns",
+  "scoutTasks",
+  "scoutRunners",
 ];
 
 export function storeHealth(data: AppData): StoreHealthReport {

@@ -136,6 +136,23 @@ Persistent log of user preferences, decisions, and chat themes for future agents
 
 ---
 
+### Autonomous agent runtime + lead scout (2026-09-11, Claude)
+
+**User request (`/goal`):** make the Mainframe agent harness a fully autonomous agent that runs 24/7, can automate the whole system, and scrapes the web for leads across many platforms from its own PC. (A mid-session "/orchestration … auth refactor" message was meant for Cursor, not this session.)
+
+**Shipped:**
+- Store **v11**: `agentRuns`, `scoutTasks`, `scoutRunners` (additive; `normalizeStore` fills `[]`).
+- `agent-harness.ts` rewritten: autonomy tiers (`AGENT_AUTONOMY` observe/assist/operate/full; deletes/HR/imports/QB-sync refused everywhere; approve gated by ad score), server-built briefing, real tool schemas, Anthropic `web_search` server tool (`serverTools` in `ai-provider.ts`), run records, daily run cap, `agentRuntimeStatus`.
+- `agent-tools.ts`: `fetch_page` (https + domain allowlist + private-host block), `ingest_ad` (→ `adsrc-agent` → pipeline), `request_web_scan`, `scout_status`, `last_tick_report`, `set_goal`/`complete_goal`/`list_goals` (memory topic `agent-goal`).
+- `agent-wake.ts` + engine: agent_ops runs on interval **or wakes** on new qualified ads / replies / inbound messages / tick errors / finished scans, min gap `AGENT_HARNESS_MIN_GAP_MIN`, `AGENT_HARNESS_INTERVAL_MIN` override.
+- Lead scout: `lead-scout.ts` (tasks, runners, ingest), `scout-platforms.ts` (kijiji/craigslist/reddit/web adapters, 403/429 → blocked), `scripts/lead-scout.ts` (`npm run scout -- --daemon|--once|--dry-run|--login`), `/api/scout`, Windows Scheduled Task installer + systemd unit.
+- UI: Admin → Automation gains "Autonomous agent" (status, wake reasons, Run agent now, run history with DID/NEEDS HUMAN/NOTED) and "Lead scout (your PC)" (runners, queue, queue-a-scan, setup hint). CLI `agent status|run|goals`, `scout status|enqueue`.
+- Docs: `docs/AGENT_RUNTIME.md`, `.env.example`, CLAUDE.md. Tests: `agent-harness`, `agent-wake`, `lead-scout`.
+
+**Owner preferences reaffirmed:** owner runs the deploy; anything that sends stays behind policy; additive migrations only.
+
+---
+
 ## Chat themes (for continuity)
 
 1. **Make the app feel alive** — user wants data surfaced in UI, not buried in store/API.

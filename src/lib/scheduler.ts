@@ -101,12 +101,16 @@ export async function runServerTick(opts: {
     offloadMedia: (d) => offloadInlineMedia(d),
     discover: discovery.discoveryConfigured() ? (d) => discovery.discoverLeadsOnline(d, { newId, nowIso }) : undefined,
     jobReports: (d) => reports.runWeeklyJobReports(d, { newId, nowIso }),
-    agentOps: async (d) => {
+    agentOps: async (d, info) => {
       const { runAgentOpsSweep, agentHarnessEnvEnabled } = await import("./agent-harness");
       if (!agentHarnessEnvEnabled()) {
         return { summary: "kill-switch AGENT_HARNESS_ENABLED=0 — skipped." };
       }
-      const r = await runAgentOpsSweep(d, { newId, nowIso });
+      const r = await runAgentOpsSweep(
+        d,
+        { newId, nowIso },
+        { trigger: info.trigger, wakeReasons: info.wakeReasons },
+      );
       return { summary: r.summary };
     },
   });

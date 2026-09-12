@@ -37,6 +37,28 @@ export type AIToolRun = {
 export type AIAgentLoopResult = {
   reply: string;
   toolRuns: AIToolRun[];
+  /** Server-side web searches the provider ran (Anthropic web_search tool) */
+  webSearches?: number;
+};
+
+export type AIAgentLoopInput = {
+  systemPrompt: string;
+  contextPrompt?: string;
+  messages: AIChatMessage[];
+  tools: AIToolDefinition[];
+  executeTool: (
+    name: string,
+    args: Record<string, unknown>,
+  ) => { summary: string; ok: boolean } | Promise<{ summary: string; ok: boolean }>;
+  maxSteps?: number;
+  /**
+   * Provider-executed tools passed through verbatim (e.g. Anthropic
+   * `{ type: "web_search_20260209", name: "web_search" }`). Only the Anthropic
+   * loop honours these; Gemini/OpenAI ignore them.
+   */
+  serverTools?: Array<Record<string, unknown>>;
+  /** Override the model for this loop (defaults to the provider's main model) */
+  model?: string;
 };
 
 function trimKey(value: string | undefined): string | undefined {
@@ -179,17 +201,7 @@ export async function completeChat(input: {
 }
 
 /** Multi-step agent loop with tool execution. Returns null when no provider or on hard failure. */
-export async function runAIAgentLoop(input: {
-  systemPrompt: string;
-  contextPrompt?: string;
-  messages: AIChatMessage[];
-  tools: AIToolDefinition[];
-  executeTool: (
-    name: string,
-    args: Record<string, unknown>,
-  ) => { summary: string; ok: boolean } | Promise<{ summary: string; ok: boolean }>;
-  maxSteps?: number;
-}): Promise<AIAgentLoopResult | null> {
+export async function runAIAgentLoop(input: AIAgentLoopInput): Promise<AIAgentLoopResult | null> {
   const provider = resolveAIProvider();
   if (provider === "none") return null;
 
@@ -250,23 +262,15 @@ async function anthropicGenerateText(input: {
   }
 }
 
-async function anthropicAgentLoop(input: {
-  systemPrompt: string;
-  contextPrompt?: string;
-  messages: AIChatMessage[];
-  tools: AIToolDefinition[];
-  executeTool: (
-    name: string,
-    args: Record<string, unknown>,
-  ) => { summary: string; ok: boolean } | Promise<{ summary: string; ok: boolean }>;
-  maxSteps?: number;
-}): Promise<AIAgentLoopResult | null> {
+async function anthropicAgentLoop(input: AIAgentLoopInput): Promise<AIAgentLoopResult | null> {
   const key = getAnthropicApiKey();
   if (!key) return null;
 
   const toolRuns: AIToolRun[] = [];
+  let webSearches = 0;
+  const model = input.model?.trim() || getAnthropicModel();
   const system = [input.systemPrompt, input.contextPrompt].filter(Boolean).join("\n\n");
-  const tools = input.tools.map((t) => ({
+  const clientTools = input.tools.map((t) => ({
     name: t.name,
     description: t.description,
     input_schema: {
@@ -275,11 +279,14 @@ async function anthropicAgentLoop(input: {
       properties: (t.parameters as { properties?: Record<string, unknown> })?.properties ?? {},
     },
   }));
+  // Provider-executed tools (web_search) ride along verbatim; their
+  // server_tool_use / web_search_tool_result blocks are echoed back untouched.
+  const tools: Array<Record<string, unknown>> = [...clientTools, ...(input.serverTools ?? [])];
 
-  type ContentBlock =
-    | { type: "text"; text: string }
-    | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
-    | { type: "tool_result"; tool_use_id: string; content: string };
+  type TextBlock = { type: "text"; text: string };
+  type ToolUseBlock = { type: "tool_use"; id: string; name: string; input: Record<string, unknown> };
+  type ToolResultBlock = { type: "tool_result"; tool_use_id: string; content: string };
+  type ContentBlock = TextBlock | ToolUseBlock | ToolResultBlock | { type: string; [k: string]: unknown };
 
   const apiMessages: Array<{ role: "user" | "assistant"; content: string | ContentBlock[] }> =
     input.messages
@@ -288,6 +295,12 @@ async function anthropicAgentLoop(input: {
         role: m.role === "assistant" ? ("assistant" as const) : ("user" as const),
         content: m.content,
       }));
+
+  const finish = (reply?: string): AIAgentLoopResult | null => {
+    if (reply) return { reply, toolRuns, webSearches };
+    if (!toolRuns.length) return null;
+    return { ...summarizeToolRuns(toolRuns), webSearches };
+  };
 
   for (let step = 0; step < (input.maxSteps ?? 5); step++) {
     try {
@@ -300,23 +313,27 @@ async function anthropicAgentLoop(input: {
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: getAnthropicModel(),
+          model,
           max_tokens: 4096,
-          ...(anthropicSupportsTemperature(getAnthropicModel()) ? { temperature: 0.2 } : {}),
+          ...(anthropicSupportsTemperature(model) ? { temperature: 0.2 } : {}),
           system,
           messages: apiMessages,
           tools,
         }),
       });
-      if (!res.ok) return toolRuns.length ? summarizeToolRuns(toolRuns) : null;
+      if (!res.ok) return finish();
       const json = (await res.json()) as {
         stop_reason?: string;
         content?: ContentBlock[];
+        usage?: { server_tool_use?: { web_search_requests?: number } };
       };
       const content = json.content ?? [];
-      const toolUses = content.filter(
-        (b): b is Extract<ContentBlock, { type: "tool_use" }> => b.type === "tool_use",
-      );
+      const searched = json.usage?.server_tool_use?.web_search_requests;
+      if (typeof searched === "number" && Number.isFinite(searched)) {
+        // The API reports the running total for the request; take the max seen.
+        webSearches = Math.max(webSearches, searched);
+      }
+      const toolUses = content.filter((b): b is ToolUseBlock => b.type === "tool_use");
 
       if (toolUses.length) {
         apiMessages.push({ role: "assistant", content });
@@ -335,18 +352,17 @@ async function anthropicAgentLoop(input: {
       }
 
       const reply = content
-        .filter((b): b is Extract<ContentBlock, { type: "text" }> => b.type === "text")
+        .filter((b): b is TextBlock => b.type === "text")
         .map((b) => b.text)
         .join("")
         .trim();
-      if (reply) return { reply, toolRuns };
-      return toolRuns.length ? summarizeToolRuns(toolRuns) : null;
+      return finish(reply);
     } catch {
-      return toolRuns.length ? summarizeToolRuns(toolRuns) : null;
+      return finish();
     }
   }
 
-  return summarizeToolRuns(toolRuns);
+  return finish() ?? { ...summarizeToolRuns(toolRuns), webSearches };
 }
 
 async function geminiGenerateText(input: {
@@ -454,17 +470,7 @@ function geminiModelPartsFromResponse(json: GeminiResponse): Array<Record<string
   return JSON.parse(JSON.stringify(parts)) as Array<Record<string, unknown>>;
 }
 
-async function geminiAgentLoop(input: {
-  systemPrompt: string;
-  contextPrompt?: string;
-  messages: AIChatMessage[];
-  tools: AIToolDefinition[];
-  executeTool: (
-    name: string,
-    args: Record<string, unknown>,
-  ) => { summary: string; ok: boolean } | Promise<{ summary: string; ok: boolean }>;
-  maxSteps?: number;
-}): Promise<AIAgentLoopResult | null> {
+async function geminiAgentLoop(input: AIAgentLoopInput): Promise<AIAgentLoopResult | null> {
   const key = getGeminiApiKey();
   if (!key) return null;
 
@@ -538,17 +544,7 @@ async function geminiAgentLoop(input: {
   return summarizeToolRuns(toolRuns);
 }
 
-async function openaiAgentLoop(input: {
-  systemPrompt: string;
-  contextPrompt?: string;
-  messages: AIChatMessage[];
-  tools: AIToolDefinition[];
-  executeTool: (
-    name: string,
-    args: Record<string, unknown>,
-  ) => { summary: string; ok: boolean } | Promise<{ summary: string; ok: boolean }>;
-  maxSteps?: number;
-}): Promise<AIAgentLoopResult | null> {
+async function openaiAgentLoop(input: AIAgentLoopInput): Promise<AIAgentLoopResult | null> {
   const key = trimKey(process.env.OPENAI_API_KEY);
   if (!key) return null;
 

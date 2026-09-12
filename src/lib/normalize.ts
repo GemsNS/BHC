@@ -181,5 +181,8 @@ export function normalizeStore(raw: Partial<AppData>): AppData {
     payments: raw.payments ?? [],
     messages: raw.messages ?? [],
     passwordResetTokens: raw.passwordResetTokens ?? [],
+    agentRuns: raw.agentRuns ?? [],
+    scoutTasks: raw.scoutTasks ?? [],
+    scoutRunners: raw.scoutRunners ?? [],
   };
 }

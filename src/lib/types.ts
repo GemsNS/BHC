@@ -772,6 +772,73 @@ export interface AssistantAuditEntry {
   createdAt: string;
 }
 
+/* ------------------------------------------------------------------ */
+/* Autonomous Mainframe agent runtime + lead scout (own-PC web scraper)  */
+/* ------------------------------------------------------------------ */
+
+/** How much the unattended agent may do on its own (AGENT_AUTONOMY). */
+export type AgentAutonomyLevel = "observe" | "assist" | "operate" | "full";
+
+/** One unattended agent run (scheduled, woken by events, or manual). */
+export interface AgentRunRecord {
+  id: string;
+  trigger: "schedule" | "wake" | "manual" | "test";
+  autonomy: AgentAutonomyLevel;
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+  skipped: "kill_switch" | "budget" | "no_ai" | "run_cap" | null;
+  did: string[];
+  needsHuman: string[];
+  noted: string[];
+  toolRuns: Array<{ tool: string; ok: boolean; summary: string; refused?: boolean }>;
+  /** Why the agent woke outside its schedule (new ads, replies, errors, …) */
+  wakeReasons: string[];
+  webSearches: number;
+  estimatedTokens: number;
+  error: string | null;
+}
+
+/** Platforms the lead scout runner knows how to scan. */
+export type ScoutPlatform = "kijiji" | "craigslist" | "reddit" | "facebook" | "web";
+
+export type ScoutTaskStatus = "queued" | "running" | "done" | "failed";
+
+/** A scan the agent (or an operator) asked the own-PC scout runner to perform. */
+export interface ScoutTask {
+  id: string;
+  platform: ScoutPlatform;
+  query: string;
+  region: string;
+  status: ScoutTaskStatus;
+  /** Actor id or "agent" / "ui" / "cli" */
+  requestedBy: string;
+  note: string;
+  createdAt: string;
+  claimedAt: string | null;
+  claimedBy: string | null;
+  completedAt: string | null;
+  /** Listings the runner found (after its own demand filter) */
+  found: number;
+  /** New ad listings created in the CRM from this task */
+  created: number;
+  error: string | null;
+}
+
+/** A scout runner process (the owner's PC, the prod host, …) that heartbeats in. */
+export interface ScoutRunner {
+  id: string;
+  name: string;
+  host: string;
+  version: string;
+  platforms: ScoutPlatform[];
+  lastSeenAt: string;
+  lastRunAt: string | null;
+  lastSummary: string;
+  tasksDone: number;
+  adsPosted: number;
+}
+
 /** Persistent facts Mainframe learns from chat, imports, and APIs */
 export interface AssistantMemoryEntry {
   id: string;
@@ -1218,6 +1285,11 @@ export interface AppData {
   messages: Message[];
   /** Staff password-reset tokens (hashed); never sent to the browser */
   passwordResetTokens: PasswordResetToken[];
+  /** Autonomous agent run history (capped) */
+  agentRuns: AgentRunRecord[];
+  /** Lead scout: scans requested for the own-PC runner + runner heartbeats */
+  scoutTasks: ScoutTask[];
+  scoutRunners: ScoutRunner[];
 }
 
 export const ROLE_LABELS: Record<EmployeeRole, string> = {

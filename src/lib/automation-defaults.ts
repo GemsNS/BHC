@@ -227,7 +227,7 @@ export const AUTOMATION_CATALOG: AutomationCatalogEntry[] = [
     action: "agent_ops",
     name: "Mainframe ops sweep (AI agent)",
     description:
-      "Unattended Mainframe agent: reads CRM/ads/outreach, creates follow-up tasks, lists anything that needs a human send/approval/delete. Ships OFF. Requires AI key + AGENT_HARNESS_ENABLED=1.",
+      "Autonomous Mainframe agent: hunts the web for homeowner job requests (web search, listing pages, own-PC lead scout), feeds the ad pipeline, keeps tasks/leads current, and lists anything that needs a human. Runs on this interval and wakes early on new ads, replies, inbound messages, or errors. Ships OFF. Requires AI key + AGENT_HARNESS_ENABLED=1; AGENT_AUTONOMY sets how much it may do.",
     runHour: 0,
     intervalMinutes: 60,
     defaultEnabled: false,

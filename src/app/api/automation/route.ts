@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { agentRuntimeStatus } from "@/lib/agent-harness";
 import { getApiEmployee } from "@/lib/api-auth";
 import { automationStatus } from "@/lib/automation-engine";
+import { enqueueScoutTask, parseScoutPlatform, scoutStatus } from "@/lib/lead-scout";
 import { runServerTick, schedulerInfo } from "@/lib/scheduler";
 import { createBackup, listBackups, restoreBackup } from "@/lib/store-backup";
 import { storeHealth } from "@/lib/store-health";
@@ -42,6 +44,10 @@ export async function GET(request: Request) {
     recentTicks: data.automationRuns.slice(0, 15),
     notifications: data.notifications.slice(0, 30),
     webhookBacklog: webhookBacklog(data).slice(0, 20),
+    // Autonomous agent + own-PC lead scout
+    agent: agentRuntimeStatus(data),
+    agentRuns: (data.agentRuns ?? []).slice(0, 10),
+    scout: scoutStatus(data),
   });
 }
 
@@ -55,12 +61,17 @@ const bodySchema = z.object({
     "retry_webhooks",
     "mark_read",
     "clear_notifications",
+    "agent_run",
+    "scout_enqueue",
   ]),
   force: z.boolean().optional(),
   ids: z.array(z.string()).optional(),
   id: z.string().optional(),
   name: z.string().optional(),
   enabled: z.boolean().optional(),
+  platform: z.string().optional(),
+  query: z.string().max(200).optional(),
+  region: z.string().max(120).optional(),
 });
 
 export async function POST(request: Request) {
@@ -137,6 +148,56 @@ export async function POST(request: Request) {
         d.notifications = d.notifications.filter((n) => !n.readAt);
       });
       return NextResponse.json({ ok: true, id: newId() });
+    }
+    case "agent_run": {
+      // Run one agent sweep now, even if the scheduled automation is toggled off.
+      // Still subject to the AGENT_HARNESS_ENABLED kill-switch, the daily run cap,
+      // and the AI budget (all enforced inside runAgentOpsSweep).
+      const { runAgentOpsSweep, agentHarnessEnvEnabled } = await import("@/lib/agent-harness");
+      if (!agentHarnessEnvEnabled()) {
+        return NextResponse.json(
+          { error: "Agent kill-switch is off — set AGENT_HARNESS_ENABLED=1 on the host and restart." },
+          { status: 409 },
+        );
+      }
+      let result: Awaited<ReturnType<typeof runAgentOpsSweep>> | null = null;
+      const after = await updateStoreAsync(async (d) => {
+        result = await runAgentOpsSweep(d, { newId, nowIso }, { trigger: "manual" });
+        const auto = d.assistantAutomations.find((a) => a.action === "agent_ops");
+        if (auto) auto.lastRunAt = nowIso();
+      });
+      const r = result as Awaited<ReturnType<typeof runAgentOpsSweep>> | null;
+      return NextResponse.json({
+        ok: Boolean(r?.ok),
+        summary: r?.summary ?? "Agent did not run.",
+        skipped: r?.skipped ?? null,
+        record: { results: [r?.summary ?? "Agent did not run."], errors: [] },
+        agent: agentRuntimeStatus(after),
+        agentRun: r?.record ?? null,
+      });
+    }
+    case "scout_enqueue": {
+      const platform = parseScoutPlatform(body.platform);
+      const query = body.query?.trim() ?? "";
+      if (!platform) return NextResponse.json({ error: "platform must be kijiji, craigslist, reddit, facebook, or web" }, { status: 400 });
+      if (query.length < 4) return NextResponse.json({ error: "query required" }, { status: 400 });
+      const employee = await getApiEmployee(request);
+      let result: { existing: boolean; taskId: string } | null = null;
+      let failure: string | null = null;
+      const data = await updateStore((d) => {
+        try {
+          const r = enqueueScoutTask(
+            d,
+            { platform, query, region: body.region?.trim() || undefined, requestedBy: employee?.id ?? "ui" },
+            { newId, nowIso },
+          );
+          result = { existing: r.existing, taskId: r.task.id };
+        } catch (err) {
+          failure = err instanceof Error ? err.message : String(err);
+        }
+      });
+      if (failure) return NextResponse.json({ error: failure }, { status: 400 });
+      return NextResponse.json({ ok: true, ...(result ?? {}), scout: scoutStatus(data) });
     }
     default:
       return NextResponse.json({ error: "Unknown action" }, { status: 400 });

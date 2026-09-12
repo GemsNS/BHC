@@ -21,6 +21,7 @@ const PUBLIC_PREFIXES = [
   "/api/sms/inbound",
   "/api/voice/",
   "/api/ads/inbound",
+  "/api/scout", // own-PC lead scout runner; auth via ADS_INBOUND_SECRET or staff session inside route
   "/api/payments/webhook",
   "/api/gods-eye/webhook", // GEV sibling → CRM; auth via GODS_EYE_WEBHOOK_SECRET inside route
   "/api/presentations/",
