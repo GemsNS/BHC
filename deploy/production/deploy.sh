@@ -6,7 +6,7 @@
 #   bash deploy/production/deploy.sh --rollback                # go back to the previous release
 #   bash deploy/production/deploy.sh --no-restart              # build only
 #
-# Env (optional): BHC_APP_DIR=/opt/bhc  BHC_SERVICE=bhc  BHC_APP_USER=bhc
+# Env (optional): BHC_APP_DIR=/opt/bhc  BHC_SERVICE=bhc  BHC_APP_USER=www-data
 #                 BHC_HEALTH_URL=http://127.0.0.1:3000/api/health
 #                 BHC_HEALTH_TIMEOUT=90  BHC_NO_SUDO=1
 #
@@ -23,9 +23,10 @@ set -euo pipefail
 
 APP_DIR="${BHC_APP_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 SERVICE="${BHC_SERVICE:-bhc}"
-# App runs as this user (see deploy/production/bhc.service). Keep data/ owned by them
-# so nightly store_backup can write data/backups/*.json.
-APP_USER="${BHC_APP_USER:-bhc}"
+# Prod host (bhc-app-1) runs the app as www-data — there is no Linux user `bhc`.
+# Override with BHC_APP_USER / BHC_APP_GROUP only if a host differs.
+# Keep data/ owned by this user so nightly store_backup can write data/backups/*.json.
+APP_USER="${BHC_APP_USER:-www-data}"
 APP_GROUP="${BHC_APP_GROUP:-$APP_USER}"
 HEALTH_URL="${BHC_HEALTH_URL:-http://127.0.0.1:3000/api/health}"
 HEALTH_TIMEOUT="${BHC_HEALTH_TIMEOUT:-90}"
@@ -40,7 +41,7 @@ SUDO="sudo"
 if [ "${BHC_NO_SUDO:-0}" = "1" ] || [ "$(id -u)" = "0" ]; then SUDO=""; fi
 
 fix_data_ownership() {
-  # Root deploys often mkdir/cp into data/backups as root → EACCES for User=bhc.
+  # Root deploys often mkdir/cp into data/backups as root → EACCES for User=www-data.
   if ! id -u "$APP_USER" >/dev/null 2>&1; then
     log "skip chown (user $APP_USER not found)"
     return 0

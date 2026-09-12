@@ -13,13 +13,16 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=bhc
-Group=bhc
+User=www-data
+Group=www-data
 WorkingDirectory=/opt/bhc
+EnvironmentFile=-/etc/bhc/bhc.env
 EnvironmentFile=-/opt/bhc/.env
 EnvironmentFile=-/opt/bhc/data/deploy/runtime.env
 Environment=NODE_ENV=production
 Environment=PORT=3000
+Environment=BHC_APP_USER=www-data
+Environment=BHC_APP_GROUP=www-data
 Environment=NEXT_TELEMETRY_DISABLED=1
 ExecStart=/usr/bin/npm start
 Restart=always

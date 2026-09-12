@@ -13,9 +13,10 @@ After=bhc.service
 
 [Service]
 Type=oneshot
-User=bhc
-Group=bhc
+User=www-data
+Group=www-data
 WorkingDirectory=/opt/bhc
+EnvironmentFile=-/etc/bhc/bhc.env
 EnvironmentFile=-/opt/bhc/.env
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/npx --yes tsx scripts/bhc-cli.ts automations tick

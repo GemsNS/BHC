@@ -4,9 +4,13 @@
 **CRM tab:** Admin → God's Eye View (`/admin/gods-eye`)  
 **Automation:** Admin → Automation → “Mainframe ops sweep (AI agent)” (`agent_ops`)
 
-**Twilio:** Account is **restored**. Wire SMS back on prod (`TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER`, then `TWILIO_ENABLED=1`, webhook → `/api/sms/inbound`). Full steps in §3 below — do not leave SMS off assuming compliance is still pending.
+> **Live prod (2026-09-11/12):** see [`docs/GROKBOT_CURSOR_HANDBACK_2026-09-11.md`](./GROKBOT_CURSOR_HANDBACK_2026-09-11.md).  
+> Twilio, harness, GEV (HRM camera), and `OUTREACH_AUTOSEND=email,sms` are **ON** at SHA `83e32f8`.  
+> Deploy as `www-data` (`BHC_APP_USER` defaults to `www-data` in `deploy/production/deploy.sh`).
 
-This handback covers two ship-ready but **default-OFF** systems. CRM stays fully operational if either (or both) remain off.
+**Twilio:** Account is **restored** and enabled on prod (`TWILIO_ENABLED=1`, webhook → `/api/sms/inbound`). Setup detail in §3 and the dated Cursor handback.
+
+Sections below remain the enablement / sibling-deploy runbook. Prefer the dated handback for current kill-switch values.
 
 Upstream GEV (MIT code, third-party **data** keeps own licenses):  
 https://github.com/bilawalsidhu/gods-eye-view
@@ -17,6 +21,7 @@ https://github.com/bilawalsidhu/gods-eye-view
 
 ```bash
 cd /opt/bhc && bash deploy/production/deploy.sh
+# App user defaults to www-data (override with BHC_APP_USER if needed)
 git -C /opt/bhc rev-parse --short HEAD
 curl -sS http://127.0.0.1:3000/api/health
 ```
@@ -24,8 +29,8 @@ curl -sS http://127.0.0.1:3000/api/health
 Confirm leads still tick (Kijiji demand sources already on main):
 
 ```bash
-sudo -u bhc bash -lc 'cd /opt/bhc && npm run bhc -- ads ensure-sources && npm run bhc -- ads ingest && npm run bhc -- ads status'
-sudo -u bhc bash -lc 'cd /opt/bhc && npm run bhc -- ads test-email <owner@bhcontracting.ca>'
+sudo -u www-data bash -lc 'cd /opt/bhc && set -a && source /etc/bhc/bhc.env && set +a && npm run bhc -- ads ensure-sources && npm run bhc -- ads ingest && npm run bhc -- ads status'
+sudo -u www-data bash -lc 'cd /opt/bhc && set -a && source /etc/bhc/bhc.env && set +a && npm run bhc -- ads test-email <owner@bhcontracting.ca>'
 ```
 
 SPF/DMARC were fixed on GoDaddy (Outlook include + `p=reject`). Re-check anytime:
@@ -101,7 +106,7 @@ WorkingDirectory=/opt/gods-eye-view
 EnvironmentFile=/etc/gods-eye-view/env
 ExecStart=/usr/bin/npm run preview -- --host 127.0.0.1 --port 4173
 Restart=on-failure
-User=bhc
+User=www-data
 Group=bhc
 
 [Install]
@@ -222,7 +227,7 @@ AGENT_HARNESS_MAX_STEPS=8
 sudo systemctl restart bhc
 # Enable in UI: Admin → Automation → "Mainframe ops sweep (AI agent)" → ON
 # Or force one run:
-sudo -u bhc bash -lc 'cd /opt/bhc && npm run bhc -- automations tick --force'
+sudo -u www-data bash -lc 'cd /opt/bhc && npm run bhc -- automations tick --force'
 ```
 
 ### Safety checklist
@@ -274,7 +279,7 @@ TWILIO_ENABLED=1                         # was 0 while suspended — flip on aft
 
 ```bash
 sudo systemctl restart bhc
-sudo -u bhc bash -lc 'cd /opt/bhc && npm run bhc -- status'   # expect SMS configured
+sudo -u www-data bash -lc 'cd /opt/bhc && npm run bhc -- status'   # expect SMS configured
 # Optional: send a test SMS via CLI/console once FROM is verified
 ```
 

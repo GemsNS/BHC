@@ -10,7 +10,7 @@
 #
 # Prereqs on the host (once):
 #   cd /opt/bhc && npm i -D playwright && npx playwright install chromium
-#   sudo -u bhc FB_SESSION_STATE=/etc/bhc/fb-session/state.json \
+#   sudo -u www-data FB_SESSION_STATE=/etc/bhc/fb-session/state.json \
 #     npx tsx scripts/fb-marketplace-scrape.ts --login
 
 [Unit]
@@ -20,9 +20,10 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-User=bhc
-Group=bhc
+User=www-data
+Group=www-data
 WorkingDirectory=/opt/bhc
+EnvironmentFile=-/etc/bhc/bhc.env
 EnvironmentFile=-/opt/bhc/.env
 Environment=NODE_ENV=production
 Environment=FB_SCRAPE_HEADLESS=1
