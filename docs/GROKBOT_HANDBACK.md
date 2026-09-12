@@ -141,8 +141,8 @@ In `/opt/bhc/.env`:
 ```bash
 GODS_EYE_ENABLED=1
 NEXT_PUBLIC_GODS_EYE_ENABLED=1
-GODS_EYE_EMBED_URL=https://gev.bhcontracting.ca/
-NEXT_PUBLIC_GODS_EYE_EMBED_URL=https://gev.bhcontracting.ca/
+GODS_EYE_EMBED_URL="https://gev.bhcontracting.ca/#lat=44.6488&lon=-63.5752&alt=65000&heading=0&pitch=-55&map=esri-imagery"
+NEXT_PUBLIC_GODS_EYE_EMBED_URL="$GODS_EYE_EMBED_URL"
 GODS_EYE_WEBHOOK_SECRET=<openssl rand -hex 24>
 # Optional soft-fail status chips (already used by BHC):
 # CESIUM_ION_TOKEN=...
